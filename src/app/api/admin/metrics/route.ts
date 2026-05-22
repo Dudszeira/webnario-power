@@ -7,7 +7,7 @@ import {
   getRecentRealComments 
 } from '@/lib/db';
 import { verifyAdminFromRequest } from '@/lib/auth';
-import { getCurrentEditionId, getLiveStartMs, isLiveActive, isLiveOver } from '@/lib/edition';
+import { getCurrentEditionId, getLiveStartMs, isLiveActive, isLiveOver, getSimulatedNow } from '@/lib/edition';
 
 export async function GET(req: NextRequest) {
   if (!(await verifyAdminFromRequest(req))) {
@@ -37,10 +37,11 @@ export async function GET(req: NextRequest) {
 
   // Current edition live status
   const currentEditionRow = await getEdition(targetEdition);
+  const simulatedNow = getSimulatedNow(currentEditionRow);
   const videoDuration = currentEditionRow?.video_duration ?? 7200;
   const liveStartMs = getLiveStartMs(targetEdition);
-  const liveActive = isLiveActive(targetEdition, videoDuration);
-  const liveOver = isLiveOver(targetEdition, videoDuration);
+  const liveActive = isLiveActive(targetEdition, videoDuration, simulatedNow);
+  const liveOver = isLiveOver(targetEdition, videoDuration, simulatedNow);
   const liveStatus = liveActive ? 'live' : liveOver ? 'over' : 'waiting';
 
   const editionConfig = currentEditionRow || {};

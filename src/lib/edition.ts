@@ -60,3 +60,13 @@ export function formatSeconds(s: number): string {
 export function getNextLiveDate(now: Date = new Date()): Date {
   return new Date(getLiveStartMs(getCurrentEditionId(now)));
 }
+
+export function getSimulatedNow(
+  edition: { test_mode?: number; test_time?: string | null } | null,
+  realNow: Date = new Date()
+): Date {
+  if (edition && edition.test_mode === 1 && edition.test_time) {
+    return new Date(edition.test_time);
+  }
+  return realNow;
+}

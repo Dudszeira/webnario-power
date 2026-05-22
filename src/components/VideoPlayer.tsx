@@ -26,35 +26,98 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
   const videoRef = useRef<HTMLVideoElement>(null);
   const ytPlayerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  
   const [started, setStarted] = useState(false);
-  const [ytReady, setYtReady] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [volume, setVolume] = useState(100);
+  const [muted, setMuted] = useState(false);
+  
+  const [currentTime, setCurrentTime] = useState(0);
+  const [liveElapsed, setLiveElapsed] = useState(initialOffset);
+  const [showToast, setShowToast] = useState(false);
 
-  // Upload player
+  const playTimestampRef = useRef<number | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ytIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Trigger Toast Notification
+  function triggerToast() {
+    setShowToast(true);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setShowToast(false), 2500);
+  }
+
+  // Increment simulated time limit
+  useEffect(() => {
+    if (!started) return;
+    playTimestampRef.current = Date.now();
+
+    const interval = setInterval(() => {
+      if (playTimestampRef.current) {
+        const secondsPassed = Math.floor((Date.now() - playTimestampRef.current) / 1000);
+        setLiveElapsed(initialOffset + secondsPassed);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [started, initialOffset]);
+
+  // Sync volume & mute for both players
+  useEffect(() => {
+    if (source === 'upload') {
+      const video = videoRef.current;
+      if (video) {
+        video.volume = muted ? 0 : volume / 100;
+        video.muted = muted;
+      }
+    } else if (source === 'youtube' && ytPlayerRef.current) {
+      if (ytPlayerRef.current.setVolume) {
+        ytPlayerRef.current.setVolume(muted ? 0 : volume);
+      }
+      if (ytPlayerRef.current.mute && ytPlayerRef.current.unMute) {
+        if (muted) ytPlayerRef.current.mute();
+        else ytPlayerRef.current.unMute();
+      }
+    }
+  }, [volume, muted, source]);
+
+  // Upload Player Logic
   useEffect(() => {
     if (source !== 'upload') return;
     const video = videoRef.current;
     if (!video) return;
 
     const handleTime = () => {
-      onTimeUpdate?.(Math.floor(video.currentTime));
+      const cur = Math.floor(video.currentTime);
+      setCurrentTime(cur);
+      onTimeUpdate?.(cur);
+
+      // Security Guard: Prevent skipping forward beyond live simulation
+      const currentLiveLimit = initialOffset + (playTimestampRef.current ? Math.floor((Date.now() - playTimestampRef.current) / 1000) : 0);
+      if (video.currentTime > currentLiveLimit + 2) {
+        video.currentTime = Math.max(0, currentLiveLimit);
+        triggerToast();
+      }
     };
 
     video.addEventListener('timeupdate', handleTime);
     return () => video.removeEventListener('timeupdate', handleTime);
-  }, [source, onTimeUpdate]);
+  }, [source, onTimeUpdate, initialOffset]);
 
   function startUpload() {
     const video = videoRef.current;
     if (!video) return;
     video.currentTime = initialOffset;
-    video.play().catch(() => {});
+    video.play()
+      .then(() => {
+        setPlaying(true);
+      })
+      .catch(() => {});
     setStarted(true);
     onStarted?.();
   }
 
-  // YouTube player
-  const ytIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
+  // YouTube Player Logic
   useEffect(() => {
     if (source !== 'youtube') return;
 
@@ -75,17 +138,28 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
           start: initialOffset,
         },
         events: {
-          onReady: () => setYtReady(true),
+          onReady: () => {},
           onStateChange: (e: any) => {
-            if (e.data === 1) onStarted?.();
+            const isPlaying = e.data === 1; // YT.PlayerState.PLAYING
+            setPlaying(isPlaying);
+            if (isPlaying) onStarted?.();
           },
         },
       });
 
-      // Store interval in ref so cleanup always works (sync or async path)
       ytIntervalRef.current = setInterval(() => {
-        if (ytPlayerRef.current?.getCurrentTime) {
-          onTimeUpdate?.(Math.floor(ytPlayerRef.current.getCurrentTime()));
+        const player = ytPlayerRef.current;
+        if (player && typeof player.getCurrentTime === 'function') {
+          const cur = Math.floor(player.getCurrentTime());
+          setCurrentTime(cur);
+          onTimeUpdate?.(cur);
+
+          // Security Guard: Prevent skipping forward beyond live simulation
+          const currentLiveLimit = initialOffset + (playTimestampRef.current ? Math.floor((Date.now() - playTimestampRef.current) / 1000) : 0);
+          if (cur > currentLiveLimit + 2) {
+            player.seekTo(Math.max(0, currentLiveLimit), true);
+            triggerToast();
+          }
         }
       }, 1000);
     }
@@ -102,81 +176,191 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
     return () => {
       if (ytIntervalRef.current) clearInterval(ytIntervalRef.current);
     };
-  }, [source, url, initialOffset]);
+  }, [source, url, initialOffset, onTimeUpdate, onStarted]);
 
   function startYT() {
-    if (ytPlayerRef.current?.seekTo) {
-      ytPlayerRef.current.seekTo(initialOffset, true);
-    }
-    if (ytPlayerRef.current?.playVideo) {
-      ytPlayerRef.current.playVideo();
+    const player = ytPlayerRef.current;
+    if (player) {
+      if (player.seekTo) player.seekTo(initialOffset, true);
+      if (player.playVideo) player.playVideo();
+      if (player.unMute) player.unMute();
+      if (player.setVolume) player.setVolume(100);
     }
     setStarted(true);
+    setPlaying(true);
     onStarted?.();
   }
 
-  if (source === 'youtube') {
-    return (
-      <div ref={containerRef} className="relative w-full h-full video-wrapper select-none" style={{ aspectRatio: '16/9' }}>
-        <div id="yt-player" className="w-full h-full" />
-
-        {/* Overlay to block YT controls / clicks */}
-        <div
-          className="absolute inset-0 z-10"
-          style={{ background: 'transparent' }}
-          onContextMenu={(e) => e.preventDefault()}
-        />
-
-        {!started && (
-          <div
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center cursor-pointer"
-            style={{ background: 'rgba(0,0,0,0.72)' }}
-            onClick={startYT}
-          >
-            <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'linear-gradient(145deg,#2a9fd6,#1a6fb5)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 24px rgba(26,111,181,0.45)' }}>
-                <svg style={{ width: 30, height: 30, fill: '#fff', marginLeft: 4 }} viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-            </div>
-            <p className="text-white font-semibold mt-4 text-lg">Clique para assistir ao vivo</p>
-          </div>
-        )}
-      </div>
-    );
+  function togglePlay() {
+    if (source === 'upload') {
+      const video = videoRef.current;
+      if (video) {
+        if (playing) {
+          video.pause();
+          setPlaying(false);
+        } else {
+          video.play().catch(() => {});
+          setPlaying(true);
+        }
+      }
+    } else {
+      const player = ytPlayerRef.current;
+      if (player) {
+        if (playing) {
+          player.pauseVideo();
+          setPlaying(false);
+        } else {
+          player.playVideo();
+          setPlaying(true);
+        }
+      }
+    }
   }
 
-  // Upload player
-  return (
-    <div ref={containerRef} className="relative w-full h-full video-wrapper select-none" style={{ aspectRatio: '16/9' }}>
-      {url ? (
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          style={{ display: started ? 'block' : 'none' }}
-          playsInline
-          disablePictureInPicture
-          onContextMenu={(e) => e.preventDefault()}
-        >
-          <source src={url} />
-        </video>
-      ) : null}
+  function handleVolumeChange(val: number) {
+    setVolume(val);
+    if (val === 0) setMuted(true);
+    else setMuted(false);
+  }
 
+  const progressPercent = liveElapsed > 0 ? Math.min(100, (currentTime / liveElapsed) * 100) : 0;
+
+  // RENDER PLAYER
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full overflow-hidden select-none bg-black group"
+      style={{ aspectRatio: '16/9', borderRadius: 12 }}
+    >
+      {/* 🔴 BADGE AO VIVO */}
+      {started && (
+        <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 pointer-events-none transition-opacity duration-300">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping flex-shrink-0" />
+          <span className="w-2 h-2 absolute top-[9px] left-[13px] rounded-full bg-red-500 flex-shrink-0" />
+          <span className="text-[10.5px] font-bold tracking-widest text-white uppercase">AO VIVO</span>
+        </div>
+      )}
+
+      {/* ⏱ TOAST DE SEGURANÇA */}
+      {showToast && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 bg-black/90 text-white font-bold px-5 py-3 rounded-lg border-l-4 border-blue-500 shadow-2xl backdrop-blur-sm pointer-events-none transition-all duration-300 scale-100 whitespace-nowrap text-xs md:text-sm animate-bounce">
+          ⏱ Isso é ao vivo — não é possível avançar
+        </div>
+      )}
+
+      {/* 🛡️ BLOQUEADORES DE EVENTO DE CLIQUE DO YOUTUBE (Z-INDEX 10) */}
+      {source === 'youtube' && (
+        <>
+          <div className="absolute top-0 left-0 right-0 h-[65px] z-10 cursor-default bg-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-[65px] z-10 cursor-default bg-transparent" />
+          <div className="absolute inset-0 z-10 bg-transparent" onContextMenu={(e) => e.preventDefault()} />
+        </>
+      )}
+
+      {/* SOURCES */}
+      {source === 'youtube' ? (
+        <div id="yt-player" className="w-full h-full pointer-events-none" />
+      ) : (
+        url && (
+          <video
+            ref={videoRef}
+            className="w-full h-full object-cover"
+            style={{ display: started ? 'block' : 'none' }}
+            playsInline
+            disablePictureInPicture
+            onContextMenu={(e) => e.preventDefault()}
+          >
+            <source src={url} />
+          </video>
+        )
+      )}
+
+      {/* 🎬 COVER DE INÍCIO */}
       {!started && (
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer"
-          style={{ background: '#0a0a0f' }}
-          onClick={startUpload}
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 bg-black/85 backdrop-blur-md hover:bg-black/75"
+          onClick={source === 'youtube' ? startYT : startUpload}
         >
-          <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'linear-gradient(145deg,#2a9fd6,#1a6fb5)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 24px rgba(26,111,181,0.45)' }}>
-              <svg style={{ width: 30, height: 30, fill: '#fff', marginLeft: 4 }} viewBox="0 0 24 24">
+          <div className="w-[76px] h-[76px] rounded-full bg-blue-500/10 flex items-center justify-center transition-all duration-300 hover:scale-105 group-hover:bg-blue-500/20">
+            <div className="w-[58px] h-[58px] rounded-full bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/40 transition-transform duration-200">
+              <svg className="w-6 h-6 fill-white ml-1" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
             </div>
           </div>
-          <p className="text-white font-semibold mt-4 text-lg">Clique para assistir ao vivo</p>
+          <p className="text-white font-bold mt-4 text-base tracking-wide uppercase">Clique para assistir ao vivo</p>
+        </div>
+      )}
+
+      {/* 🎛️ CONTROLES PERSONALIZADOS (Z-INDEX 20) */}
+      {started && (
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col px-4 pb-3 pt-8 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 select-none">
+          {/* Progress Bar (Read Only) */}
+          <div className="w-full h-1 bg-white/10 rounded-full mb-3 overflow-hidden cursor-not-allowed">
+            <div
+              className="h-full bg-blue-500 rounded-full transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {/* Play / Pause button */}
+              <button
+                onClick={togglePlay}
+                className="w-8 h-8 flex items-center justify-center text-white hover:text-blue-400 transition-colors"
+                title={playing ? 'Pausar' : 'Reproduzir'}
+              >
+                {playing ? (
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Status Indicator */}
+              <div className="flex items-center gap-1 bg-red-600/20 border border-red-600/30 px-2.5 py-0.5 rounded text-[9.5px] font-bold text-red-500 uppercase tracking-widest pointer-events-none">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                AO VIVO
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* Mute Button */}
+              <button
+                onClick={() => setMuted(!muted)}
+                className="w-8 h-8 flex items-center justify-center text-white hover:text-blue-400 transition-colors"
+                title={muted ? 'Ativar som' : 'Mudo'}
+              >
+                {muted ? (
+                  <svg className="w-5 h-5 fill-none stroke-current" strokeWidth="2" viewBox="0 0 24 24">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19" fill="currentColor" stroke="none" />
+                    <line x1="23" y1="9" x2="17" y2="15" />
+                    <line x1="17" y1="9" x2="23" y2="15" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 fill-none stroke-current" strokeWidth="2" viewBox="0 0 24 24">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19" fill="currentColor" stroke="none" />
+                    <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Volume Slider */}
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={muted ? 0 : volume}
+                onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                className="w-16 md:w-20 h-1 rounded-lg bg-white/20 appearance-none cursor-pointer accent-blue-500 outline-none"
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -4,6 +4,10 @@ const nextConfig = {
   images: {
     formats: ['image/webp'],
   },
+  webpack: (config) => {
+    config.resolve.symlinks = false;
+    return config;
+  },
 };
 
 export default nextConfig;

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { verifyUserSession, verifyAdminSession } from '@/lib/auth';
-import { getCurrentEditionId, isLiveActive, isLiveOver, getVideoOffset, getLiveStartMs } from '@/lib/edition';
+import { getCurrentEditionId, isLiveActive, isLiveOver, getVideoOffset, getLiveStartMs, getSimulatedNow } from '@/lib/edition';
 import { 
   getEdition, 
   getRegistrationById, 
@@ -19,6 +19,7 @@ export default async function AoVivoPage() {
   const editionId = getCurrentEditionId();
 
   const edition = await getEdition(editionId);
+  const simulatedNow = getSimulatedNow(edition);
   const videoDuration = edition?.video_duration ?? 7200;
   const salesUrl = edition?.sales_page_url ?? '';
 
@@ -26,7 +27,7 @@ export default async function AoVivoPage() {
   if (!isAdmin) {
     if (!session) redirect('/espera');
     if (session.editionId !== editionId) redirect('/espera');
-    if (!isLiveActive(editionId, videoDuration)) redirect('/espera');
+    if (!isLiveActive(editionId, videoDuration, simulatedNow)) redirect('/espera');
 
     // Mark registration as consumed on first access
     const reg = await getRegistrationById(session.registrationId);
@@ -44,7 +45,7 @@ export default async function AoVivoPage() {
     }
   }
 
-  const offset = isAdmin ? 0 : getVideoOffset(editionId);
+  const offset = isAdmin ? 0 : getVideoOffset(editionId, simulatedNow);
   const liveStartMs = getLiveStartMs(editionId);
 
   const simulatedComments = await getSimulatedComments(editionId);

@@ -9,6 +9,7 @@ const defaultConfig = {
   cta_enabled: false, cta_url: '', cta_text: '',
   cta_start_seconds: 0, cta_end_seconds: 3600,
   viewer_min: 210, viewer_max: 220,
+  test_mode: false, test_time: '',
 };
 
 function SectionCard({ title, description, accent, children }: {
@@ -56,7 +57,26 @@ export default function AdminConfig() {
 
   useEffect(() => {
     fetch('/api/admin/config').then(r => r.json()).then(d => {
-      if (d.edition) setConfig({ ...defaultConfig, ...d.edition, chat_enabled: !!d.edition.chat_enabled, cta_enabled: !!d.edition.cta_enabled });
+      if (d.edition) {
+        let testTimeLocal = '';
+        if (d.edition.test_time) {
+          try {
+            const dateObj = new Date(d.edition.test_time);
+            const tzOffset = dateObj.getTimezoneOffset() * 60000;
+            testTimeLocal = new Date(dateObj.getTime() - tzOffset).toISOString().slice(0, 16);
+          } catch (e) {
+            console.error('Erro ao formatar data de teste:', e);
+          }
+        }
+        setConfig({
+          ...defaultConfig,
+          ...d.edition,
+          chat_enabled: !!d.edition.chat_enabled,
+          cta_enabled: !!d.edition.cta_enabled,
+          test_mode: !!d.edition.test_mode,
+          test_time: testTimeLocal
+        });
+      }
       setLoading(false);
     });
   }, []);
@@ -64,7 +84,19 @@ export default function AdminConfig() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await fetch('/api/admin/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+    
+    const payload = {
+      ...config,
+      test_time: (config.test_mode && config.test_time) 
+        ? new Date(config.test_time).toISOString() 
+        : null
+    };
+
+    await fetch('/api/admin/config', { 
+      method: 'PUT', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify(payload) 
+    });
     setSaving(false); setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
@@ -147,6 +179,15 @@ export default function AdminConfig() {
                   <input className="input-admin" type="number" value={config.viewer_max} onChange={e => set('viewer_max', Number(e.target.value))} />
                 </Field>
               </div>
+            </SectionCard>
+
+            <SectionCard title="Modo Teste / Live Simulada" description="Força um horário fictício na plataforma para testar o comportamento da live simulada." accent="#ec4899">
+              <Toggle checked={config.test_mode} onChange={v => set('test_mode', v)} label="Habilitar Modo Teste" />
+              {config.test_mode && (
+                <Field label="Data e hora fictícia do teste" hint="Defina o dia e horário que a plataforma deve assumir (ex: terça às 20:05 para testar 5 minutos de live).">
+                  <input className="input-admin" type="datetime-local" value={config.test_time} onChange={e => set('test_time', e.target.value)} required />
+                </Field>
+              )}
             </SectionCard>
 
             <SectionCard title="Página de vendas" description="Redirect para usuários bloqueados após a live." accent="#ef4444">

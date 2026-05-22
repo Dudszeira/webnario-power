@@ -1,7 +1,7 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifyUserSession } from '@/lib/auth';
-import { getCurrentEditionId, isLiveActive, isLiveOver, getLiveStartMs } from '@/lib/edition';
+import { getCurrentEditionId, isLiveActive, isLiveOver, getLiveStartMs, getSimulatedNow } from '@/lib/edition';
 import { getEdition } from '@/lib/db';
 import EsperaContent from '@/components/EsperaContent';
 
@@ -12,15 +12,16 @@ export default async function EsperaPage() {
   const editionId = getCurrentEditionId();
 
   const edition = await getEdition(editionId);
+  const simulatedNow = getSimulatedNow(edition);
   const videoDuration = edition?.video_duration ?? 7200;
   const salesUrl = edition?.sales_page_url ?? '';
 
   // If live is active and user has a valid session for this edition → go to live room
   if (session && session.editionId === editionId) {
-    if (isLiveActive(editionId, videoDuration)) {
+    if (isLiveActive(editionId, videoDuration, simulatedNow)) {
       redirect('/ao-vivo');
     }
-    if (isLiveOver(editionId, videoDuration)) {
+    if (isLiveOver(editionId, videoDuration, simulatedNow)) {
       // Live is over — show "perdeu a live" modal on waiting page
       return (
         <EsperaContent

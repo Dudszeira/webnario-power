@@ -31,7 +31,23 @@ export async function POST(req: NextRequest) {
   // Ensure edition row exists
   const existing = await getEdition(editionId);
   if (!existing) {
-    await upsertEdition({ id: editionId, live_date: editionId });
+    await upsertEdition({ 
+      id: editionId, 
+      live_date: editionId,
+      video_source: 'youtube',
+      video_url: '',
+      video_duration: 7200,
+      sales_page_url: '',
+      chat_enabled: 1,
+      chat_mode: 'general',
+      cta_enabled: 0,
+      cta_url: '',
+      cta_text: '',
+      cta_start_seconds: 0,
+      cta_end_seconds: 3600,
+      viewer_min: 210,
+      viewer_max: 220
+    });
   }
 
   // Check: same email already used in this edition → block

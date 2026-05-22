@@ -37,6 +37,8 @@ export async function PUT(req: NextRequest) {
     cta_end_seconds: Number(body.cta_end_seconds) || 3600,
     viewer_min: Number(body.viewer_min) || 210,
     viewer_max: Number(body.viewer_max) || 220,
+    test_mode: body.test_mode ? 1 : 0,
+    test_time: body.test_time || null,
   });
 
   return NextResponse.json({ ok: true });

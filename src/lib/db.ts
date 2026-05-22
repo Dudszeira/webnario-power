@@ -31,6 +31,8 @@ export type Edition = {
   viewer_min: number;
   viewer_max: number;
   created_at: string;
+  test_mode?: number;
+  test_time?: string | null;
 };
 
 export type Registration = {
