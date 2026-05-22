@@ -1,0 +1,641 @@
+/* ═══════════════════════════════════════════════════
+   Live Comments Widget — CSS v2.5.3
+   Anti-Elementor: todos os elementos críticos usam
+   !important e seletores de alta especificidade.
+   Fonte padrão: Montserrat
+═══════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+.lc-wrap,
+.lc-wrap * {
+    box-sizing: border-box !important;
+    font-family: 'Montserrat', Arial, sans-serif !important;
+}
+.lc-wrap * { margin: 0; padding: 0; }
+
+/* ── Variáveis dark (padrão) ── */
+.lc-wrap {
+    --lc-bg:           #111111;
+    --lc-bg-header:    #0a0a0a;
+    --lc-bg-input:     #0a0a0a;
+    --lc-bg-field:     rgba(255,255,255,0.05);
+    --lc-border:       rgba(255,255,255,0.07);
+    --lc-border-field: rgba(255,255,255,0.1);
+    --lc-text:         rgba(255,255,255,0.78);
+    --lc-text-title:   #ffffff;
+    --lc-text-muted:   rgba(255,255,255,0.35);
+    --lc-text-typing:  rgba(255,255,255,0.3);
+    --lc-placeholder:  rgba(255,255,255,0.2);
+    --lc-dot-typing:   rgba(255,255,255,0.3);
+    --lc-scrollbar:    rgba(255,255,255,0.1);
+    --lc-reply-bg:     rgba(85,160,238,0.06);
+    --lc-reply-text:   rgba(255,255,255,0.65);
+    --lc-toggle-bg:    rgba(255,255,255,0.08);
+    --lc-viewers-fill: rgba(255,255,255,0.35);
+    --lc-accent:       #55A0EE;
+    --lc-host-color:   #e0a030;
+
+    width: 100% !important;
+    position: relative !important;
+    background: var(--lc-bg) !important;
+    border-radius: 15px !important;
+    overflow: visible !important; /* overflow:visible para o modal sair corretamente */
+    border: 1px solid var(--lc-border) !important;
+    transition: background .25s, border-color .25s;
+}
+
+/* clip interno para o conteúdo do widget */
+.lc-wrap-inner {
+    border-radius: inherit;
+    overflow: hidden;
+}
+
+/* ── Light mode ── */
+.lc-wrap.lc-light {
+    --lc-bg:           #ffffff;
+    --lc-bg-header:    #f5f5f5;
+    --lc-bg-input:     #f5f5f5;
+    --lc-bg-field:     rgba(0,0,0,0.04);
+    --lc-border:       rgba(0,0,0,0.09);
+    --lc-border-field: rgba(0,0,0,0.12);
+    --lc-text:         rgba(0,0,0,0.75);
+    --lc-text-title:   #111111;
+    --lc-text-muted:   rgba(0,0,0,0.38);
+    --lc-text-typing:  rgba(0,0,0,0.3);
+    --lc-placeholder:  rgba(0,0,0,0.25);
+    --lc-dot-typing:   rgba(0,0,0,0.25);
+    --lc-scrollbar:    rgba(0,0,0,0.1);
+    --lc-reply-bg:     rgba(85,160,238,0.07);
+    --lc-reply-text:   rgba(0,0,0,0.55);
+    --lc-toggle-bg:    rgba(0,0,0,0.07);
+    --lc-viewers-fill: rgba(0,0,0,0.35);
+}
+
+/* ═══════════════════════════════════════
+   MODAL STAFF — position:fixed para escapar
+   de qualquer overflow:hidden do Elementor
+═══════════════════════════════════════ */
+.lc-staff-overlay {
+    display: none !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 999999 !important;
+    background: rgba(0,0,0,0.78) !important;
+    align-items: center !important;
+    justify-content: center !important;
+    backdrop-filter: blur(4px);
+}
+.lc-staff-overlay.lc-staff-open {
+    display: flex !important;
+}
+.lc-staff-card {
+    background: #1c1f2e !important;
+    border: 1px solid rgba(85,160,238,0.25) !important;
+    border-radius: 14px !important;
+    padding: 28px 24px !important;
+    width: 300px !important;
+    max-width: calc(100vw - 32px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6) !important;
+    animation: lcModalIn .2s ease;
+}
+@keyframes lcModalIn {
+    from { opacity:0; transform:scale(.95) translateY(8px); }
+    to   { opacity:1; transform:scale(1)   translateY(0); }
+}
+.lc-light .lc-staff-card {
+    background: #ffffff !important;
+    border-color: rgba(85,160,238,0.3) !important;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.2) !important;
+}
+.lc-staff-card-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+.lc-staff-title {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    letter-spacing: .02em !important;
+}
+.lc-light .lc-staff-title { color: #111 !important; }
+
+/* Botão fechar do modal */
+.lc-staff-close-btn {
+    all: unset !important;
+    width: 28px !important; height: 28px !important;
+    border-radius: 50% !important;
+    background: rgba(255,255,255,0.08) !important;
+    color: rgba(255,255,255,0.5) !important;
+    font-size: 18px !important; line-height: 28px !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    transition: background .15s !important;
+    flex-shrink: 0 !important;
+}
+.lc-staff-close-btn:hover { background: rgba(255,255,255,0.15) !important; }
+.lc-light .lc-staff-close-btn { background: rgba(0,0,0,0.07) !important; color: rgba(0,0,0,0.45) !important; }
+
+.lc-staff-error {
+    font-size: 12px !important; color: #e08080 !important;
+    background: rgba(224,80,80,0.1) !important;
+    border-radius: 6px !important; padding: 8px 11px !important;
+    display: none !important; font-weight: 500 !important;
+}
+.lc-staff-error.lc-show { display: block !important; }
+
+/* Inputs do modal */
+.lc-staff-input {
+    all: unset !important;
+    display: block !important;
+    width: 100% !important;
+    background: rgba(255,255,255,0.07) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 8px !important;
+    padding: 10px 13px !important;
+    font-size: 13px !important; font-weight: 500 !important;
+    color: #fff !important;
+    transition: border-color .2s !important;
+    box-sizing: border-box !important;
+}
+.lc-light .lc-staff-input {
+    background: rgba(0,0,0,0.05) !important;
+    border-color: rgba(0,0,0,0.14) !important;
+    color: #111 !important;
+}
+.lc-staff-input::placeholder { color: rgba(255,255,255,0.22) !important; opacity: 1 !important; }
+.lc-light .lc-staff-input::placeholder { color: rgba(0,0,0,0.28) !important; }
+.lc-staff-input:focus { border-color: var(--lc-accent) !important; outline: none !important; }
+
+/* Container de Senha com Revelação */
+.lc-staff-pw-container {
+    position: relative !important;
+    width: 100% !important;
+    display: block !important;
+}
+.lc-staff-pw-container .lc-staff-input {
+    padding-right: 38px !important; /* Espaço para o ícone do olho */
+}
+.lc-staff-pw-toggle {
+    all: unset !important;
+    position: absolute !important;
+    top: 50% !important;
+    right: 12px !important;
+    transform: translateY(-50%) !important;
+    width: 18px !important;
+    height: 18px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: rgba(255,255,255,0.45) !important;
+    transition: color 0.15s !important;
+    z-index: 10 !important;
+}
+.lc-light .lc-staff-pw-toggle {
+    color: rgba(0,0,0,0.45) !important;
+}
+.lc-staff-pw-toggle:hover {
+    color: var(--lc-accent) !important;
+}
+.lc-staff-pw-toggle svg {
+    width: 16px !important;
+    height: 16px !important;
+    display: block !important;
+    stroke: currentColor !important;
+    fill: none !important;
+}
+
+/* Botão entrar do modal */
+.lc-staff-btn {
+    all: unset !important;
+    display: block !important;
+    width: 100% !important;
+    background: var(--lc-accent) !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+    padding: 11px !important;
+    font-size: 12px !important; font-weight: 700 !important;
+    letter-spacing: .07em !important; text-transform: uppercase !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    transition: opacity .15s, transform .1s !important;
+    box-sizing: border-box !important;
+}
+.lc-staff-btn:hover   { opacity: .88 !important; }
+.lc-staff-btn:active  { transform: scale(.98) !important; }
+.lc-staff-btn:disabled { opacity: .45 !important; cursor: not-allowed !important; }
+
+/* ═══════════════════════════════════════
+   CTA BANNER
+═══════════════════════════════════════ */
+.lc-cta-banner {
+    display: none !important;
+    align-items: center !important; justify-content: space-between !important;
+    gap: 8px !important;
+    background: linear-gradient(135deg,#e0a030,#e06020) !important;
+    padding: 10px 14px !important;
+    animation: lcSlideIn .4s ease;
+}
+.lc-cta-banner.lc-cta-visible { display: flex !important; }
+.lc-cta-link {
+    display: flex !important; align-items: center !important; gap: 8px !important;
+    color: #fff !important; text-decoration: none !important;
+    flex: 1 !important; font-size: 12px !important; font-weight: 700 !important;
+    letter-spacing: .03em !important;
+}
+.lc-cta-link:hover { opacity: .9 !important; }
+.lc-cta-link svg   { width: 16px !important; height: 16px !important; flex-shrink: 0 !important; }
+.lc-cta-pulse {
+    width: 8px !important; height: 8px !important; border-radius: 50% !important;
+    background: #fff !important; flex-shrink: 0 !important;
+    animation: lcBlink 1s ease-in-out infinite;
+}
+.lc-cta-close {
+    all: unset !important;
+    background: rgba(0,0,0,0.2) !important; color: #fff !important;
+    font-size: 18px !important; line-height: 1 !important;
+    cursor: pointer !important; padding: 2px 8px !important;
+    border-radius: 4px !important; flex-shrink: 0 !important;
+}
+.lc-cta-close:hover { background: rgba(0,0,0,0.35) !important; }
+
+/* ═══════════════════════════════════════
+   STAFF BAR (pós-login)
+═══════════════════════════════════════ */
+.lc-staff-bar {
+    display: none !important;
+    background: rgba(85,160,238,0.08) !important;
+    border-bottom: 1px solid rgba(85,160,238,0.2) !important;
+    padding: 7px 14px !important;
+    gap: 12px !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+}
+.lc-staff-bar.lc-staff-active { display: flex !important; }
+.lc-staff-bar-label {
+    font-size: 10px !important; font-weight: 700 !important;
+    color: var(--lc-accent) !important;
+    text-transform: uppercase !important; letter-spacing: .08em !important;
+}
+.lc-staff-name-tag {
+    font-size: 11px !important; font-weight: 700 !important;
+    color: #fff !important;
+    background: rgba(85,160,238,0.2) !important;
+    padding: 2px 9px !important; border-radius: 20px !important;
+}
+.lc-light .lc-staff-name-tag { color: #111 !important; }
+
+/* Mini switches na staff bar */
+.lc-staff-toggle-wrap { display: flex !important; align-items: center !important; gap: 6px !important; }
+.lc-staff-toggle-label { font-size: 11px !important; color: var(--lc-text) !important; }
+.lc-staff-switch {
+    position: relative !important; width: 34px !important; height: 18px !important; flex-shrink: 0 !important;
+}
+.lc-staff-switch input { opacity: 0 !important; width: 0 !important; height: 0 !important; }
+.lc-staff-slider {
+    position: absolute !important; inset: 0 !important; cursor: pointer !important;
+    background: rgba(255,255,255,0.15) !important; border-radius: 18px !important;
+    transition: background .2s !important;
+}
+.lc-staff-slider::before {
+    content: '' !important; position: absolute !important;
+    width: 12px !important; height: 12px !important; border-radius: 50% !important;
+    background: #fff !important; left: 3px !important; top: 3px !important;
+    transition: transform .2s !important;
+}
+.lc-staff-switch input:checked + .lc-staff-slider { background: var(--lc-accent) !important; }
+.lc-staff-switch input:checked + .lc-staff-slider::before { transform: translateX(16px) !important; }
+
+.lc-staff-hint {
+    font-size: 10px !important; color: var(--lc-text-muted) !important;
+    font-style: italic !important;
+}
+.lc-staff-logout {
+    all: unset !important;
+    margin-left: auto !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    border-radius: 5px !important; padding: 3px 10px !important;
+    font-size: 10px !important; font-weight: 700 !important;
+    color: rgba(255,255,255,0.4) !important; cursor: pointer !important;
+    text-transform: uppercase !important; letter-spacing: .05em !important;
+    transition: all .2s !important;
+}
+.lc-staff-logout:hover { border-color: #e05050 !important; color: #e05050 !important; }
+
+/* ═══════════════════════════════════════
+   REPLY FORM STAFF
+═══════════════════════════════════════ */
+.lc-staff-reply-form {
+    display: none !important;
+    padding: 8px 14px !important; gap: 8px !important;
+    border-top: 1px solid var(--lc-border) !important;
+    background: rgba(85,160,238,0.04) !important;
+    flex-direction: column !important;
+}
+.lc-staff-reply-form.lc-reply-open { display: flex !important; }
+.lc-staff-reply-label {
+    font-size: 10px !important; font-weight: 700 !important;
+    color: var(--lc-accent) !important;
+    text-transform: uppercase !important; letter-spacing: .07em !important;
+}
+.lc-staff-reply-row { display: flex !important; gap: 8px !important; }
+.lc-staff-reply-input {
+    all: unset !important;
+    flex: 1 !important;
+    background: var(--lc-bg-field) !important;
+    border: 1px solid var(--lc-border-field) !important;
+    border-radius: 6px !important; padding: 7px 10px !important;
+    font-size: 12px !important; color: var(--lc-text-title) !important;
+    resize: none !important; height: 38px !important;
+    transition: border-color .2s !important;
+    box-sizing: border-box !important; display: block !important;
+}
+.lc-staff-reply-input:focus { border-color: var(--lc-accent) !important; }
+.lc-staff-reply-input::placeholder { color: var(--lc-placeholder) !important; opacity: 1 !important; }
+.lc-staff-reply-send {
+    all: unset !important;
+    background: var(--lc-accent) !important; color: #fff !important;
+    border-radius: 6px !important; padding: 0 14px !important;
+    font-size: 11px !important; font-weight: 700 !important;
+    text-transform: uppercase !important; letter-spacing: .05em !important;
+    cursor: pointer !important; white-space: nowrap !important;
+    transition: opacity .15s !important; display: flex !important;
+    align-items: center !important;
+}
+.lc-staff-reply-send:hover   { opacity: .88 !important; }
+.lc-staff-reply-send:disabled{ opacity: .4  !important; cursor: not-allowed !important; }
+.lc-staff-reply-cancel {
+    all: unset !important;
+    border: 1px solid var(--lc-border) !important;
+    border-radius: 6px !important; padding: 0 10px !important;
+    font-size: 11px !important; color: var(--lc-text-muted) !important;
+    cursor: pointer !important; display: flex !important; align-items: center !important;
+}
+
+/* ═══════════════════════════════════════
+   HEADER
+═══════════════════════════════════════ */
+.lc-header {
+    display: flex !important; align-items: center !important;
+    justify-content: space-between !important;
+    padding: 13px 16px !important;
+    background: var(--lc-bg-header) !important;
+    border-bottom: 1px solid var(--lc-border) !important;
+    transition: background .25s, border-color .25s;
+}
+.lc-header-left  { display: flex !important; align-items: center !important; gap: 10px !important; }
+.lc-header-right { display: flex !important; align-items: center !important; gap: 6px !important; }
+
+.lc-live-dot {
+    width: 8px !important; height: 8px !important; border-radius: 50% !important;
+    background: #e03c3c !important; flex-shrink: 0 !important;
+    animation: lcBlink 1.2s ease-in-out infinite;
+}
+@keyframes lcBlink { 0%,100%{opacity:1} 50%{opacity:.15} }
+
+.lc-title {
+    font-size: 13px !important; font-weight: 700 !important;
+    color: var(--lc-text-title) !important;
+    letter-spacing: .05em !important; text-transform: uppercase !important;
+    transition: color .25s;
+}
+
+/* Botão dark/light */
+.lc-theme-toggle {
+    all: unset !important;
+    width: 30px !important; height: 30px !important;
+    border-radius: 50% !important;
+    background: var(--lc-toggle-bg) !important;
+    cursor: pointer !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    transition: background .2s, transform .15s !important; flex-shrink: 0 !important;
+}
+.lc-theme-toggle:hover { transform: scale(1.1) !important; background: rgba(255,255,255,0.13) !important; }
+.lc-light .lc-theme-toggle:hover { background: rgba(0,0,0,0.1) !important; }
+.lc-theme-toggle svg { width: 15px !important; height: 15px !important; display: block !important; pointer-events: none !important; }
+.lc-theme-toggle svg.lc-icon-moon { display: block !important; }
+.lc-theme-toggle svg.lc-icon-sun  { display: none  !important; }
+.lc-light .lc-theme-toggle svg.lc-icon-moon { display: none  !important; }
+.lc-light .lc-theme-toggle svg.lc-icon-sun  { display: block !important; }
+
+/* Botão staff — ícone de cadeado no header */
+.lc-staff-access-btn {
+    all: unset !important;
+    width: 30px !important; height: 30px !important;
+    border-radius: 50% !important;
+    background: var(--lc-toggle-bg) !important;
+    cursor: pointer !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    transition: background .2s, transform .15s !important; flex-shrink: 0 !important;
+    position: relative !important;
+}
+.lc-staff-access-btn:hover { transform: scale(1.1) !important; background: rgba(85,160,238,0.2) !important; }
+.lc-staff-access-btn svg { width: 14px !important; height: 14px !important; display: block !important; pointer-events: none !important; }
+/* Cadeado visível no modo claro */
+.lc-light .lc-staff-access-btn svg { stroke: rgba(0,0,0,0.45) !important; }
+/* Ponto verde quando staff logado */
+.lc-staff-access-btn .lc-staff-dot {
+    display: none !important;
+    position: absolute !important; top: 3px !important; right: 3px !important;
+    width: 7px !important; height: 7px !important; border-radius: 50% !important;
+    background: #7ec8a0 !important;
+    border: 1px solid var(--lc-bg-header) !important;
+}
+.lc-wrap[data-staff] .lc-staff-access-btn .lc-staff-dot { display: block !important; }
+.lc-wrap[data-staff] .lc-staff-access-btn { background: rgba(85,160,238,0.15) !important; }
+
+/* Viewers */
+.lc-viewers {
+    font-size: 12px !important; font-weight: 600 !important;
+    color: var(--lc-text-muted) !important;
+    display: flex !important; align-items: center !important; gap: 5px !important;
+    transition: color .25s;
+}
+.lc-viewers svg { width: 13px !important; height: 13px !important; fill: var(--lc-viewers-fill) !important; }
+
+/* ═══════════════════════════════════════
+   LISTA DE COMENTÁRIOS
+═══════════════════════════════════════ */
+.lc-list {
+    height: 340px !important; overflow-y: auto !important;
+    padding: 12px 14px !important;
+    display: flex !important; flex-direction: column !important;
+    gap: 14px !important; scroll-behavior: smooth !important;
+    background: var(--lc-bg) !important; transition: background .25s;
+}
+.lc-list::-webkit-scrollbar       { width: 3px !important; }
+.lc-list::-webkit-scrollbar-track { background: transparent !important; }
+.lc-list::-webkit-scrollbar-thumb { background: var(--lc-scrollbar) !important; border-radius: 3px !important; }
+
+/* ═══════════════════════════════════════
+   COMENTÁRIO
+═══════════════════════════════════════ */
+.lc-comment { display: flex !important; gap: 10px !important; animation: lcSlideIn .3s ease; }
+@keyframes lcSlideIn {
+    from { opacity:0; transform:translateY(8px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+.lc-avatar {
+    width: 32px !important; height: 32px !important; border-radius: 50% !important;
+    flex-shrink: 0 !important; display: flex !important;
+    align-items: center !important; justify-content: center !important;
+    font-size: 13px !important; font-weight: 700 !important;
+    text-transform: uppercase !important;
+}
+.lc-comment-body { flex: 1 !important; min-width: 0 !important; }
+.lc-comment-name {
+    font-size: 12px !important; font-weight: 700 !important;
+    color: var(--lc-accent) !important;
+    margin-bottom: 3px !important;
+    display: flex !important; align-items: center !important;
+    gap: 6px !important; flex-wrap: wrap !important;
+}
+.lc-comment-name.lc-user-name { color: #7ec8a0 !important; }
+.lc-comment-name.lc-host-name { color: var(--lc-host-color) !important; }
+.lc-badge {
+    font-size: 9px !important; font-weight: 700 !important;
+    letter-spacing: .06em !important; text-transform: uppercase !important;
+    padding: 2px 6px !important; border-radius: 3px !important;
+}
+.lc-badge-host {
+    background: rgba(224,160,48,0.15) !important;
+    color: var(--lc-host-color) !important;
+    border: 1px solid rgba(224,160,48,0.3) !important;
+}
+.lc-badge-you {
+    background: rgba(126,200,160,0.15) !important;
+    color: #7ec8a0 !important;
+    border: 1px solid rgba(126,200,160,0.3) !important;
+}
+.lc-comment-text {
+    font-size: 13px !important; font-weight: 400 !important;
+    color: var(--lc-text) !important; line-height: 1.55 !important;
+    transition: color .25s; word-break: break-word !important;
+}
+/* Staff: comentários clicáveis */
+.lc-wrap[data-staff] .lc-comment[data-id] { cursor: pointer !important; transition: opacity .15s !important; }
+.lc-wrap[data-staff] .lc-comment[data-id]:hover { opacity: .82 !important; }
+
+.lc-reply {
+    margin-top: 8px !important; padding: 8px 10px !important;
+    background: var(--lc-reply-bg) !important;
+    border-left: 2px solid rgba(85,160,238,0.4) !important;
+    border-radius: 0 4px 4px 0 !important; transition: background .25s;
+}
+.lc-reply-label {
+    font-size: 10px !important; font-weight: 700 !important;
+    color: var(--lc-accent) !important;
+    letter-spacing: .06em !important; text-transform: uppercase !important;
+    margin-bottom: 3px !important;
+}
+.lc-reply-text {
+    font-size: 12px !important; color: var(--lc-reply-text) !important;
+    line-height: 1.5 !important; transition: color .25s;
+}
+
+/* ═══════════════════════════════════════
+   INPUT ÁREA
+═══════════════════════════════════════ */
+.lc-input-area {
+    padding: 12px 14px !important;
+    border-top: 1px solid var(--lc-border) !important;
+    background: var(--lc-bg-input) !important;
+    display: flex !important; flex-direction: column !important;
+    gap: 8px !important; transition: background .25s, border-color .25s;
+}
+/* Força aparência idêntica em input e textarea —
+   cada propriedade explícita para vencer theme + browser + Elementor */
+.lc-wrap input.lc-name-input,
+.lc-wrap textarea.lc-text-input {
+    all: unset !important;
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    background: var(--lc-bg-field) !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    border-color: var(--lc-border-field) !important;
+    border-radius: 6px !important;
+    -webkit-border-radius: 6px !important;
+    padding: 9px 12px !important;
+    margin: 0 !important;
+    font-family: 'Montserrat', Arial, sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+    color: var(--lc-text-title) !important;
+    outline: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    resize: none !important;
+    transition: border-color .2s, background .25s, color .25s !important;
+}
+.lc-wrap input.lc-name-input::placeholder,
+.lc-wrap textarea.lc-text-input::placeholder {
+    color: var(--lc-placeholder) !important;
+    opacity: 1 !important;
+    font-weight: 400 !important;
+}
+.lc-wrap input.lc-name-input:focus,
+.lc-wrap textarea.lc-text-input:focus {
+    border-color: var(--lc-accent) !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+.lc-wrap textarea.lc-text-input { height: 60px !important; }
+
+.lc-input-row {
+    display: flex !important; align-items: center !important;
+    justify-content: space-between !important;
+}
+.lc-send-btn {
+    all: unset !important;
+    background: var(--lc-accent) !important; color: #fff !important;
+    border-radius: 6px !important; padding: 9px 20px !important;
+    font-size: 12px !important; font-weight: 700 !important;
+    letter-spacing: .07em !important; text-transform: uppercase !important;
+    cursor: pointer !important;
+    transition: opacity .15s, transform .1s !important;
+    display: inline-flex !important; align-items: center !important;
+}
+.lc-send-btn:hover   { opacity: .88 !important; }
+.lc-send-btn:active  { transform: scale(.97) !important; }
+.lc-send-btn:disabled { opacity: .4 !important; cursor: not-allowed !important; }
+
+/* ═══════════════════════════════════════
+   TYPING INDICATOR
+═══════════════════════════════════════ */
+.lc-typing {
+    display: flex !important; align-items: center !important;
+    gap: 8px !important; padding: 4px 14px !important;
+    opacity: 0 !important; height: 22px !important;
+    background: var(--lc-bg) !important;
+    transition: opacity .3s, background .25s;
+}
+.lc-typing.visible { opacity: 1 !important; }
+.lc-typing-text {
+    font-size: 11px !important; color: var(--lc-text-typing) !important;
+    font-style: italic !important; transition: color .25s;
+}
+.lc-typing-dots { display: flex !important; gap: 3px !important; align-items: center !important; }
+.lc-typing-dots span {
+    width: 4px !important; height: 4px !important; border-radius: 50% !important;
+    background: var(--lc-dot-typing) !important;
+    animation: lcDot 1.2s ease-in-out infinite; transition: background .25s;
+}
+.lc-typing-dots span:nth-child(2) { animation-delay: .2s; }
+.lc-typing-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes lcDot {
+    0%,80%,100% { transform:scale(.8); opacity:.4; }
+    40%         { transform:scale(1.2); opacity:1;  }
+}
+
+@media (max-width:480px) { .lc-list { height: 260px !important; } }

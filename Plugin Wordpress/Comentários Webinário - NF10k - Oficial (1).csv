@@ -1,0 +1,769 @@
+Hour,Minute,Second,Name,Role,Message,Mode
+0,0,4,Monge Bruno,Attendee,Bóra!!! Já faturei uns 600 reais só de estar aqui 🙋🏻‍♂️,Chat
+0,0,4,Katia Oliveira,Attendee,Boa noite 🥰,Chat
+0,0,2,Robison Kunz,Admin,Boa noiteeee ⚡️,Highlighted
+0,0,3,Gilberto Ramos,Attendee,Boa Noite - SP,Chat
+0,0,5,Gi Heidy,Attendee,Hola soy de Paraguay,Chat
+0,0,3,William Fagundes,Attendee,na area,Chat
+0,0,3,Erica Correia,Attendee,Boa noite!!!,Chat
+0,0,3,Maris Martins,Attendee,boa noite galerinha,Chat
+0,0,4,Grasielly Tais,Attendee,Boa Noite,Chat
+0,0,5,Aline Maciel,Attendee,"Olá, Paraná aqui são José dos Pinhais",Chat
+0,0,31,Robison Kunz,Admin,"Me conta, de onde vc é?",Highlighted
+0,0,35,Silva Marco,Attendee,boa noite de Portugal,Chat
+0,0,36,Kleber Rita,Attendee,"Boa noite, Lages, SC",Chat
+0,0,37,Grasielly Tais,Attendee,Estância Velha/RS,Chat
+0,0,37,Maris Martins,Attendee,norte do Paraná,Chat
+0,0,38,William Fagundes,Attendee,Caxias do Sul/RS,Chat
+0,0,40,Tha Les Ribeiro,Attendee,Boa noite! Itamaraju-Ba,Chat
+0,0,42,Estevao Ra,Attendee,Luanda/Angola.,Chat
+0,0,43,Luiz Fernando,Attendee,São José dos pinhas/parana,Chat
+0,0,46,David Jhones Coutinho,Attendee,boa noite sou de suzano SP,Chat
+0,0,0,Mr Syllos,Attendee,Boa noite/São Gonçalo/RJ,Chat
+0,0,47,Deia Biancheti,Attendee,Boa noite pae! São Paulo/SP,Chat
+0,0,48,Tachi Lagui,Attendee,Boa noite!Brasília,Chat
+0,1,10,Jeff Kundera,Attendee,Sou de Santo André SP,Chat
+0,1,12,Delcio Crocante,Attendee,Luanda/Angola,Chat
+0,1,21,Vj Fotografia,Attendee,"Boa noite, São Paulo capital ",Chat
+0,1,25,Nilsonpedroso,Attendee,"Não Me Toque, Rio Grande do Sul ",Chat
+0,1,26,Li Oliveiraa,Attendee,Boa noite! Campina Grande PB,Chat
+0,1,31,Lucas Miroh,Attendee,"Boa noite, Florianópolis, SC",Chat
+0,1,30,Geovanni Gomes,Attendee,Boa noite,Chat
+0,1,32,Geovanni Gomes,Attendee,Campo Grande MS,Chat
+0,1,34,Rodrigo Rimoldi,Attendee,JARAGUÁ DO SUL - SANTA CATARINA,Chat
+0,1,34,Janaina Colman Raimundo,Attendee,Colinas Rio Grande do Sul,Chat
+0,1,36,Ed Bueno,Attendee,Boa noite! Praia Grande/SP,Chat
+0,1,37,Aline Maciel,Attendee,são José dos Pinhais/Paraná,Chat
+0,1,38,Leandro Norberto,Attendee,Macaé Rj. 🤙,Chat
+0,0,53,Ieda Teresinha Pezzi,Attendee,porto alegre -rs,Chat
+0,0,46,Flavio Araujo,Attendee,boa noite,Chat
+0,0,55,Gi Heidy,Attendee,Comenzó?,Chat
+0,0,58,David Jhones Coutinho,Attendee,??,Chat
+0,0,54,Tiago Crispim,Attendee,Teresina Piauí !!!!,Chat
+0,0,37,Emily Marqz,Attendee,boa noite Westfalia Rs,Chat
+0,0,5,Dieine Backes,Attendee,voces estao conseguindo assistir ?,Chat
+0,0,4,Ellen Pereira,Attendee,boa noite!!!,Chat
+0,0,3,David Jhones Coutinho,Attendee,agora sim kkk boa noite,Chat
+0,0,3,William Fagundes,Attendee,tudo certo,Chat
+0,0,5,Mr Syllos,Attendee,Estou ouvido e vendo,Chat
+0,0,11,Wills,Attendee,Tudo Certo,Chat
+0,0,16,Isa Moraes,Attendee,tudo certo,Chat
+0,0,18,Rodrigo Rimoldi,Attendee,JARAGUÁ DO SUL - SANTA CATARINA,Chat
+0,0,24,Ed Bueno,Attendee,tudo certo,Chat
+0,0,29,Tha Les Ribeiro,Attendee,Tudo certo,Chat
+0,0,33,Mr Syllos,Attendee,São Gonçalo/RJ,Chat
+0,0,33,Daniel Gialluca,Attendee,Tudo ok. Valinhos SP. Boa noite,Chat
+0,0,36,Isa Moraes,Attendee,são Leopoldo rs,Chat
+0,0,38,Flavio Araujo,Attendee,boa noite. brasilia,Chat
+0,0,46,Vj Fotografia,Attendee,Som e áudio ok,Chat
+0,0,48,Wills,Attendee,a 1 ano e meio,Chat
+0,0,49,William Fagundes,Attendee,conheço faz tempo,Chat
+0,0,51,Ed Bueno,Attendee,1 ano,Chat
+0,0,51,Isa Moraes,Attendee,alguns meses,Chat
+0,0,51,Grasielly Tais,Attendee,"Ouvindo sim, coneço deste do tempo do IEI",Chat
+0,0,53,Daniel Gialluca,Attendee,2 anos,Chat
+0,0,54,Flavio Araujo,Attendee,8 anos,Chat
+0,0,55,Robison Kunz,Admin,Sejam bem vindos! Todos preparadooooss?? \o/,Highlighted
+0,1,5,Emily Marqz,Attendee,Não conheço. primeira vez vendo a live sua,Chat
+0,1,7,Javier Sandoval,Attendee,"Hola buenas noches, saludos desde Paraguay. a 8 años...",Chat
+0,1,7,Everton,Attendee,Osório a uns 10 anos,Chat
+0,1,8,Sidney Ferreiralemos,Attendee,sou daqui do espírito santo Vitória,Chat
+0,1,9,Lorraine Brito,Attendee,"boa noiteee, já participei de algumas aulasss",Chat
+0,1,20,David Jhones Coutinho,Attendee,4 dias,Chat
+0,1,26,Lorraine Brito,Attendee,mas to retornando pra área novamente agora,Chat
+0,1,27,Sidney Ferreiralemos,Attendee,conheçir você foi pandemia COVID,Chat
+0,1,28,Gabriela Dossantos,Attendee,Boa noite Kunz! Gabi de Criciúma SC,Chat
+0,1,29,Rodrigo Rimoldi,Attendee,JARAGUÁ DO SUL - SANTA CATARINA,Chat
+0,1,29,Leandro Norberto,Attendee,"Das antigas. Macaé Rj - Fiz o curso com vcs, mas cai de novo. Quero subir. Lembra o brother que vendeu a prancha!",Chat
+0,1,32,Avalferreira,Attendee,"sou do RJ, conheco essa semana",Chat
+0,1,32,Tfonseca,Attendee,2 dias,Chat
+0,1,34,Vida Gilsonbarbosa,Attendee,Pirpirituba/ Paraíba,Chat
+0,1,41,Simone Moraes,Attendee,"Sp, te conheci no primeiro photo in Rio e",Chat
+0,1,42,Isa Moraes,Attendee,vou participar do curso dia 14 e 15,Chat
+0,1,45,Gi Heidy,Attendee,"Un años, en un congresso de fotografia em foz de Iguaçu, shoot de Paraguay",Chat
+0,1,47,Maikon Borba,Attendee,Joinville SC,Chat
+0,1,57,Eliz Rezende,Attendee,eu,Chat
+0,1,58,Tfonseca,Attendee,SERVE PRA QUEM QUER COMEÇAR ??,Chat
+0,1,58,Sidney Ferreiralemos,Attendee,lembro foi na pandemia você poder da auti,Chat
+0,2,9,Tachi Lagui,Attendee,Quero chegar nos 10k,Chat
+0,2,9,Simone Moraes,Attendee,"Quero chegar , nunca cheguei ",Chat
+0,2,10,William Fagundes,Attendee,quero chegar nos 10K,Chat
+0,2,10,Isa Moraes,Attendee,eu n cheguei nem nos mil,Chat
+0,2,11,Gabriela Dossantos,Attendee,Quero chegar nos 10k por mês,Chat
+0,2,11,Flavio Araujo,Attendee,quero chegar,Chat
+0,2,12,Lorraine Brito,Attendee,eu quero chegar nos 10k de faturamentooooo!!!,Chat
+0,2,12,Eliz Rezende,Attendee,conheço a 8 meses,Chat
+0,2,12,Randhy Rondon,Attendee,quero chegar nos 10k,Chat
+0,2,13,Tha Les Ribeiro,Attendee,Quero chegar nos 10k,Chat
+0,2,13,Ed Bueno,Attendee,quero MUITO chegar nos 10k mês,Chat
+0,2,14,Ellen Pereira,Attendee,quero chegar nos 10k,Chat
+0,2,15,Leticia Carlos,Attendee,boa noite Valinhos sp,Chat
+0,2,16,Maikon Borba,Attendee,"quero , conheci vc hj",Chat
+0,2,22,Vj Fotografia,Attendee,EEEEEEEUUUUUUUU,Chat
+0,2,30,Gi Heidy,Attendee,Yoooo,Chat
+0,2,56,Mauro Mendes,Attendee,quero,Chat
+0,3,1,Tfonseca,Attendee,"Serve para quem quer fazer transição de carreira para fotografia, sair do hobby ???",Chat
+0,3,2,Junior Rocha,Attendee,foi na pandemia que eu conheci você,Chat
+0,3,53,Gabriele Barbier,Attendee,Uns 7 ou 8 anos,Chat
+0,4,48,Simone Moraes,Attendee,Eu tenho dificuldade de divulgar no tráfego pago,Chat
+0,5,8,Tania Ferreira,Attendee,4 meses,Chat
+0,12,5,Oryo Sylva,Attendee,dificil pq eu sou exatamente artista demais kk,Chat
+0,12,10,Ed Bueno,Attendee,"artista demais, empreendedor de menos... exatamente a minha questão kkkkkkkkkk",Chat
+0,12,34,Ed Bueno,Attendee,cansei de ser artista quebrado hahaha,Chat
+0,12,37,Henrique Gil,Attendee,boa noite povo bonito,Chat
+0,13,26,Matheusalves,Attendee,✍🏼✍🏼,Chat
+0,13,58,Silva Marco,Attendee,boas,Chat
+0,14,16,Bruna Cota,Attendee,por aqui temos uma fotografa de 17 anos ☝🏼☝🏼,Chat
+0,15,8,Robison Kunz,Admin,O que você quer ser? Diz aqui,Highlighted
+0,15,10,Oryo Sylva,Attendee,artista,Chat
+0,15,17,Melissa Braga,Attendee,Os dois,Chat
+0,15,18,Gustavo Brayan,Attendee,os dois,Chat
+0,15,18,William Fagundes,Attendee,10k,Chat
+0,15,21,Bruna Cota,Attendee,10k !!!,Chat
+0,15,22,Deia Biancheti,Attendee,quero ser os 2,Chat
+0,15,25,Andre Alberto,Attendee,10k,Chat
+0,15,27,Andre Filipeamorim,Attendee,10k,Chat
+0,15,27,Deia Biancheti,Attendee,10k,Chat
+0,15,28,Modecaiônix,Attendee,10k,Chat
+0,15,30,Katia Oliveira,Attendee,quero ser os 2,Chat
+0,15,30,Tha Les Ribeiro,Attendee,10k,Chat
+0,15,32,Dhi Vieira,Attendee,10k,Chat
+0,15,33,Grasielly Tais,Attendee,os dois,Chat
+0,15,35,Paesch,Attendee,10k,Chat
+0,15,37,Katia Oliveira,Attendee,10k,Chat
+0,15,38,Dercilio Pinto,Attendee,Boa noite,Chat
+0,15,40,Silva Marco,Attendee,10k,Chat
+0,15,42,Oryo Sylva,Attendee,10k,Chat
+0,15,45,Ed Bueno,Attendee,"quero continuar sendo artista, mas tb virar empreendedor e fazer + de 10k mês",Chat
+0,15,45,Cassiano,Attendee,"os dois, 10K",Chat
+0,15,46,Wills,Attendee,10k,Chat
+0,15,47,Ed Bueno,Attendee,10k,Chat
+0,15,48,Tachi Lagui,Attendee,10k,Chat
+0,15,50,Tiago Crispim,Attendee,Chama,Chat
+0,15,50,Isa Moraes,Attendee,10k,Chat
+0,15,50,Lucas Miroh,Attendee,10k,Chat
+0,15,51,Erica Correia,Attendee,10k,Chat
+0,15,51,Randhy Rondon,Attendee,10k,Chat
+0,15,51,Bruna Cota,Attendee,10k!! Aqui tem uma fotografa de 17 anos 👆👆,Chat
+0,15,52,Cassiano,Attendee,"OS DOIS, 20K",Chat
+0,15,54,Ieda Teresinha Pezzi,Attendee,ambos 10k,Chat
+0,15,55,Flavio Araujo,Attendee,10k,Chat
+0,15,55,Dercilio Pinto,Attendee,Os 2,Chat
+0,15,57,Mr Syllos,Attendee,Os dois dez k,Chat
+0,15,59,Celia Rocha,Attendee,Os dois,Chat
+0,16,1,Emily Marqz,Attendee,sou iniciante quero tudo,Chat
+0,16,1,Gustavo Brayan,Attendee,"Artista ja sou, preciso empreender!!",Chat
+0,16,4,Fulvio Vital,Attendee,10k,Chat
+0,16,4,Sabrina Bandeira,Attendee,10k,Chat
+0,16,4,Daniel Gialluca,Attendee,os 2,Chat
+0,16,10,Maris Martins,Attendee,10k,Chat
+0,16,17,Gabriele Barbier,Attendee,"A meta é ser os 2 , borá 10K",Chat
+0,16,33,Vj Fotografia,Attendee,Quero ser os dois!!! 10K,Chat
+0,17,19,Dercilio Pinto,Attendee,Já Sou fotógrafo preciso empreender!,Chat
+0,17,19,William Fagundes,Attendee,👋,Chat
+0,17,40,Vj Fotografia,Attendee,Quero aprender a empreender,Chat
+0,18,57,Aline Maciel,Attendee,10k,Chat
+0,20,11,Marisa Gusmaocarneiro,Attendee,Quero os dois,Chat
+0,20,36,William Fagundes,Attendee,caramba,Chat
+0,21,11,Smoke,Attendee,10k,Chat
+0,21,20,Isa Moraes,Attendee,bora,Chat
+0,21,22,Cassiano,Attendee,boraa,Chat
+0,21,22,Ed Bueno,Attendee,quero,Chat
+0,21,25,Wills,Attendee,bora conhecer,Chat
+0,21,26,Daniel Gialluca,Attendee,Bora aprender,Chat
+0,21,26,Paesch,Attendee,bora,Chat
+0,21,32,Grasielly Tais,Attendee,bora,Chat
+0,21,33,Dercilio Pinto,Attendee,Excelente profissional quero,Chat
+0,21,55,Dercilio Pinto,Attendee,bora,Chat
+0,24,2,Ed Bueno,Attendee,fazer vídeo também não é um problema???,Chat
+0,24,28,Ed Bueno,Attendee,"ou é um diferencial? faço as duas coisas bem, mas ainda não consegui ganhar dinheiro",Chat
+0,24,58,Gamedaanna,Attendee,oi,Chat
+0,25,5,Gamedaanna,Attendee,chegando agora,Chat
+0,25,41,Renata Lisboa,Attendee,Cheguei,Chat
+0,26,25,William Fagundes,Attendee,estou chegando la na autoria,Chat
+0,26,43,Robison Kunz,Admin,"E aíiii, como está a SUA autoria? 👀",Highlighted
+0,27,7,Isa Moraes,Attendee,ainda nao encontrei minha autoria,Chat
+0,27,10,Oryo Sylva,Attendee,com mta humildade eu tenho mta autoria no meu trabalhinho,Chat
+0,27,54,Rafael Michel,Attendee,ISSO ME DEU UM NORTE. Nunca desisti de outros nichos mas várias colegas de profissão me crticaram por isso. Por falar que n sou de eventos. Mas me contratam corporativo por conta o meu diferencial,Chat
+0,28,18,Gamedaanna,Attendee,7,Chat
+0,28,25,Emily Marqz,Attendee,8,Chat
+0,28,38,Glendamiranda,Attendee,4,Chat
+0,28,39,Ed Bueno,Attendee,8,Chat
+0,28,39,Dercilio Pinto,Attendee,10,Chat
+0,28,41,Flavio Araujo,Attendee,6,Chat
+0,28,49,Tha Les Ribeiro,Attendee,7,Chat
+0,28,50,Euavilaa,Attendee,8,Chat
+0,28,57,Andre Filipeamorim,Attendee,7,Chat
+0,29,0,Ed Bueno,Attendee,anotando tudo!,Chat
+0,29,2,Gilsonn Barbosa,Attendee,6,Chat
+0,29,15,Glendamiranda,Attendee,8,Chat
+0,29,17,Emily Marqz,Attendee,10,Chat
+0,29,18,Gamedaanna,Attendee,10,Chat
+0,29,19,Tha Les Ribeiro,Attendee,8,Chat
+0,29,22,Tachi Lagui,Attendee,10,Chat
+0,29,25,Andre Filipeamorim,Attendee,9,Chat
+0,29,30,Glendamiranda,Attendee,5,Chat
+0,29,32,Gamedaanna,Attendee,10,Chat
+0,29,36,Emily Marqz,Attendee,8,Chat
+0,29,40,Andre Filipeamorim,Attendee,7,Chat
+0,29,41,Leandro Norberto,Attendee,6,Chat
+0,29,57,Dercilio Pinto,Attendee,6,Chat
+0,30,3,Grasielly Tais,Attendee,5,Chat
+0,30,5,Andre Filipeamorim,Attendee,23,Chat
+0,30,10,Rodrigo De Lima,Attendee,19,Chat
+0,30,18,Bruna Cota,Attendee,20,Chat
+0,30,19,Oryo Sylva,Attendee,autoria 28,Chat
+0,30,24,Andre Iaferreira,Attendee,autoria - 24,Chat
+0,30,26,Ed Bueno,Attendee,autoria 24,Chat
+0,30,29,Leandro Norberto,Attendee,Autoria 21,Chat
+0,30,29,Randhy Rondon,Attendee,autoria 23,Chat
+0,30,30,Tachi Lagui,Attendee,24,Chat
+0,30,31,Paesch,Attendee,autoria 22,Chat
+0,30,34,Gamedaanna,Attendee,autoria27,Chat
+0,30,34,Melissa Braga,Attendee,Autoria 25,Chat
+0,30,36,Cassiano,Attendee,autoria: 19,Chat
+0,30,38,Grasielly Tais,Attendee,auoria 5,Chat
+0,30,39,Nagila Almeida,Attendee,20,Chat
+0,30,39,Gilberto Ramos,Attendee,18,Chat
+0,30,39,Daniela Couto,Attendee,20,Chat
+0,30,40,Psfelix,Attendee,22,Chat
+0,30,41,Dercilio Pinto,Attendee,4,Chat
+0,30,41,Francine Silva,Attendee,23,Chat
+0,30,43,Viniss,Attendee,autoria 21,Chat
+0,30,44,Glendamiranda,Attendee,17,Chat
+0,30,47,Tiago Guedesfotografiaofici,Attendee,23,Chat
+0,30,50,Emily Marqz,Attendee,26,Chat
+0,30,51,Jovensretratosfotografias,Attendee,22,Chat
+0,30,55,Wills,Attendee,autoria 18,Chat
+0,30,55,Kleber Rita,Attendee,autoria 23,Chat
+0,30,57,Maris Martins,Attendee,23,Chat
+0,30,57,Jeffersonhenrique,Attendee,Autoria 19,Chat
+0,31,0,Tha Les Ribeiro,Attendee,AUTORIA 21,Chat
+0,31,3,Everton,Attendee,21,Chat
+0,31,10,Henrique Gil,Attendee,sou Nutela. 15,Chat
+0,31,11,Jeffersonhenrique,Attendee,Autoria 19 começando agora desta área,Chat
+0,31,11,Cinthia Basilio,Attendee,26,Chat
+0,31,11,Dercilio Pinto,Attendee,autoria 20,Chat
+0,31,21,Junior Rocha,Attendee,autoria 23,Chat
+0,31,31,Gi Heidy,Attendee,AUTORÍA 21,Chat
+0,31,38,Leandro Norberto,Attendee,Sou Fraco!,Chat
+0,31,41,Sonia Duartee,Attendee,3,Chat
+0,31,47,Ed Bueno,Attendee,vixiii aí a situação tá feia... tentando melhorar agora,Chat
+0,32,13,Cinthia Basilio,Attendee,Autoria 26,Chat
+0,32,19,Oryo Sylva,Attendee,kkkkk,Chat
+0,32,35,William Fagundes,Attendee,não cheguei no ar condicionado,Chat
+0,32,37,William Fagundes,Attendee,kkk,Chat
+0,32,45,Rafael Michel,Attendee,22,Chat
+0,32,46,Cassiano,Attendee,gostei dessa analogia do ventilador,Chat
+0,33,40,Bueno,Attendee,analogia perfeita,Chat
+0,33,52,João,Attendee,10,Chat
+0,34,42,João,Attendee,28,Chat
+0,34,57,Karoline Santos Tavares,Attendee,15,Chat
+0,36,34,Henrique Gil,Attendee,áudio ok,Chat
+0,37,24,Wills,Attendee,10,Chat
+0,37,29,Placafinal,Attendee,6,Chat
+0,37,30,Welinton Custodiofotoefilms,Attendee,Fiz o poder da autoria foi top de mais,Chat
+0,37,34,Andre Filipeamorim,Attendee,sim,Chat
+0,37,36,Geovanni Gomes,Attendee,🚀,Chat
+0,37,46,William Fagundes,Attendee,sim,Chat
+0,37,46,Dea Dastora,Attendee,6,Chat
+0,37,50,Robson Lopes,Attendee,Sim 👏👏,Chat
+0,37,52,Bruna Cota,Attendee,"nao gostei, ja teria pulado",Chat
+0,37,58,Henrique Gil,Attendee,7,Chat
+0,38,2,Bruna Cota,Attendee,achei muito lento,Chat
+0,38,13,William Fagundes,Attendee,top,Chat
+0,38,13,Junior Rocha,Attendee,4,Chat
+0,38,15,Henrique Gil,Attendee,10,Chat
+0,38,16,Wills,Attendee,7,Chat
+0,38,18,Placafinal,Attendee,10,Chat
+0,38,20,Cemporcentohc,Attendee,os dois,Chat
+0,38,20,Bruna Cota,Attendee,"nao gostei do primeiro video, muito grande, lento e nao chama atenção ",Chat
+0,38,21,Bueno,Attendee,"outra pegada, muito melhor",Chat
+0,38,26,Dea Dastora,Attendee,2,Chat
+0,38,26,Robson Lopes,Attendee,1,Chat
+0,38,28,Wills,Attendee,1,Chat
+0,38,30,Katia Oliveira,Attendee,melhor,Chat
+0,38,30,Kleber Rita,Attendee,1,Chat
+0,38,31,Gabriele Barbier,Attendee,eu gostei muito do primeiro,Chat
+0,38,32,William Fagundes,Attendee,2,Chat
+0,38,32,Avalferreira,Attendee,2,Chat
+0,38,34,Flavio Araujo,Attendee,melhor,Chat
+0,38,34,Gilberto Ramos,Attendee,2,Chat
+0,38,35,Andre Filipeamorim,Attendee,1,Chat
+0,38,36,Henrique Gil,Attendee,2,Chat
+0,38,36,Oryo Sylva,Attendee,2,Chat
+0,38,39,Katia Oliveira,Attendee,2,Chat
+0,38,40,Caroltheodoro Carolzinha,Attendee,1,Chat
+0,38,41,Francine Silva,Attendee,2,Chat
+0,38,42,Bruna Cota,Attendee,versao numero 2 melhor,Chat
+0,38,42,Flavio Araujo,Attendee,2,Chat
+0,38,44,Lucas Miroh,Attendee,1,Chat
+0,38,45,Rodrigo De Lima,Attendee,2,Chat
+0,38,45,Walisson Silva,Attendee,2,Chat
+0,38,45,Gabriela Dossantos,Attendee,2,Chat
+0,38,46,Gilmar Ferreiramiguez,Attendee,2,Chat
+0,38,50,Janainasantos,Attendee,2,Chat
+0,38,50,Ana Paula Ismael,Attendee,2,Chat
+0,38,51,Tha Les Ribeiro,Attendee,2,Chat
+0,38,52,Isa Moraes,Attendee,eu gostei mais do 1,Chat
+0,38,52,Modecaiônix,Attendee,1,Chat
+0,38,52,William Fagundes,Attendee,segundo,Chat
+0,38,54,Vonlimalima,Attendee,2,Chat
+0,38,57,João,Attendee,2,Chat
+0,38,59,Bruna Cota,Attendee,"o primeiro video achei muito lento, ja teria pulado.",Chat
+0,39,1,Celia Rocha,Attendee,1,Chat
+0,39,2,Natany Kattnem,Attendee,2,Chat
+0,39,3,Daniela Couto,Attendee,2,Chat
+0,39,4,Gabriele Barbier,Attendee,sempre que tem impressos ou quadros gosto de fazer esse estilo,Chat
+0,39,6,Junior Rocha,Attendee,2,Chat
+0,39,12,Juliane Dasilva,Attendee,2,Chat
+0,39,18,Wills,Attendee,oloko,Chat
+0,39,55,Caroltheodoro Carolzinha,Attendee,videos curtos tem maior entrega/alcance,Chat
+0,40,0,Isa Moraes,Attendee,pior q no Instagram nunca consigo alcançar ngm fora dos meus seguidores,Chat
+0,40,13,Robison Kunz,Admin,Faz sentido? Sim ou Não?,Highlighted
+0,40,16,Leticia Carlos,Attendee,2,Chat
+0,40,22,Wills,Attendee,sim,Chat
+0,40,22,Caroltheodoro Carolzinha,Attendee,sim,Chat
+0,40,38,Robson Lopes,Attendee,Sim,Chat
+0,40,39,Marcelo Francojp,Attendee,2,Chat
+0,40,42,Oryo Sylva,Attendee,2,Chat
+0,40,45,William Fagundes,Attendee,2,Chat
+0,40,45,João,Attendee,2,Chat
+0,40,48,Rodrigo De Lima,Attendee,2,Chat
+0,40,50,Henrique Gil,Attendee,1,Chat
+0,40,51,Janainasantos,Attendee,1,Chat
+0,40,52,Katia Oliveira,Attendee,2,Chat
+0,40,53,Bruna Cota,Attendee,trabalhei com o Joao e Mayara! Muito foda!!!,Chat
+0,40,55,Natany Kattnem,Attendee,2,Chat
+0,40,55,Gilberto Ramos,Attendee,1,Chat
+0,40,57,Andre Filipeamorim,Attendee,2,Chat
+0,40,57,William Fagundes,Attendee,foto do noivo,Chat
+0,40,58,Walisson Silva,Attendee,2,Chat
+0,41,0,Lau Bruxel,Attendee,2,Chat
+0,41,3,Daniela Couto,Attendee,2,Chat
+0,41,3,Gtrindade,Attendee,2,Chat
+0,41,4,Caroltheodoro Carolzinha,Attendee,2,Chat
+0,41,7,Bruna Cota,Attendee,Trabalhei com O Joao e a Mayara! Muito foda!!!!!!!!!,Chat
+0,41,13,Vonlimalima,Attendee,1,Chat
+0,41,15,Avalferreira,Attendee,"eu gosto da primeira, mas a segunda que deu resultado ",Chat
+0,41,18,Sonia Duartee,Attendee,2,Chat
+0,41,20,Gilberto Ramos,Attendee,1,Chat
+0,41,22,Modecaiônix,Attendee,2,Chat
+0,41,23,Isa Moraes,Attendee,1,Chat
+0,41,26,Beatriz Ribeiro,Attendee,foto 1 com collab,Chat
+0,41,30,Bruna Cota,Attendee,"Trabalhei com o joao e mayara, sao incriveis!! ",Chat
+0,41,33,Juliane Dasilva,Attendee,1,Chat
+0,41,33,Junior Rocha,Attendee,2,Chat
+0,41,48,Janainasantos,Attendee,O momento mais lindo da mulher,Chat
+0,42,10,Aline Maciel,Attendee,1,Chat
+0,42,16,William Fagundes,Attendee,"desculpe a ignorancia, o que é coolab?",Chat
+0,42,22,Cassiano,Attendee,2,Chat
+0,42,34,Karoline Santos Tavares,Attendee,Versão 2,Chat
+0,42,47,Oryo Sylva,Attendee,markting: 17,Chat
+0,42,52,Dea Dastora,Attendee,6,Chat
+0,43,1,Leandro Norberto,Attendee,3,Chat
+0,43,13,Leandro Norberto,Attendee,2,Chat
+0,43,23,Oryo Sylva,Attendee,10 com ctz rs,Chat
+0,43,31,Leandro Norberto,Attendee,3,Chat
+0,43,34,Oryo Sylva,Attendee,18,Chat
+0,43,41,Dea Dastora,Attendee,14,Chat
+0,43,44,Francine Silva,Attendee,14,Chat
+0,43,45,Oryo Sylva,Attendee,marketing 18,Chat
+0,43,45,Daniela Couto,Attendee,12,Chat
+0,43,46,Hudson Freddo,Attendee,6,Chat
+0,43,47,Andre Alberto,Attendee,2,Chat
+0,43,48,Monge Bruno,Attendee,"Jesus amado, meu marketing ta em 8... me ajuda please",Chat
+0,43,48,Dea Dastora,Attendee,marketing 14,Chat
+0,43,49,Bruna Cota,Attendee,3,Chat
+0,43,49,Leandro Norberto,Attendee,marketing 8,Chat
+0,43,51,Lau Bruxel,Attendee,14,Chat
+0,43,51,Robison Kunz,Admin,Como está SEU Marketing? 👀,Highlighted
+0,43,53,William Fagundes,Attendee,marketing 4,Chat
+0,43,54,Celia Rocha,Attendee,10,Chat
+0,43,55,Wills,Attendee,Marketig 20,Chat
+0,43,55,Gilberto Ramos,Attendee,Marketing 07,Chat
+0,43,56,Bruna Cota,Attendee,7,Chat
+0,43,58,Andre Filipeamorim,Attendee,12,Chat
+0,44,0,Vocefc,Attendee,10,Chat
+0,44,1,Cinthia Basilio,Attendee,Marketing 0,Chat
+0,44,1,Tachi Lagui,Attendee,11,Chat
+0,44,2,Gilsonn Barbosa,Attendee,0,Chat
+0,44,6,Vonlimalima,Attendee,9,Chat
+0,44,8,Gi Heidy,Attendee,Marketing 0,Chat
+0,44,8,Walisson Silva,Attendee,4,Chat
+0,44,13,Karoline Santos Tavares,Attendee,Sim,Chat
+0,44,17,Paesch,Attendee,12,Chat
+0,44,17,Bueno,Attendee,11,Chat
+0,44,17,Jeffersonhenrique,Attendee,Marketing 8 ( estou começando agora ),Chat
+0,44,20,Cassiano,Attendee,1,Chat
+0,44,24,Henrique Gil,Attendee,5,Chat
+0,44,26,Everton,Attendee,8,Chat
+0,44,27,Aline Maciel,Attendee,1,Chat
+0,44,28,Juliane Dasilva,Attendee,marketing 5,Chat
+0,44,28,Lorraine Brito,Attendee,o meu tá ruim,Chat
+0,44,30,Nilsonpedroso,Attendee,0,Chat
+0,44,34,Maris Martins,Attendee,marketing 4,Chat
+0,44,34,Karoline Santos Tavares,Attendee,Eu estou começando agora estou totalmente perdida 😞,Chat
+0,44,34,Gilsonn Barbosa,Attendee,0,Chat
+0,44,35,Jovensretratosfotografias,Attendee,MKT 8,Chat
+0,44,40,Tha Les Ribeiro,Attendee,MARKETING: 9,Chat
+0,44,40,Bruna Cota,Attendee,"Eiii, trabalhei com o Joao e Mayara, conheci você por eles!!",Chat
+0,44,40,Randhy Rondon,Attendee,6,Chat
+0,44,43,Bruna Cota,Attendee,"Eiii, trabalhei com o Joao e Mayara, conheci você por eles!!",Chat
+0,44,44,Grasielly Tais,Attendee,marentik 9,Chat
+0,44,44,Maximizepropagandas,Attendee,marketing 12 .. senhor,Chat
+0,44,49,Bruna Cota,Attendee,"Eiii, trabalhei com o Joao e Mayara, conheci você por eles!!",Chat
+0,44,51,Li Ttledaniel,Attendee,4 e descendo,Chat
+0,45,2,Vj Fotografia,Attendee,MKT - total 5,Chat
+0,45,7,Isa Moraes,Attendee,13 🥲,Chat
+0,45,26,Alexandre Tonetto,Attendee,"Na minha cidade, a galera gosta de pagar ticket baixo. Fica dificil colocar um valor alto onde as pessoas procuram preço, não valor.",Chat
+0,45,30,Vinicius Maximo,Attendee,salve kunz,Chat
+0,46,2,William Fagundes,Attendee,deu pra perceber que a maioria é artista aqui,Chat
+0,46,6,Isa Moraes,Attendee,eu também,Chat
+0,46,15,Rafael Michel,Attendee,23,Chat
+0,46,38,Jorge Moreiraphotografia,Attendee,3,Chat
+0,46,41,Rafael Michel,Attendee,Tive que fazer faculdade de marketing pra melhorar,Chat
+0,46,42,Tita Gorg,Attendee,boa noite,Chat
+0,46,46,Karoline Santos Tavares,Attendee,3,Chat
+0,46,54,Karoline Santos Tavares,Attendee,3,Chat
+0,47,2,Rafael Michel,Attendee,Mas precisava desse olhar fotógrafo to amando,Chat
+0,47,17,Karoline Santos Tavares,Attendee,0,Chat
+0,47,47,Karoline Santos Tavares,Attendee,Marketing 6,Chat
+0,47,48,Bueno,Attendee,mas muito sentido,Chat
+0,48,29,Monge Bruno,Attendee,"Da pra ouvir ela bem de boa, melhor que seu mic quase.",Chat
+0,48,30,Tobias Doacordeon,Attendee,Boa noite,Chat
+0,48,49,Isa Moraes,Attendee,pessoal n quer pagar caro,Chat
+0,49,8,Vj Fotografia,Attendee,Meus atuais clientes são assim. Essa é uma das coisas que preciso mudar,Chat
+0,49,9,Maikon Borba,Attendee,aqui na cidade tem fotógrafos vendendo ensaios a 99 reais,Chat
+0,49,26,Isa Moraes,Attendee,eu faço isso 🤡,Chat
+0,49,32,Gabriele Barbier,Attendee,"Eu passei a definir o meu valor e não preco , e é para essas pessoas que enxergam valor e tem confianca que quero como cliente",Chat
+0,49,35,William Fagundes,Attendee,ja nao do mais bola por esta crença,Chat
+0,49,37,Isa Moraes,Attendee,pq se aumentar n tenho nenhuma venda,Chat
+0,50,5,William Fagundes,Attendee,esse cliente nao e pra voce,Chat
+0,50,16,Janainasantos,Attendee,As pessoas paga x por decoração e comida mas na hora da foto que é oque fica aí choram,Chat
+0,50,21,Oryo Sylva,Attendee,eu preciso de uns 20 clientes,Chat
+0,50,23,Bruna Cota,Attendee,São os famosos clientes cara de pix!!!!,Chat
+0,50,25,Isa Moraes,Attendee,simm,Chat
+0,50,35,Bruna Cota,Attendee,Os famosos clientes cara de pix hahaha,Chat
+0,50,40,Isa Moraes,Attendee,pessoal prefere nao pagar e tirar pelo cell na hora do valor,Chat
+0,51,2,Gabriele Barbier,Attendee,"e isso é para qualquer nicho , que eu sou babá em paralelo e estou definindo meu público como de alto padrão , acho que essa clareza abre muitas portas em qualquer negócio",Chat
+0,51,42,Henrique Gil,Attendee,o que são clientes cara de Pix?,Chat
+0,54,37,Lau Bruxel,Attendee,Vendas - 15,Chat
+0,54,38,Francine Silva,Attendee,16 - vendas,Chat
+0,54,39,Jeffersonhenrique,Attendee,Vendas 4 ( começando agora ),Chat
+0,54,39,Bueno,Attendee,Vendas - 11 de novo... tá osso,Chat
+0,54,40,Nilsonpedroso,Attendee,Venda 12,Chat
+0,54,41,William Fagundes,Attendee,vendas 15,Chat
+0,54,41,Bueno,Attendee,hahaha,Chat
+0,54,43,Hudson Freddo,Attendee,Vendas 18,Chat
+0,54,44,Oryo Sylva,Attendee,vendas: 20,Chat
+0,54,45,Bruna Cota,Attendee,vendas - 19,Chat
+0,54,49,Wills,Attendee,vendas 17,Chat
+0,54,51,Tha Les Ribeiro,Attendee,VENDAS: 17 😢,Chat
+0,54,52,Tachi Lagui,Attendee,14,Chat
+0,54,52,Leandro Norberto,Attendee,Vendas 7,Chat
+0,54,55,Rodrigo De Lima,Attendee,vendas 22,Chat
+0,54,57,Paesch,Attendee,vendas 21,Chat
+0,54,59,Henrique Gil,Attendee,11,Chat
+0,54,59,Maximizepropagandas,Attendee,15,Chat
+0,55,3,Andre Iaferreira,Attendee,vendas 18,Chat
+0,55,7,Beatriz Casimiro,Attendee,16,Chat
+0,55,11,Jorge Moreiraphotografia,Attendee,"um pai de debutante me disse que iria fazer as fotos com o iPhone dele .... 3 meses depois a mãe me procura para eu arrumar ""editar"" as fotos kkkkk",Chat
+0,55,12,Cinthia Basilio,Attendee,Vendas 0,Chat
+0,55,13,Simone Moraes,Attendee,Vendas 5 🫪,Chat
+0,55,14,Grasielly Tais,Attendee,vendas 10,Chat
+0,55,16,Gilberto Ramos,Attendee,Vendas 16,Chat
+0,55,17,Gi Heidy,Attendee,Ventas - 12,Chat
+0,55,18,Daniela Couto,Attendee,12,Chat
+0,55,18,Everton,Attendee,Vendas 19,Chat
+0,55,19,Vj Fotografia,Attendee,VENDAS 12,Chat
+0,55,19,Gilsonn Barbosa,Attendee,Vendas = 21,Chat
+0,55,20,Vonlimalima,Attendee,5,Chat
+0,55,22,Jovensretratosfotografias,Attendee,vendas 12,Chat
+0,55,24,Andre Filipeamorim,Attendee,19,Chat
+0,55,24,Maris Martins,Attendee,vendas 10,Chat
+0,55,25,Juliane Dasilva,Attendee,vendas 20,Chat
+0,55,31,Li Ttledaniel,Attendee,vendas 13,Chat
+0,55,34,Randhy Rondon,Attendee,8,Chat
+0,55,39,Celia Rocha,Attendee,18,Chat
+0,55,41,Isa Moraes,Attendee,venda 23,Chat
+0,56,10,Bruna Cota,Attendee,20,Chat
+0,56,12,Barbara Ju,Attendee,Vendas=8,Chat
+0,56,24,Isa Moraes,Attendee,autoria 21,Chat
+0,56,26,Adeilton Ferreira,Attendee,Vendas - 7,Chat
+0,56,32,Isa Moraes,Attendee,marketing 13,Chat
+0,56,35,Isa Moraes,Attendee,venda 23,Chat
+0,57,3,Marcelo Dutra,Attendee,10k,Chat
+0,57,26,William Fagundes,Attendee,"é, Precisa melhorar",Chat
+0,57,32,Robison Kunz,Admin,Comenta aqui qual o nivel dos pilares do seu negocio?,Highlighted
+0,57,34,Wills,Attendee,"Autoria, preciso melhorar",Chat
+0,57,35,Jeffersonhenrique,Attendee,Autoria 18,Chat
+0,57,39,Rodrigo De Lima,Attendee,marketing precisa melhorar,Chat
+0,57,43,Maximizepropagandas,Attendee,Precisos melhorar,Chat
+0,57,46,Wills,Attendee,Marketing Satisfatorio,Chat
+0,57,52,Li Ttledaniel,Attendee,Autoria satisfatorio,Chat
+0,57,53,Randhy Rondon,Attendee,critico,Chat
+0,57,55,Wills,Attendee,Vendas preciso melhorar,Chat
+0,57,59,Leandro Norberto,Attendee,Autoria - Satisfatorio,Chat
+0,58,6,Grasielly Tais,Attendee,tudo extremamente critico,Chat
+0,58,6,Wxslxy,Attendee,Autoria - 30,Chat
+0,58,10,Sonia Duartee,Attendee,crítico,Chat
+0,58,11,Li Ttledaniel,Attendee,marketing extremamente critico,Chat
+0,58,14,Leandro Norberto,Attendee,Marketing e vendas - extremamente critico,Chat
+0,58,15,Isa Moraes,Attendee,autoria satisfatório,Chat
+0,58,17,Junior Rocha,Attendee,autoria 30,Chat
+0,58,20,Li Ttledaniel,Attendee,vendas preciso melhorar,Chat
+0,58,22,Isa Moraes,Attendee,marketing precisa melhorar,Chat
+0,58,23,Wxslxy,Attendee,Marketing - 11,Chat
+0,58,34,Maris Martins,Attendee,autoria satisfatório,Chat
+0,58,38,Bueno,Attendee,Autoria = Satisfatório. MKT e Vendas = Preciso melhorar,Chat
+0,58,39,Karoline Santos Tavares,Attendee,Vendas 0,Chat
+0,58,39,Isa Moraes,Attendee,venda satisfatório,Chat
+0,58,40,Bruna Cota,Attendee,Autoria - satisfatorio,Chat
+0,58,46,Bruna Cota,Attendee,Vendas - critico,Chat
+0,58,50,Bueno,Attendee,"dá dentro do que imaginava, muito bom... ",Chat
+0,58,53,Maris Martins,Attendee,marketing crítico,Chat
+0,58,53,Daniela Couto,Attendee,Autoria - satisfatório. Venda e Marketing- preciso melhorar,Chat
+0,58,56,Lau Bruxel,Attendee,Autoria satisfatório marketing precisa melhorar vendas precisa melhorar,Chat
+0,59,0,Wxslxy,Attendee,Vendas - 22,Chat
+0,59,10,Sonia Duartee,Attendee,crítico,Chat
+0,59,13,Henrique Gil,Attendee,crítico,Chat
+0,59,15,Maris Martins,Attendee,vendas precisa melhorar,Chat
+0,59,26,Cassiano,Attendee,vendas: 9,Chat
+0,59,31,Vonlimalima,Attendee,"autoria preciso melhorar marketing crítico, vendas crítico",Chat
+0,59,44,Andre Filipeamorim,Attendee,mkt,Chat
+0,59,45,Isa Moraes,Attendee,somos quase todos artistas kkk,Chat
+0,59,46,William Fagundes,Attendee,markint,Chat
+0,59,48,Maikon Borba,Attendee,mkt,Chat
+0,59,49,Robison Kunz,Admin,Bóra pra ação agora... Por onde você começaria as melhorias?,Highlighted
+0,59,49,Gtrindade,Attendee,mkt,Chat
+0,59,49,Jeffersonhenrique,Attendee,Marketing,Chat
+0,59,52,William Fagundes,Attendee,mkt,Chat
+0,59,54,Lau Bruxel,Attendee,Mkt,Chat
+0,59,54,Ellen Pereira,Attendee,marketing,Chat
+0,59,56,Geovanni Gomes,Attendee,mkt,Chat
+0,59,57,Tha Les Ribeiro,Attendee,MARKETING,Chat
+0,59,58,Tachi Lagui,Attendee,marketing,Chat
+0,59,59,Monicavieira,Attendee,marketing,Chat
+1,0,0,Bruna Cota,Attendee,Marketing pois ela gera a venda!!,Chat
+1,0,0,Geovanni Gomes,Attendee,claro,Chat
+1,0,1,Simone Saggioro,Attendee,marketing,Chat
+1,0,3,Wxslxy,Attendee,Marketing,Chat
+1,0,4,Gilmar Ferreiramiguez,Attendee,Marketing,Chat
+1,0,5,Gilsonn Barbosa,Attendee,Marketing,Chat
+1,0,6,Wills,Attendee,Mkt,Chat
+1,0,6,Leandro Norberto,Attendee,Marketing!,Chat
+1,0,12,Vj Fotografia,Attendee,MKT,Chat
+1,0,12,Grasielly Tais,Attendee,vendas,Chat
+1,0,14,Kleber Rita,Attendee,vendas,Chat
+1,0,17,Gilberto Ramos,Attendee,Marketing,Chat
+1,0,19,Jorge Moreiraphotografia,Attendee,MKT,Chat
+1,0,19,Celia Rocha,Attendee,Marketing,Chat
+1,0,20,Bueno,Attendee,MKT,Chat
+1,0,20,Randhy Rondon,Attendee,marketing,Chat
+1,0,22,Isa Moraes,Attendee,marketing,Chat
+1,0,27,Modecaiônix,Attendee,Marketing,Chat
+1,0,31,Junior Rocha,Attendee,marketing,Chat
+1,0,33,Maikon Borba,Attendee,😨,Chat
+1,0,37,Henrique Gil,Attendee,venda,Chat
+1,0,48,William Fagundes,Attendee,mas bha tche,Chat
+1,0,55,Wills,Attendee,😭,Chat
+1,0,55,Gabriel Magri,Attendee,Marketing,Chat
+1,0,58,Lau Bruxel,Attendee,🤡,Chat
+1,0,58,Isa Moraes,Attendee,marketing pra consequentemente transferir em vendas,Chat
+1,1,15,Andre Filipeamorim,Attendee,autoria,Chat
+1,1,15,Kleber Rita,Attendee,autoria,Chat
+1,1,15,Wxslxy,Attendee,Autoria,Chat
+1,1,16,Sonia Duartee,Attendee,marketing,Chat
+1,1,16,Isa Moraes,Attendee,puts,Chat
+1,1,16,William Fagundes,Attendee,autoria,Chat
+1,1,16,Barbara Ju,Attendee,Marketing,Chat
+1,1,16,Vonlimalima,Attendee,marketing,Chat
+1,1,17,Oryo Sylva,Attendee,autoria,Chat
+1,1,19,Grasielly Tais,Attendee,autoria,Chat
+1,1,19,Jeffersonhenrique,Attendee,Agora marketing,Chat
+1,1,20,Maikon Borba,Attendee,autoria,Chat
+1,1,24,Sonia Duartee,Attendee,marketing,Chat
+1,1,26,Andre Filipeamorim,Attendee,com uma boa autoria minhas vendas alavancariam demais,Chat
+1,1,28,William Fagundes,Attendee,autoria,Chat
+1,1,35,Wills,Attendee,Autoria,Chat
+1,1,36,Lau Bruxel,Attendee,Autoria ..,Chat
+1,1,38,Junior Rocha,Attendee,Autoria,Chat
+1,1,40,Leandro Norberto,Attendee,Oh no oh no,Chat
+1,1,45,Isa Moraes,Attendee,autoria,Chat
+1,1,46,Vj Fotografia,Attendee,MKT,Chat
+1,1,46,Modecaiônix,Attendee,Marketing,Chat
+1,1,48,Oryo Sylva,Attendee,kkkkkkkkkkk,Chat
+1,1,51,Sonia Duartee,Attendee,rsrsr,Chat
+1,1,57,Andre Iaferreira,Attendee,mkt,Chat
+1,1,59,William Fagundes,Attendee,mas to pior que jogo do bingo,Chat
+1,2,9,Andre Filipeamorim,Attendee,errei dnv kkkkkkkkkkk,Chat
+1,2,9,Sonia Duartee,Attendee,kkkkk,Chat
+1,2,9,Wills,Attendee,Verdade,Chat
+1,2,10,Juliane Dasilva,Attendee,autoria,Chat
+1,2,13,Mediastory,Attendee,Autoria,Chat
+1,2,26,Sonia Duartee,Attendee,autoria,Chat
+1,2,32,Isa Moraes,Attendee,Jesus kdkdksk,Chat
+1,2,36,Isa Moraes,Attendee,tamo perdido,Chat
+1,2,37,Sonia Duartee,Attendee,autoria,Chat
+1,2,45,Wxslxy,Attendee,sim,Chat
+1,2,45,William Fagundes,Attendee,yes,Chat
+1,2,49,Vonlimalima,Attendee,faz,Chat
+1,2,56,Bueno,Attendee,faz todo sentido!,Chat
+1,3,4,Tha Les Ribeiro,Attendee,🤯🤯🤯,Chat
+1,3,6,Li Ttledaniel,Attendee,"Faturei media 7k/mes em 2025, autoria 21, marketing 4, vendas 13",Chat
+1,3,12,Wills,Attendee,No meu caso entre os 3 então tenho q melhorar as vendas,Chat
+1,3,13,Sonia Duartee,Attendee,kkkkkk,Chat
+1,3,14,Byeli Matos,Attendee,"boa noite, cheguei somente agora, estava em aula..... vamos que vamos.",Chat
+1,3,17,Vocefc,Attendee,marguritas,Chat
+1,3,20,Cassiano,Attendee,precisa melhor tudo,Chat
+1,3,23,Rafael Michel,Attendee,Caracaaaaa kkkkk,Chat
+1,3,27,Isa Moraes,Attendee,faz,Chat
+1,3,58,Rafael Michel,Attendee,Marketing,Chat
+1,4,6,Aline Maciel,Attendee,marketing,Chat
+1,4,44,Cassiano,Attendee,MARKETING,Chat
+1,5,10,Rafael Michel,Attendee,Anotei aqui:,Chat
+1,5,18,Isa Moraes,Attendee,como eu sei qual pilar ta me travando 🥲,Chat
+1,6,1,Rafael Michel,Attendee,@isa conseguiu responder todas as perguntas?,Chat
+1,6,2,Bueno,Attendee,o pilar que me trava é Marketing,Chat
+1,6,18,Isa Moraes,Attendee,sim,Chat
+1,6,30,Isa Moraes,Attendee,mas nem sempre é o mais baixo ent n sei qual pilar focar kkdkd,Chat
+1,6,33,Cassiano,Attendee,duvidaaa,Chat
+1,6,37,Leandro Norberto,Attendee,O famoso GPS!,Chat
+1,6,46,Leandro Norberto,Attendee,Pior que da certo!,Chat
+1,6,54,Rafael Michel,Attendee,Eu colquei uma observação de ponto forte e ponto de melhoria em cada pergunta respondida isso me ajuou,Chat
+1,7,7,Isa Moraes,Attendee,hmmm,Chat
+1,7,37,Rafael Michel,Attendee,Tentaaaa ajuda mto,Chat
+1,8,21,Karoline Santos Tavares,Attendee,Marketing,Chat
+1,8,41,Rafael Michel,Attendee,Atendimento ok,Chat
+1,8,45,Marcelo Dutra,Attendee,22,Chat
+1,9,1,Rafael Michel,Attendee,Mas meu Instagram vitrine e n maquina de venda,Chat
+1,9,34,Karoline Santos Tavares,Attendee,Autoria,Chat
+1,10,31,Isa Moraes,Attendee,eu nao faturo nem 1 mil por mês,Chat
+1,10,54,Robison Kunz,Admin,Quem quer faturar mais de 10k por mês com a fotografia??,Highlighted
+1,10,56,Vonlimalima,Attendee,sim,Chat
+1,10,57,William Fagundes,Attendee,s,Chat
+1,11,1,Ellen Pereira,Attendee,eu quero,Chat
+1,11,1,Lau Bruxel,Attendee,Simmmm mmmm,Chat
+1,11,3,Erica Correia,Attendee,eu quero,Chat
+1,11,5,Tachi Lagui,Attendee,eu quero!,Chat
+1,11,6,Bruna Cota,Attendee,eu quero!,Chat
+1,11,7,Paesch,Attendee,EU QUERO!!!!!!!,Chat
+1,11,7,Vonlimalima,Attendee,eu quero,Chat
+1,11,9,Grasielly Tais,Attendee,sim,Chat
+1,11,11,Nilsonpedroso,Attendee,Eu quero,Chat
+1,11,14,Jeffersonhenrique,Attendee,E que ainda nem fatura nem 1 mil por mês ??,Chat
+1,11,18,Wills,Attendee,"Eu quero, mas estou com medo do valor da mentoria",Chat
+1,11,20,Tha Les Ribeiro,Attendee,EU QUEROO!!!,Chat
+1,11,20,Maikon Borba,Attendee,👋,Chat
+1,11,20,Jeffersonhenrique,Attendee,Eu quero,Chat
+1,11,22,Jonatas Felipe,Attendee,eu quero,Chat
+1,11,27,Ramon Nazario,Attendee,eu quero,Chat
+1,11,28,Gtrindade,Attendee,Muitooooo,Chat
+1,11,31,Karoline Santos Tavares,Attendee,Estou começando agora por onde eu começo ?,Chat
+1,11,41,Henrique Gil,Attendee,querooo,Chat
+1,11,44,Isa Moraes,Attendee,eu quero muitoooo,Chat
+1,12,20,Barbara Ju,Attendee,Siiiim quero,Chat
+1,12,26,Sonia Duartee,Attendee,eu quero,Chat
+1,12,47,Sonia Duartee,Attendee,simmmmmm quero,Chat
+1,12,48,Gabriele Barbier,Attendee,🏆🏆🏆🏆,Chat
+1,13,3,Marcelo Dutra,Attendee,eu quero,Chat
+1,14,8,Kitwe Narciso,Attendee,eu querooo,Chat
+1,14,21,Randhy Rondon,Attendee,"estou começando na fotografia, fazendo ensaio externo com pessoas que conheço para criar meu portfolio ",Chat
+1,15,2,Robison Kunz,Admin,@Randhy Rondon você já pode estar faturando com esses portfólios.,Chat
+1,15,40,Robison Kunz,Admin,Isso é um pulo do gato pra quem está começando! Arrancar já faturando,Chat
+1,18,59,Randhy Rondon,Attendee,estou criando campanha usando esse conteúdo,Chat
+1,19,2,William Fagundes,Attendee,sempre,Chat
+1,20,2,Karoline Santos Tavares,Attendee,Quero,Chat
+1,20,41,Wills,Attendee,sim,Chat
+1,20,46,Paesch,Attendee,com toda a certeza,Chat
+1,21,7,Jeffersonhenrique,Attendee,Com certeza,Chat
+1,21,55,Vj Fotografia,Attendee,"Me imagino sim, tenho mil planos pra essa consistência mensal!! ",Chat
+1,23,33,William Fagundes,Attendee,nao,Chat
+1,22,45,Robison Kunz,Admin,Preparados? Curiosos?,Highlighted
+1,22,48,Wills,Attendee,😬,Chat
+1,22,50,Kitwe Narciso,Attendee,siim pora favooor,Chat
+1,22,50,William Fagundes,Attendee,medo,Chat
+1,23,16,Modecaiônix,Attendee,200,Chat
+1,23,34,William Fagundes,Attendee,boa,Chat
+1,23,45,Vonlimalima,Attendee,o tempo todo,Chat
+1,24,45,Ana Fernandes,Attendee,cadê o link????,Chat
+1,24,56,Bruna Cota,Attendee,OUUUAAA O MARKETING,Chat
+1,25,21,Gtrindade,Attendee,nervosaaaa,Chat
+1,25,51,Cassiano,Attendee,surtando aquiii,Chat
+1,26,20,Ismael Martini,Attendee,Meu Deus...,Chat
+1,26,31,João,Attendee,Show,Chat
+1,26,47,Wills,Attendee,😳,Chat
+1,26,59,Leandro Norberto,Attendee,Galera eu fiz e vale a PENA. Só vocÊs se dedicarem e não deixar a peteca. Fui aluno e na primeira semana eu ganhei 6 mil. Vendi minha prancha e deu certo. Façam!,Chat
+1,27,10,Ana Paula Ismael,Attendee,vai ter boleto parcelado?,Chat
+1,27,26,Kitwe Narciso,Attendee,somente cartão?,Chat
+1,27,37,Bueno,Attendee,se for no boleto tô dentro!,Chat
+1,27,53,Wills,Attendee,manda o link ⚡,Chat
+1,28,0,William Fagundes,Attendee,"é, por hoje é só pessoal ...",Chat
+1,28,3,Bruna Cota,Attendee,"mas e apenas o ingresso, certo?",Chat
+1,28,10,Ismael Martini,Attendee,tento.. tento divulgar e nao consigo....,Chat
+1,28,31,Bruna Cota,Attendee,"KKKKKKKKKKKK adoro vc cara, vale com toda certeza!!!!",Chat
+1,30,15,Anna Beatriz Duarte,Attendee,chegandooooo agoraaaa,Chat
+1,30,43,Jorge Moreiraphotografia,Attendee,cartão já ta estourado kkk,Chat
+1,30,45,Cinthia Basilio,Attendee,Vai ter boleto?,Chat
+1,30,50,Vonlimalima,Attendee,no boleto?,Chat
+1,31,4,Vonlimalima,Attendee,ou só no cartão?,Chat
+1,31,8,Douglas Barbosa,Attendee,🤯🤯🤯🤯,Chat
+1,31,34,Digi Fae,Attendee,😨😨,Chat
+1,31,39,Kaiky Oliveira,Attendee,👋,Chat
+1,31,49,Wills,Attendee,👋,Chat
+1,31,3,Robison Kunz,Admin,📍Faça parte da Power Start: https://mentoriapower.com.br/power-start/live-ckt,Highlighted
+1,32,26,Ana Paula Ismael,Attendee,É vitalício?,Chat
+1,32,30,Bruna Cota,Attendee,"Eiii, trabalhei com a Fala das Imagens, te conheci por lá!! Você e FODA!!!!! ",Chat
+1,33,5,Bueno,Attendee,uma pena não ter a opção de parcelamento no boleto... seria incrível e viabilizaria pra muita gente,Chat
+1,34,0,Isa Moraes,Attendee,vdd,Chat
+1,34,7,Ana Fernandes,Attendee,"Minha região só quer fotografo barato, será que funciona pra mim?",Chat
+1,34,35,Ana Paula Ismael,Attendee,tá certo vdd,Chat
+1,34,41,Douglas Barbosa,Attendee,tem como pagar um valor no pix e passar o restante no cartao?,Chat
+1,34,44,Kaiky Oliveira,Attendee,quanto tempo dura então?,Chat
+1,35,0,Bruna Cota,Attendee,"Não e uma duvida, so queria dizer o quão incrivel e o seu trabalho! Trabalhei com O João e Mayara, te conheci por lá! Você e foda!! ",Chat
+1,35,6,Flavio Waki,Attendee,Quanto tempo de acesso?,Chat
+1,35,57,Marcs Oliveira,Attendee,Compra feito! Bora faturar mais de 10k mês,Chat
+1,36,8,Joao Paulo,Attendee,Tô dentro!!!! Serei um dos 10?? kkk,Chat
+1,36,14,Robison Kunz,Admin,📍Faça parte da Power Start: https://mentoriapower.com.br/power-start/live-ckt,Highlighted
+1,36,43,Ismael Martini,Attendee,tem tráfego pago???,Chat
+1,36,43,Ana Fernandes,Attendee,E funciona pra qualquer nicho ou tipo de trabalho?,Chat
+1,36,58,William Fagundes,Attendee,"estou em um situação financeiro no momento critico se não ja estava dentro , boa sorte a quem ja se inscreveu e aproveitem ...",Chat
+1,37,47,Kaiky Oliveira,Attendee,Dentroo,Chat
+1,39,7,Flavio Waki,Attendee,"Kunz, até para quem é iniciante e não tem clientes ainda pode fazer?",Chat
+1,40,2,Rosilene Pereira Marinho,Attendee,Trabalho sozinha. Da pra fazer 10k também?,Chat
+1,40,21,Robison Kunz,Admin,Quer fazer PIX + Cartão chama aqui: http://mentoriapower.com.br/timekunz,Highlighted
+1,40,46,Anna Beatriz Duarte,Attendee,Quero ser Artista e Empreendedor 10K,Chat
+1,42,1,Simone Moraes,Attendee,Tem tráfego pago?,Chat
+1,42,28,Cinthia Basilio,Attendee,Gastronomia e hotelaria tambem?,Chat
+1,42,45,Hudson Freddo,Attendee,até quando vai ficar liberado a promoção? meu cartão só libera dia 27,Chat
+1,43,6,Gilsonn Barbosa,Attendee,Acabei de fechar e pagar!,Chat
+1,43,18,Gilsonn Barbosa,Attendee,Rumo aos 10k,Chat
+1,43,27,Karoline Santos Tavares,Attendee,@Robison Kunz usa todo limite do cartão ?,Chat
+1,42,36,Vonlimalima,Attendee,a proposta ficará disponível até quando?,Chat
+1,44,27,Simone Moraes,Attendee,Preciso de ajuda tbm para pix e cartão,Chat
+1,45,35,Robison Kunz,Admin,Quer fazer PIX + Cartão chama aqui: http://mentoriapower.com.br/timekunz,Highlighted
+1,45,47,Rosilene Pereira Marinho,Attendee,Muito bom!! Ainda dá tempo de ganhar o ingresso pro evento?,Chat
+1,47,1,Flavio Waki,Attendee,"Tô dentro. Vlw, Kunz. Comprei.",Chat
+1,47,7,Anderson Mendes,Attendee,"fala kunz, além de mentoria, você tem algum método sobre edição?, pois minhas fotos no pc fica muito nítida as cores, porem quando eu vou postar no Instagram ela fica meio escura e perde as cores ",Chat
+1,47,20,Ismael Martini,Attendee,se nao ocorre as vendas por tráfego. como ocorre as vendas? para buscar clientes?,Chat
+1,48,4,Felipe Deornelas,Attendee,"Anderson, você está exportando em adobe RGB. muda pra sRGB. passei por isso já.",Chat
+1,48,7,Flavio Waki,Attendee,Já acompanho os depoimentos no YouTube e sempre tive vontade de fazer uma mentoria com você.,Chat
+1,48,10,William Fagundes,Attendee,@Anderson Mendes tem que salvar suas fotos em adobe rgb,Chat
+1,48,14,Robison Kunz,Admin,Quer fazer PIX + Cartão chama aqui: http://mentoriapower.com.br/timekunz,Highlighted
+1,49,4,William Fagundes,Attendee,@Anderson Mendes corrigindo em sRGB,Chat
+1,49,17,Vonlimalima,Attendee,preciso muito,Chat
+1,49,27,Douglas Barbosa,Attendee,🤯🤯🤯,Chat
+1,49,20,Vonlimalima,Attendee,a oferta tá muito boa se conseguir o cartão até quinta falo com vocês por onde? para garantir minha vaga?,Chat
+1,49,50,Rosilene Pereira Marinho,Attendee,to dentro!!!!,Chat
+1,50,40,Joao Paulo,Attendee,Aêêê....faz o próximo em São Paulo novamente!!!,Chat
+1,50,43,Simone Moraes,Attendee,Esse vídeo vai ficar salvo?,Chat
+1,49,43,Ana Fernandes,Attendee,Só mais uma dúvida... Eu trabalho CLT durante o dia e fotografo nos finais de semana. Não tenho como largar meu emprego agora porque preciso da estabilidade. Será que consigo acompanhar a mentoria?,Chat
+1,50,47,Anderson Casarin,Attendee,fala um pouco da quantidade de horas e dias da mentoria,Chat
+1,52,12,Andre Ssa Cristhi,Attendee,Boa noite a todos 📸,Chat
+1,52,28,William Fagundes,Attendee,alguem me empresta um cartão? vai que né...kkkk,Chat
+1,51,52,Vonlimalima,Attendee,me envia o link para deixar reservado minha vaga até quinta,Chat
+1,52,10,Robison Kunz,Admin,Quer deixar sua vaga reservada? Fale com o time: http://mentoriapower.com.br/timekunz,Highlighted
+1,53,45,William Fagundes,Attendee,yes,Chat
+1,53,48,William Fagundes,Attendee,claro,Chat
+1,53,50,Robison Kunz,Admin,WhatsApp Time do Kunz: Quer fazer PIX + Cartão chama aqui: http://mentoriapower.com.br/timekunz,Highlighted
