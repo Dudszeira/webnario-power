@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '@/lib/db';
+import { 
+  getEdition, 
+  upsertEdition, 
+  getRegistrationByEmail, 
+  getRegistrationByIP, 
+  createRegistration, 
+  createEvent 
+} from '@/lib/db';
 import { createUserSession, getIP } from '@/lib/auth';
 import { getCurrentEditionId, getLiveStartMs } from '@/lib/edition';
 
@@ -19,27 +26,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'E-mail inválido.' }, { status: 400 });
   }
 
-  const db = getDb();
   const editionId = getCurrentEditionId();
 
   // Ensure edition row exists
-  const existing = db.prepare('SELECT id FROM editions WHERE id = ?').get(editionId);
+  const existing = await getEdition(editionId);
   if (!existing) {
-    const [y, m, d] = editionId.split('-');
-    db.prepare(
-      `INSERT INTO editions (id, live_date) VALUES (?, ?)`
-    ).run(editionId, editionId);
+    await upsertEdition({ id: editionId, live_date: editionId });
   }
 
   // Check: same email already used in this edition → block
-  const emailReg = db
-    .prepare('SELECT id, ip, consumed FROM registrations WHERE edition_id = ? AND email = ?')
-    .get(editionId, email) as any;
+  const emailReg = await getRegistrationByEmail(editionId, email);
 
   if (emailReg) {
     // Same email: check if same IP or different IP
     if (emailReg.ip !== ip || emailReg.consumed) {
-      const edition = db.prepare('SELECT sales_page_url FROM editions WHERE id = ?').get(editionId) as any;
+      const edition = await getEdition(editionId);
       return NextResponse.json(
         { error: 'blocked', sales_page_url: edition?.sales_page_url || '' },
         { status: 409 }
@@ -64,12 +65,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Check: same IP already used in this edition → block
-  const ipReg = db
-    .prepare('SELECT id, email FROM registrations WHERE edition_id = ? AND ip = ?')
-    .get(editionId, ip) as any;
+  const ipReg = await getRegistrationByIP(editionId, ip);
 
   if (ipReg) {
-    const edition = db.prepare('SELECT sales_page_url FROM editions WHERE id = ?').get(editionId) as any;
+    const edition = await getEdition(editionId);
     return NextResponse.json(
       { error: 'blocked', sales_page_url: edition?.sales_page_url || '' },
       { status: 409 }
@@ -79,13 +78,10 @@ export async function POST(req: NextRequest) {
   // Register new user
   const regId = `reg_${uuidv4()}`;
   try {
-    db.prepare(
-      `INSERT INTO registrations (id, edition_id, name, email, ip)
-       VALUES (?, ?, ?, ?, ?)`
-    ).run(regId, editionId, name, email, ip);
+    await createRegistration({ id: regId, edition_id: editionId, name, email, ip });
   } catch (err: any) {
-    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-      const edition = db.prepare('SELECT sales_page_url FROM editions WHERE id = ?').get(editionId) as any;
+    if (err?.code === '23505') { // PostgreSQL Unique Constraint Violation
+      const edition = await getEdition(editionId);
       return NextResponse.json(
         { error: 'blocked', sales_page_url: edition?.sales_page_url || '' },
         { status: 409 }
@@ -96,10 +92,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Log page_view event
-  db.prepare(
-    `INSERT INTO events (id, edition_id, registration_id, type, metadata)
-     VALUES (?, ?, ?, 'register', '{}')`
-  ).run(`ev_${uuidv4()}`, editionId, regId);
+  await createEvent({
+    id: `ev_${uuidv4()}`,
+    edition_id: editionId,
+    registration_id: regId,
+    type: 'register',
+    metadata: '{}'
+  });
 
   const token = await createUserSession({ registrationId: regId, editionId, email, name });
   const resp = NextResponse.json({ ok: true });

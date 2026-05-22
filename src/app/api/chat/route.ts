@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '@/lib/db';
+import { 
+  getEdition, 
+  getRealComments, 
+  getIsolatedComments, 
+  insertComment 
+} from '@/lib/db';
 import { verifyUserSessionFromRequest, verifyStaffToken } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
 
@@ -19,10 +24,9 @@ export async function GET(req: NextRequest) {
   if (session && session.editionId !== editionId) return NextResponse.json({ comments: [] });
 
   const since = req.nextUrl.searchParams.get('since') || '1970-01-01T00:00:00.000Z';
-  const db = getDb();
 
   // Read authoritative settings from DB
-  const edition = db.prepare('SELECT chat_mode, cta_enabled FROM editions WHERE id = ?').get(editionId) as any;
+  const edition = await getEdition(editionId);
   const chatMode: string = edition?.chat_mode || 'general';
   const ctaEnabled: number = edition?.cta_enabled ?? 1;
 
@@ -30,32 +34,13 @@ export async function GET(req: NextRequest) {
 
   if (staffMember) {
     // Staff sees all real comments regardless of chat_mode
-    comments = db.prepare(
-      `SELECT id, type, author_name, text, reply, reply_author, created_at, is_pinned, pin_start_seconds, pin_end_seconds
-       FROM comments
-       WHERE edition_id = ? AND type IN ('real_user','real_staff') AND visible = 1 AND created_at > ?
-       ORDER BY created_at ASC LIMIT 100`
-    ).all(editionId, since);
+    comments = await getRealComments(editionId, since, 100);
   } else if (chatMode === 'isolated') {
     // Isolated: user sees own comments + real_staff only
-    comments = db.prepare(
-      `SELECT id, type, author_name, text, reply, reply_author, created_at, is_pinned, pin_start_seconds, pin_end_seconds
-       FROM comments
-       WHERE edition_id = ?
-         AND type IN ('real_user','real_staff')
-         AND visible = 1
-         AND created_at > ?
-         AND (type = 'real_staff' OR registration_id = ?)
-       ORDER BY created_at ASC LIMIT 50`
-    ).all(editionId, since, session!.registrationId);
+    comments = await getIsolatedComments(editionId, since, session!.registrationId, 50);
   } else {
     // General: all real comments
-    comments = db.prepare(
-      `SELECT id, type, author_name, text, reply, reply_author, created_at, is_pinned, pin_start_seconds, pin_end_seconds
-       FROM comments
-       WHERE edition_id = ? AND type IN ('real_user','real_staff') AND visible = 1 AND created_at > ?
-       ORDER BY created_at ASC LIMIT 50`
-    ).all(editionId, since);
+    comments = await getRealComments(editionId, since, 50);
   }
 
   return NextResponse.json({ comments, cta_enabled: ctaEnabled });
@@ -71,8 +56,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Edição inválida' }, { status: 403 });
   }
 
-  const db = getDb();
-  const edition = db.prepare('SELECT chat_enabled FROM editions WHERE id = ?').get(editionId) as any;
+  const edition = await getEdition(editionId);
   if (!edition?.chat_enabled) {
     return NextResponse.json({ error: 'Chat desabilitado' }, { status: 403 });
   }
@@ -84,10 +68,19 @@ export async function POST(req: NextRequest) {
   }
 
   const commentId = `c_${uuidv4()}`;
-  db.prepare(
-    `INSERT INTO comments (id, edition_id, registration_id, type, author_name, text)
-     VALUES (?, ?, ?, 'real_user', ?, ?)`
-  ).run(commentId, editionId, session.registrationId, session.name, text);
+  await insertComment({
+    id: commentId,
+    edition_id: editionId,
+    registration_id: session.registrationId,
+    type: 'real_user',
+    author_name: session.name,
+    text,
+    video_timestamp: null,
+    is_pinned: 0,
+    pin_start_seconds: null,
+    pin_end_seconds: null,
+    visible: 1
+  });
 
   return NextResponse.json({ ok: true, id: commentId });
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '@/lib/db';
+import { clearSimulatedComments, insertCommentsBatch, getSimulatedComments } from '@/lib/db';
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
 
@@ -69,21 +69,14 @@ export async function POST(req: NextRequest) {
     rows = XLSX.utils.sheet_to_json(ws, { defval: '' }) as Record<string, any>[];
   }
 
-  const db = getDb();
   const errors: string[] = [];
   const inserted: any[] = [];
+  const commentsToInsert: any[] = [];
 
   const replace = formData.get('replace') === 'true';
   if (replace) {
-    db.prepare(
-      `DELETE FROM comments WHERE edition_id = ? AND type IN ('simulated_user','simulated_staff','simulated_purchase')`
-    ).run(editionId);
+    await clearSimulatedComments(editionId);
   }
-
-  const insert = db.prepare(
-    `INSERT INTO comments (id, edition_id, type, author_name, text, video_timestamp)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  );
 
   rows.forEach((row, idx) => {
     const lineNum = idx + 2;
@@ -101,13 +94,31 @@ export async function POST(req: NextRequest) {
     const ts = parseTimestamp(row.timestamp || row.minutagem || row.video_timestamp || 0);
     if (ts === null) { errors.push(`Linha ${lineNum}: timestamp inválido`); return; }
 
-    try {
-      insert.run(`c_${uuidv4()}`, editionId, tipo, nome, texto, ts);
-      inserted.push({ line: lineNum, tipo, nome, ts });
-    } catch (e: any) {
-      errors.push(`Linha ${lineNum}: ${e.message}`);
-    }
+    commentsToInsert.push({
+      id: `c_${uuidv4()}`,
+      edition_id: editionId,
+      registration_id: null,
+      type: tipo,
+      author_name: nome,
+      text: texto,
+      video_timestamp: ts,
+      is_pinned: 0,
+      pin_start_seconds: null,
+      pin_end_seconds: null,
+      visible: 1,
+      reply: null,
+      reply_author: null
+    });
+    inserted.push({ line: lineNum, tipo, nome, ts });
   });
+
+  if (commentsToInsert.length > 0) {
+    try {
+      await insertCommentsBatch(commentsToInsert);
+    } catch (e: any) {
+      errors.push(`Erro geral na inserção em lote: ${e.message}`);
+    }
+  }
 
   return NextResponse.json({ ok: true, inserted: inserted.length, errors });
 }
@@ -118,12 +129,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const editionId = req.nextUrl.searchParams.get('edition') || getCurrentEditionId();
-  const db = getDb();
-  const comments = db
-    .prepare(
-      `SELECT * FROM comments WHERE edition_id = ? AND type IN ('simulated_user','simulated_staff','simulated_purchase') ORDER BY video_timestamp ASC`
-    )
-    .all(editionId);
+  const comments = await getSimulatedComments(editionId);
   return NextResponse.json({ comments });
 }
 
@@ -133,9 +139,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const editionId = req.nextUrl.searchParams.get('edition') || getCurrentEditionId();
-  const db = getDb();
-  db.prepare(
-    `DELETE FROM comments WHERE edition_id = ? AND type IN ('simulated_user','simulated_staff','simulated_purchase')`
-  ).run(editionId);
+  await clearSimulatedComments(editionId);
   return NextResponse.json({ ok: true });
 }

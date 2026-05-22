@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '@/lib/db';
+import { 
+  getAdminComments, 
+  insertComment, 
+  updateCommentVisibility, 
+  updateCommentPin 
+} from '@/lib/db';
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
 
@@ -10,12 +15,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const editionId = req.nextUrl.searchParams.get('edition') || getCurrentEditionId();
-  const db = getDb();
-  const comments = db
-    .prepare(
-      `SELECT * FROM comments WHERE edition_id = ? ORDER BY created_at DESC LIMIT 100`
-    )
-    .all(editionId);
+  const comments = await getAdminComments(editionId);
   return NextResponse.json({ comments });
 }
 
@@ -27,21 +27,20 @@ export async function POST(req: NextRequest) {
   const editionId = getCurrentEditionId();
   const body = await req.json().catch(() => ({}));
 
-  const db = getDb();
   const id = `c_${uuidv4()}`;
-  db.prepare(
-    `INSERT INTO comments (id, edition_id, type, author_name, text, is_pinned, pin_start_seconds, pin_end_seconds)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(
+  await insertComment({
     id,
-    editionId,
-    body.type || 'real_staff',
-    body.author_name || 'Staff',
-    body.text || '',
-    body.is_pinned ? 1 : 0,
-    body.pin_start_seconds ?? null,
-    body.pin_end_seconds ?? null,
-  );
+    edition_id: editionId,
+    registration_id: null,
+    type: body.type || 'real_staff',
+    author_name: body.author_name || 'Staff',
+    text: body.text || '',
+    video_timestamp: null,
+    is_pinned: body.is_pinned ? 1 : 0,
+    pin_start_seconds: body.pin_start_seconds ?? null,
+    pin_end_seconds: body.pin_end_seconds ?? null,
+    visible: 1
+  });
   return NextResponse.json({ ok: true, id });
 }
 
@@ -53,12 +52,11 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { id, visible, is_pinned } = body;
 
-  const db = getDb();
   if (typeof visible === 'number') {
-    db.prepare('UPDATE comments SET visible = ? WHERE id = ?').run(visible, id);
+    await updateCommentVisibility(id, visible);
   }
   if (typeof is_pinned === 'number') {
-    db.prepare('UPDATE comments SET is_pinned = ? WHERE id = ?').run(is_pinned, id);
+    await updateCommentPin(id, is_pinned);
   }
   return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '@/lib/db';
+import { createEvent } from '@/lib/db';
 import { verifyUserSessionFromRequest } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
 
@@ -12,17 +12,13 @@ export async function POST(req: NextRequest) {
   const type = String(body?.type || 'cta_click');
   const meta = JSON.stringify(body?.meta || {});
 
-  const db = getDb();
-  db.prepare(
-    `INSERT INTO events (id, edition_id, registration_id, type, metadata)
-     VALUES (?, ?, ?, ?, ?)`
-  ).run(
-    `ev_${uuidv4()}`,
-    editionId,
-    session?.registrationId || null,
+  await createEvent({
+    id: `ev_${uuidv4()}`,
+    edition_id: editionId,
+    registration_id: session?.registrationId || null,
     type,
-    meta
-  );
+    metadata: meta
+  });
 
   return NextResponse.json({ ok: true });
 }

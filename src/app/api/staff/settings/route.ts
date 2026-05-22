@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyStaffToken } from '@/lib/auth';
-import { getDb } from '@/lib/db';
+import { upsertEdition } from '@/lib/db';
 import { getCurrentEditionId } from '@/lib/edition';
 
 export async function PATCH(req: NextRequest) {
@@ -11,21 +11,28 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const editionId = getCurrentEditionId();
-  const db = getDb();
 
-  if (body?.chat_mode !== undefined && body?.cta_enabled !== undefined) {
-    const mode = body.chat_mode === 'isolated' ? 'isolated' : 'general';
-    db.prepare('UPDATE editions SET chat_mode = ?, cta_enabled = ? WHERE id = ?')
-      .run(mode, body.cta_enabled ? 1 : 0, editionId);
-  } else if (body?.chat_mode !== undefined) {
-    const mode = body.chat_mode === 'isolated' ? 'isolated' : 'general';
-    db.prepare('UPDATE editions SET chat_mode = ? WHERE id = ?').run(mode, editionId);
-  } else if (body?.cta_enabled !== undefined) {
-    db.prepare('UPDATE editions SET cta_enabled = ? WHERE id = ?')
-      .run(body.cta_enabled ? 1 : 0, editionId);
-  } else {
+  const updateData: any = { id: editionId };
+  let hasUpdates = false;
+
+  if (body?.chat_mode !== undefined) {
+    updateData.chat_mode = body.chat_mode === 'isolated' ? 'isolated' : 'general';
+    hasUpdates = true;
+  }
+  if (body?.cta_enabled !== undefined) {
+    updateData.cta_enabled = body.cta_enabled ? 1 : 0;
+    hasUpdates = true;
+  }
+
+  if (!hasUpdates) {
     return NextResponse.json({ error: 'Nada para atualizar' }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  try {
+    await upsertEdition(updateData);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('Erro ao atualizar configurações da edição:', error);
+    return NextResponse.json({ error: 'Erro interno ao salvar configurações' }, { status: 500 });
+  }
 }

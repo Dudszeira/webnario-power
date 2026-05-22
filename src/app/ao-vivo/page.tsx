@@ -1,7 +1,14 @@
 import { redirect } from 'next/navigation';
 import { verifyUserSession, verifyAdminSession } from '@/lib/auth';
 import { getCurrentEditionId, isLiveActive, isLiveOver, getVideoOffset, getLiveStartMs } from '@/lib/edition';
-import { getDb, type Edition } from '@/lib/db';
+import { 
+  getEdition, 
+  getRegistrationById, 
+  markRegistrationConsumed, 
+  createEvent, 
+  getSimulatedComments, 
+  getPinnedComments 
+} from '@/lib/db';
 import AoVivoContent from '@/components/AoVivoContent';
 
 export const dynamic = 'force-dynamic';
@@ -11,8 +18,7 @@ export default async function AoVivoPage() {
   const session = await verifyUserSession();
   const editionId = getCurrentEditionId();
 
-  const db = getDb();
-  const edition = db.prepare('SELECT * FROM editions WHERE id = ?').get(editionId) as Edition | undefined;
+  const edition = await getEdition(editionId);
   const videoDuration = edition?.video_duration ?? 7200;
   const salesUrl = edition?.sales_page_url ?? '';
 
@@ -23,44 +29,26 @@ export default async function AoVivoPage() {
     if (!isLiveActive(editionId, videoDuration)) redirect('/espera');
 
     // Mark registration as consumed on first access
-    const reg = db
-      .prepare('SELECT consumed FROM registrations WHERE id = ?')
-      .get(session.registrationId) as { consumed: number } | undefined;
+    const reg = await getRegistrationById(session.registrationId);
 
     if (reg && !reg.consumed) {
-      db.prepare(
-        "UPDATE registrations SET consumed = 1, consumed_at = datetime('now') WHERE id = ?"
-      ).run(session.registrationId);
+      await markRegistrationConsumed(session.registrationId);
 
-      db.prepare(
-        "INSERT OR IGNORE INTO events (id, edition_id, registration_id, type, metadata) VALUES (?, ?, ?, 'enter_live', '{}')"
-      ).run(
-        `ev_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-        editionId,
-        session.registrationId
-      );
+      await createEvent({
+        id: `ev_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        edition_id: editionId,
+        registration_id: session.registrationId,
+        type: 'enter_live',
+        metadata: '{}'
+      });
     }
   }
 
   const offset = isAdmin ? 0 : getVideoOffset(editionId);
   const liveStartMs = getLiveStartMs(editionId);
 
-  const simulatedComments = db
-    .prepare(
-      `SELECT * FROM comments
-       WHERE edition_id = ?
-         AND type IN ('simulated_user','simulated_staff','simulated_purchase')
-         AND visible = 1
-       ORDER BY video_timestamp ASC`
-    )
-    .all(editionId) as any[];
-
-  const pinnedComments = db
-    .prepare(
-      `SELECT * FROM comments
-       WHERE edition_id = ? AND is_pinned = 1 AND visible = 1`
-    )
-    .all(editionId) as any[];
+  const simulatedComments = await getSimulatedComments(editionId);
+  const pinnedComments = await getPinnedComments(editionId);
 
   const chatEnabled = edition?.chat_enabled ?? 1;
   const chatMode = edition?.chat_mode ?? 'general';
@@ -94,8 +82,26 @@ export default async function AoVivoPage() {
       ctaEndSecs={ctaEndSecs}
       viewerMin={viewerMin}
       viewerMax={viewerMax}
-      simulatedComments={simulatedComments}
-      pinnedComments={pinnedComments}
+      simulatedComments={simulatedComments.map(c => ({
+        id: c.id,
+        type: c.type,
+        author_name: c.author_name,
+        text: c.text,
+        video_timestamp: c.video_timestamp ?? 0,
+        is_pinned: c.is_pinned,
+        pin_start_seconds: c.pin_start_seconds ?? undefined,
+        pin_end_seconds: c.pin_end_seconds ?? undefined,
+      }))}
+      pinnedComments={pinnedComments.map(c => ({
+        id: c.id,
+        type: c.type,
+        author_name: c.author_name,
+        text: c.text,
+        video_timestamp: c.video_timestamp ?? 0,
+        is_pinned: c.is_pinned,
+        pin_start_seconds: c.pin_start_seconds ?? undefined,
+        pin_end_seconds: c.pin_end_seconds ?? undefined,
+      }))}
       salesUrl={salesUrl}
       isAdminPreview={isAdmin}
     />

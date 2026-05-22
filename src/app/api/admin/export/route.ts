@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { supabase } from '@/lib/db';
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
 
@@ -9,19 +9,25 @@ export async function GET(req: NextRequest) {
   }
 
   const editionId = req.nextUrl.searchParams.get('edition') || getCurrentEditionId();
-  const db = getDb();
 
-  const regs = db
-    .prepare('SELECT * FROM registrations WHERE edition_id = ? ORDER BY created_at ASC')
-    .all(editionId) as any[];
+  const { data: regs = [] } = await supabase
+    .from('registrations')
+    .select('*')
+    .eq('edition_id', editionId)
+    .order('created_at', { ascending: true });
 
-  const events = db
-    .prepare('SELECT * FROM events WHERE edition_id = ? ORDER BY created_at ASC')
-    .all(editionId) as any[];
+  const { data: events = [] } = await supabase
+    .from('events')
+    .select('*')
+    .eq('edition_id', editionId)
+    .order('created_at', { ascending: true });
 
-  const realComments = db
-    .prepare(`SELECT * FROM comments WHERE edition_id = ? AND type IN ('real_user','real_staff') ORDER BY created_at ASC`)
-    .all(editionId) as any[];
+  const { data: realComments = [] } = await supabase
+    .from('comments')
+    .select('*')
+    .eq('edition_id', editionId)
+    .in('type', ['real_user', 'real_staff'])
+    .order('created_at', { ascending: true });
 
   // Build CSV
   const toCSV = (rows: any[], columns: string[]) => {
@@ -30,9 +36,9 @@ export async function GET(req: NextRequest) {
     return [header, ...body].join('\n');
   };
 
-  const regsCsv = toCSV(regs, ['id', 'edition_id', 'name', 'email', 'ip', 'consumed', 'consumed_at', 'created_at']);
-  const eventsCsv = toCSV(events, ['id', 'edition_id', 'registration_id', 'type', 'metadata', 'created_at']);
-  const commentsCsv = toCSV(realComments, ['id', 'edition_id', 'type', 'author_name', 'text', 'created_at']);
+  const regsCsv = toCSV(regs || [], ['id', 'edition_id', 'name', 'email', 'ip', 'consumed', 'consumed_at', 'created_at']);
+  const eventsCsv = toCSV(events || [], ['id', 'edition_id', 'registration_id', 'type', 'metadata', 'created_at']);
+  const commentsCsv = toCSV(realComments || [], ['id', 'edition_id', 'type', 'author_name', 'text', 'created_at']);
 
   const combined = `=== REGISTROS (${editionId}) ===\n${regsCsv}\n\n=== EVENTOS ===\n${eventsCsv}\n\n=== COMENTARIOS REAIS ===\n${commentsCsv}`;
 
