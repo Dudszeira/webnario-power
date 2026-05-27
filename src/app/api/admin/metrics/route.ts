@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  getEdition, 
-  getEditionsList, 
-  getEditionMetrics, 
-  getRecentRegistrations, 
-  getRecentRealComments 
+import {
+  getEdition,
+  getEditionsList,
+  getEditionMetrics,
+  getRecentRegistrations,
 } from '@/lib/db';
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { getCurrentEditionId, getLiveStartMs, isLiveActive, isLiveOver, getSimulatedNow } from '@/lib/edition';
@@ -19,24 +18,13 @@ export async function GET(req: NextRequest) {
   // All editions for perpetual view
   const editions = await getEditionsList();
 
-  const currentMetrics = await getEditionMetrics(targetEdition);
-
-  // Recent registrations
-  const recentRegs = await getRecentRegistrations(targetEdition, 50);
-
-  // Recent real comments
-  const recentComments = await getRecentRealComments(targetEdition, 50);
-
-  // Perpetual series
-  const allEditionsMetrics = await Promise.all(
-    editions.map(async (e) => ({
-      ...(await getEditionMetrics(e.id)),
-      edition: e,
-    }))
-  );
-
-  // Current edition live status
-  const currentEditionRow = await getEdition(targetEdition);
+  // Run all independent queries in parallel
+  const [currentMetrics, recentRegs, allEditionsMetrics, currentEditionRow] = await Promise.all([
+    getEditionMetrics(targetEdition),
+    getRecentRegistrations(targetEdition, 50),
+    Promise.all(editions.map(async (e) => ({ ...(await getEditionMetrics(e.id)), edition: e }))),
+    getEdition(targetEdition),
+  ]);
   const simulatedNow = getSimulatedNow(currentEditionRow);
   const videoDuration = currentEditionRow?.video_duration ?? 7200;
   const liveStartMs = getLiveStartMs(targetEdition);
@@ -50,7 +38,6 @@ export async function GET(req: NextRequest) {
     currentEdition: targetEdition,
     currentMetrics,
     recentRegs,
-    recentComments,
     allEditions: allEditionsMetrics,
     liveStatus,
     liveStartMs,

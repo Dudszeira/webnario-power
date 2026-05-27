@@ -447,44 +447,21 @@ export async function createEvent(event: Omit<Event, 'created_at'>): Promise<voi
 
 // Metrics consolidated
 export async function getEditionMetrics(editionId: string) {
-  const { count: registrations, error: errReg } = await supabase
-    .from('registrations')
-    .select('*', { count: 'exact', head: true })
-    .eq('edition_id', editionId);
-
-  const { count: consumed, error: errCons } = await supabase
-    .from('registrations')
-    .select('*', { count: 'exact', head: true })
-    .eq('edition_id', editionId)
-    .eq('consumed', 1);
-
-  const { count: realComments, error: errReal } = await supabase
-    .from('comments')
-    .select('*', { count: 'exact', head: true })
-    .eq('edition_id', editionId)
-    .in('type', ['real_user', 'real_staff']);
-
-  const { count: ctaClicks, error: errCta } = await supabase
-    .from('events')
-    .select('*', { count: 'exact', head: true })
-    .eq('edition_id', editionId)
-    .eq('type', 'cta_click');
-
-  const { count: enterLive, error: errEnter } = await supabase
-    .from('events')
-    .select('*', { count: 'exact', head: true })
-    .eq('edition_id', editionId)
-    .eq('type', 'enter_live');
-
-  const { count: simulatedComments, error: errSim } = await supabase
-    .from('comments')
-    .select('*', { count: 'exact', head: true })
-    .eq('edition_id', editionId)
-    .in('type', ['simulated_user', 'simulated_staff', 'simulated_purchase']);
-
-  if (errReg || errCons || errReal || errCta || errEnter || errSim) {
-    console.error('getEditionMetrics error: checking logs');
-  }
+  const [
+    { count: registrations },
+    { count: consumed },
+    { count: realComments },
+    { count: ctaClicks },
+    { count: enterLive },
+    { count: simulatedComments },
+  ] = await Promise.all([
+    supabase.from('registrations').select('*', { count: 'exact', head: true }).eq('edition_id', editionId),
+    supabase.from('registrations').select('*', { count: 'exact', head: true }).eq('edition_id', editionId).eq('consumed', 1),
+    supabase.from('comments').select('*', { count: 'exact', head: true }).eq('edition_id', editionId).in('type', ['real_user', 'real_staff']),
+    supabase.from('events').select('*', { count: 'exact', head: true }).eq('edition_id', editionId).eq('type', 'cta_click'),
+    supabase.from('events').select('*', { count: 'exact', head: true }).eq('edition_id', editionId).eq('type', 'enter_live'),
+    supabase.from('comments').select('*', { count: 'exact', head: true }).eq('edition_id', editionId).in('type', ['simulated_user', 'simulated_staff', 'simulated_purchase']),
+  ]);
 
   return {
     editionId,
