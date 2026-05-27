@@ -392,7 +392,9 @@ export default function ChatPanel({
 
   useEffect(() => { scrollToBottom(); }, [comments]);
 
-  // Poll staff metrics every 10s; also syncs toggle state from DB
+  // Poll staff metrics every 10s (online count, cta clicks, chat mode)
+  // Note: cta_enabled is NOT synced here — staff controls it directly via the toggle
+  // and syncing from DB would overwrite the optimistic local state.
   useEffect(() => {
     if (!isStaff || !staffToken) return;
     const fetchMetrics = async () => {
@@ -401,7 +403,6 @@ export default function ChatPanel({
         const data = await res.json();
         if (data.online !== undefined) setStaffMetrics({ online: data.online, cta_clicks: data.cta_clicks });
         if (data.chat_mode !== undefined) setChatPublic(data.chat_mode === 'general');
-        if (data.cta_enabled !== undefined) setServerCtaEnabled(!!data.cta_enabled);
       } catch {}
     };
     fetchMetrics();
@@ -423,12 +424,14 @@ export default function ChatPanel({
     if (!text || sending) return;
     setSending(true);
     const tempId = `opt_${Date.now()}`;
-    setComments(prev => [...prev, { id: tempId, type: 'real_user', author_name: sessionName, text, created_at: new Date().toISOString() }]);
+    const displayName = isStaff ? 'Equipe Kunz' : sessionName;
+    const commentType: ChatComment['type'] = isStaff ? 'real_staff' : 'real_user';
+    setComments(prev => [...prev, { id: tempId, type: commentType, author_name: displayName, text, created_at: new Date().toISOString() }]);
     setInput('');
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }),
-      });
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (isStaff && staffToken) headers['Authorization'] = `Bearer ${staffToken}`;
+      const res = await fetch('/api/chat', { method: 'POST', headers, body: JSON.stringify({ text }) });
       const data = await res.json();
       if (data.id) setComments(prev => prev.map(c => c.id === tempId ? { ...c, id: data.id } : c));
     } catch {
@@ -598,7 +601,7 @@ export default function ChatPanel({
 
       {/* ── Input area ─────────────────────────────────────── */}
       <div style={{ flexShrink: 0, padding: '12px 14px', borderTop: `1px solid ${T.border}`, background: T.bgInput, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <input type="text" value={sessionName} readOnly
+        <input type="text" value={isStaff ? 'Equipe Kunz' : sessionName} readOnly
           style={{ display: 'block', width: '100%', boxSizing: 'border-box', background: T.bgField, border: `1px solid ${T.borderField}`, borderRadius: 6, padding: '9px 12px', fontSize: 13, color: T.textMuted, fontFamily: "'Montserrat', sans-serif", outline: 'none', cursor: 'default' }} />
         <textarea value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendComment(); } }}

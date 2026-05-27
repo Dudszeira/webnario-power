@@ -99,6 +99,7 @@ export default function AoVivoContent({
               source={videoSource}
               url={videoUrl}
               initialOffset={initialOffset}
+              videoDuration={videoDuration}
               onTimeUpdate={handleTimeUpdate}
             />
           </div>

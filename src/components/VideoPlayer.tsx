@@ -6,6 +6,7 @@ type Props = {
   source: 'upload' | 'youtube';
   url: string;
   initialOffset: number; // seconds to seek to on load
+  videoDuration: number;  // total video length in seconds (used for stable progress bar)
   onTimeUpdate?: (seconds: number) => void;
   onStarted?: () => void;
 };
@@ -22,18 +23,17 @@ declare global {
   }
 }
 
-export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, onStarted }: Props) {
+export default function VideoPlayer({ source, url, initialOffset, videoDuration, onTimeUpdate, onStarted }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const ytPlayerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const [started, setStarted] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(100);
   const [muted, setMuted] = useState(false);
-  
+
   const [currentTime, setCurrentTime] = useState(0);
-  const [liveElapsed, setLiveElapsed] = useState(initialOffset);
   const [showToast, setShowToast] = useState(false);
 
   const playTimestampRef = useRef<number | null>(null);
@@ -47,20 +47,11 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
     toastTimerRef.current = setTimeout(() => setShowToast(false), 2500);
   }
 
-  // Increment simulated time limit
+  // Record wall-clock start time when play begins (used by the security guard)
   useEffect(() => {
     if (!started) return;
     playTimestampRef.current = Date.now();
-
-    const interval = setInterval(() => {
-      if (playTimestampRef.current) {
-        const secondsPassed = Math.floor((Date.now() - playTimestampRef.current) / 1000);
-        setLiveElapsed(initialOffset + secondsPassed);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [started, initialOffset]);
+  }, [started]);
 
   // Sync volume & mute for both players
   useEffect(() => {
@@ -223,7 +214,7 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
     else setMuted(false);
   }
 
-  const progressPercent = liveElapsed > 0 ? Math.min(100, (currentTime / liveElapsed) * 100) : 0;
+  const progressPercent = videoDuration > 0 ? Math.min(100, (currentTime / videoDuration) * 100) : 0;
 
   // RENDER PLAYER
   return (

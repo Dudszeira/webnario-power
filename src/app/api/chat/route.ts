@@ -49,10 +49,16 @@ export async function GET(req: NextRequest) {
 // POST: Submit a real comment
 export async function POST(req: NextRequest) {
   const session = await verifyUserSessionFromRequest(req);
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Staff members may post without a user session using their staff token
+  const authHeader = req.headers.get('Authorization') || '';
+  const sToken = authHeader.replace('Bearer ', '').trim();
+  const staffMember = sToken ? await verifyStaffToken(sToken) : null;
+
+  if (!session && !staffMember) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const editionId = getCurrentEditionId();
-  if (session.editionId !== editionId) {
+  if (session && session.editionId !== editionId) {
     return NextResponse.json({ error: 'Edição inválida' }, { status: 403 });
   }
 
@@ -67,13 +73,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Mensagem inválida' }, { status: 400 });
   }
 
+  const isStaffPost = !!staffMember;
   const commentId = `c_${uuidv4()}`;
   await insertComment({
     id: commentId,
     edition_id: editionId,
-    registration_id: session.registrationId,
-    type: 'real_user',
-    author_name: session.name,
+    registration_id: session?.registrationId ?? `staff_${commentId}`,
+    type: isStaffPost ? 'real_staff' : 'real_user',
+    author_name: isStaffPost ? 'Equipe Kunz' : session!.name,
     text,
     video_timestamp: null,
     is_pinned: 0,

@@ -38,10 +38,21 @@ export default async function EsperaPage() {
 
   const registered = !!(session && session.editionId === editionId);
 
-  // In test mode when the live is simulated as active, pass a past timestamp so
-  // the client-side countdown and redirect interval also fire immediately.
-  const testLiveNow = edition?.test_mode === 1 && isLiveActive(editionId, videoDuration, simulatedNow);
-  const effectiveLiveStartMs = testLiveNow ? Date.now() - 1000 : getLiveStartMs(editionId);
+  // In test mode, adjust the target timestamp so the client-side countdown reflects
+  // the simulated perspective (test_time = "pretend it's currently this moment").
+  let effectiveLiveStartMs: number;
+  if (edition?.test_mode === 1) {
+    if (isLiveActive(editionId, videoDuration, simulatedNow)) {
+      // Simulated live is active → fire countdown immediately
+      effectiveLiveStartMs = Date.now() - 1000;
+    } else {
+      // Keep simulated remaining time, anchored to real now so the client ticks correctly
+      const simulatedRemaining = getLiveStartMs(editionId) - simulatedNow.getTime();
+      effectiveLiveStartMs = Date.now() + Math.max(0, simulatedRemaining);
+    }
+  } else {
+    effectiveLiveStartMs = getLiveStartMs(editionId);
+  }
 
   return (
     <EsperaContent

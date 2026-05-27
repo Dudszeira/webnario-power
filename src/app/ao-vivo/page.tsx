@@ -45,7 +45,8 @@ export default async function AoVivoPage() {
     }
   }
 
-  const offset = isAdmin ? 0 : getVideoOffset(editionId, simulatedNow);
+  // Admins see offset=0 (start of video) unless test_mode is on — then simulate the real position
+  const offset = (isAdmin && !edition?.test_mode) ? 0 : getVideoOffset(editionId, simulatedNow);
   const liveStartMs = getLiveStartMs(editionId);
 
   const simulatedComments = await getSimulatedComments(editionId);
