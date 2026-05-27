@@ -75,6 +75,89 @@ function RouteCard({ route }: { route: typeof ROUTES[0] }) {
   );
 }
 
+function TestModePanel({ currentEdition }: { currentEdition?: string }) {
+  const [testMode, setTestMode] = useState(false);
+  const [testTime, setTestTime] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    fetch('/api/admin/config').then(r => r.json()).then(d => {
+      if (d.edition) {
+        setTestMode(!!d.edition.test_mode);
+        if (d.edition.test_time) {
+          try {
+            const dt = new Date(d.edition.test_time);
+            const offset = dt.getTimezoneOffset() * 60000;
+            setTestTime(new Date(dt.getTime() - offset).toISOString().slice(0, 16));
+          } catch {}
+        }
+      }
+    });
+  }, []);
+
+  async function save() {
+    setSaving(true);
+    await fetch('/api/admin/config', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        test_mode: testMode,
+        test_time: (testMode && testTime) ? new Date(testTime).toISOString() : null,
+      }),
+    });
+    setSaving(false); setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  const accent = testMode ? '#ec4899' : '#444444';
+
+  return (
+    <div style={{ background: '#161616', border: `1px solid ${testMode ? '#ec489930' : '#222222'}`, borderRadius: 12, padding: '14px 18px', marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' as const }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: testMode ? '#ec4899' : '#333333', flexShrink: 0 }} />
+          <div>
+            <p style={{ fontSize: 12.5, fontWeight: 700, color: '#e0e0e0', margin: 0 }}>Modo Teste</p>
+            <p style={{ fontSize: 10.5, color: '#555555', margin: 0 }}>Simula um horário fictício para testar a plataforma</p>
+          </div>
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => setTestMode(v => !v)}>
+          <div style={{ width: 36, height: 20, borderRadius: 10, background: testMode ? '#ec4899' : '#2a2a2a', border: `1px solid ${testMode ? '#db2777' : '#333'}`, position: 'relative', transition: 'all .18s', flexShrink: 0 }}>
+            <div style={{ position: 'absolute', top: 3, left: testMode ? 17 : 3, width: 12, height: 12, borderRadius: '50%', background: '#fff', transition: 'left .18s' }} />
+          </div>
+          <span style={{ fontSize: 12, color: testMode ? '#ec4899' : '#666666', fontWeight: 600 }}>{testMode ? 'Ativo' : 'Inativo'}</span>
+        </label>
+      </div>
+
+      {testMode && (
+        <div style={{ marginTop: 12, display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap' as const }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <label style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: '#555555', textTransform: 'uppercase' as const, letterSpacing: '.1em', marginBottom: 5 }}>
+              Data/hora fictícia (ex: terça 20:05 para simular 5min de live)
+            </label>
+            <input
+              type="datetime-local"
+              value={testTime}
+              onChange={e => setTestTime(e.target.value)}
+              style={{ width: '100%', background: '#1e1e1e', border: '1px solid #333', borderRadius: 7, padding: '7px 10px', color: '#e0e0e0', fontSize: 13, outline: 'none' }}
+            />
+          </div>
+          <button
+            onClick={save}
+            disabled={saving}
+            style={{ padding: '8px 16px', borderRadius: 7, background: saved ? '#065f46' : '#ec4899', border: 'none', color: '#fff', fontWeight: 700, fontSize: 12, cursor: saving ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: saving ? 0.6 : 1 }}>
+            {saved ? '✓ Salvo' : saving ? '...' : 'Salvar'}
+          </button>
+        </div>
+      )}
+
+      {!testMode && saved && (
+        <p style={{ fontSize: 11, color: '#10b981', marginTop: 8 }}>Modo teste desativado.</p>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -160,6 +243,9 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>
+
+          {/* Test mode panel */}
+          <TestModePanel currentEdition={data?.currentEdition} />
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 lg:grid-cols-5" style={{ gap: 10, marginBottom: 24 }}>

@@ -38,11 +38,16 @@ export default async function EsperaPage() {
 
   const registered = !!(session && session.editionId === editionId);
 
+  // In test mode when the live is simulated as active, pass a past timestamp so
+  // the client-side countdown and redirect interval also fire immediately.
+  const testLiveNow = edition?.test_mode === 1 && isLiveActive(editionId, videoDuration, simulatedNow);
+  const effectiveLiveStartMs = testLiveNow ? Date.now() - 1000 : getLiveStartMs(editionId);
+
   return (
     <EsperaContent
       editionId={editionId}
       session={session}
-      liveStartMs={getLiveStartMs(editionId)}
+      liveStartMs={effectiveLiveStartMs}
       liveOver={false}
       salesUrl={salesUrl}
       registered={registered}
