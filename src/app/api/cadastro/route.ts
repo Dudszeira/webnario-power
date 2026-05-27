@@ -9,9 +9,10 @@ import {
   createEvent 
 } from '@/lib/db';
 import { createUserSession, getIP } from '@/lib/auth';
-import { getCurrentEditionId, getLiveStartMs } from '@/lib/edition';
+import { getCurrentEditionId } from '@/lib/edition';
 
 export async function POST(req: NextRequest) {
+  try {
   const ip = getIP(req);
   const body = await req.json().catch(() => null);
 
@@ -31,8 +32,8 @@ export async function POST(req: NextRequest) {
   // Ensure edition row exists
   const existing = await getEdition(editionId);
   if (!existing) {
-    await upsertEdition({ 
-      id: editionId, 
+    await upsertEdition({
+      id: editionId,
       live_date: editionId,
       video_source: 'youtube',
       video_url: '',
@@ -125,4 +126,8 @@ export async function POST(req: NextRequest) {
     path: '/',
   });
   return resp;
+  } catch (err) {
+    console.error('POST /api/cadastro unhandled error:', err);
+    return NextResponse.json({ error: 'Erro interno. Tente novamente.' }, { status: 500 });
+  }
 }
