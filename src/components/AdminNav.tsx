@@ -52,7 +52,7 @@ export default function AdminNav() {
   const router = useRouter();
 
   async function logout() {
-    await fetch('/api/admin/auth', { method: 'DELETE' });
+    await fetch('/api/admin/auth-session', { method: 'DELETE' });
     router.push('/admin/login');
   }
 

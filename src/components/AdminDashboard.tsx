@@ -161,10 +161,41 @@ function TestModePanel({ currentEdition }: { currentEdition?: string }) {
 export default function AdminDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [recentRegs, setRecentRegs] = useState<any[]>([]);
+  const [allEditions, setAllEditions] = useState<any[]>([]);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/admin/metrics').then(r => r.json()).then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
+    fetch('/api/admin/metrics').then(r => r.json()).then(d => {
+      setData(d);
+      setRecentRegs(d.recentRegs || []);
+      setAllEditions(d.allEditions || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
+
+  async function deleteReg(id: string) {
+    setDeletingId(id);
+    try {
+      await fetch(`/api/admin/registrations?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      setRecentRegs(prev => prev.filter(r => r.id !== id));
+    } finally {
+      setDeletingId(null);
+      setConfirmId(null);
+    }
+  }
+
+  async function deleteEdition(editionId: string) {
+    setDeletingId(editionId);
+    try {
+      await fetch(`/api/admin/editions?id=${encodeURIComponent(editionId)}`, { method: 'DELETE' });
+      setAllEditions(prev => prev.filter(e => e.editionId !== editionId));
+    } finally {
+      setDeletingId(null);
+      setConfirmId(null);
+    }
+  }
 
   if (loading) return (
     <div className="flex flex-col md:flex-row" style={{ minHeight: '100vh', background: '#0a0a0a' }}>
@@ -273,15 +304,15 @@ export default function AdminDashboard() {
           <div style={{ background: '#161616', border: '1px solid #222222', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
             <div style={{ padding: '12px 18px', borderBottom: '1px solid #1e1e1e', display: 'flex', alignItems: 'center', gap: 8 }}>
               <h2 style={{ fontSize: 13, fontWeight: 700, color: '#e0e0e0', margin: 0 }}>Registros recentes</h2>
-              {data?.recentRegs?.length > 0 && (
-                <span style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', background: 'rgba(59,130,246,0.1)', padding: '2px 7px', borderRadius: 20 }}>{data.recentRegs.length}</span>
+              {recentRegs.length > 0 && (
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', background: 'rgba(59,130,246,0.1)', padding: '2px 7px', borderRadius: 20 }}>{recentRegs.length}</span>
               )}
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table className="admin-table">
-                <thead><tr><th>Nome</th><th>E-mail</th><th>IP</th><th>Consumido</th><th>Data</th></tr></thead>
+                <thead><tr><th>Nome</th><th>E-mail</th><th>IP</th><th>Consumido</th><th>Data</th><th></th></tr></thead>
                 <tbody>
-                  {(data?.recentRegs || []).map((r: any) => (
+                  {recentRegs.map((r: any) => (
                     <tr key={r.id}>
                       <td style={{ fontWeight: 500, color: '#e0e0e0' }}>{r.name}</td>
                       <td><code style={{ fontSize: 11.5, color: '#666666' }}>{r.email}</code></td>
@@ -291,10 +322,37 @@ export default function AdminDashboard() {
                         : <span style={{ fontSize: 10.5, color: '#333333' }}>Não</span>}
                       </td>
                       <td style={{ color: '#555555', fontSize: 11.5 }}>{new Date(r.created_at).toLocaleString('pt-BR')}</td>
+                      <td>
+                        {confirmId === r.id ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <span style={{ fontSize: 10.5, color: '#ef4444', fontWeight: 600 }}>Apagar?</span>
+                            <button
+                              onClick={() => deleteReg(r.id)}
+                              disabled={deletingId === r.id}
+                              style={{ all: 'unset', fontSize: 10.5, fontWeight: 700, color: '#fff', background: '#ef4444', padding: '2px 8px', borderRadius: 4, cursor: 'pointer', opacity: deletingId === r.id ? 0.5 : 1 }}>
+                              {deletingId === r.id ? '...' : 'Sim'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmId(null)}
+                              style={{ all: 'unset', fontSize: 10.5, fontWeight: 600, color: '#555555', background: '#222', padding: '2px 8px', borderRadius: 4, cursor: 'pointer' }}>
+                              Não
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmId(r.id)}
+                            title="Excluir registro"
+                            style={{ all: 'unset', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: '#ef4444', cursor: 'pointer' }}>
+                            <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                            </svg>
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
-                  {!data?.recentRegs?.length && (
-                    <tr><td colSpan={5} style={{ textAlign: 'center', color: '#333333', padding: '24px 0', fontStyle: 'italic', fontSize: 12 }}>Nenhum registro ainda</td></tr>
+                  {!recentRegs.length && (
+                    <tr><td colSpan={6} style={{ textAlign: 'center', color: '#333333', padding: '24px 0', fontStyle: 'italic', fontSize: 12 }}>Nenhum registro ainda</td></tr>
                   )}
                 </tbody>
               </table>
@@ -308,9 +366,9 @@ export default function AdminDashboard() {
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table className="admin-table">
-                <thead><tr><th>Edição</th><th>Cadastros</th><th>Ao vivo</th><th>Consumidos</th><th>Cliques CTA</th><th>Downloads</th></tr></thead>
+                <thead><tr><th>Edição</th><th>Cadastros</th><th>Ao vivo</th><th>Consumidos</th><th>Cliques CTA</th><th>Downloads</th><th></th></tr></thead>
                 <tbody>
-                  {(data?.allEditions || []).map((e: any) => (
+                  {allEditions.map((e: any) => (
                     <tr key={e.editionId}>
                       <td><code style={{ fontSize: 12, color: '#3b82f6' }}>{e.editionId}</code></td>
                       <td style={{ color: '#e0e0e0' }}>{e.registrations}</td>
@@ -335,10 +393,37 @@ export default function AdminDashboard() {
                           </a>
                         </div>
                       </td>
+                      <td>
+                        {confirmId === e.editionId ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <span style={{ fontSize: 10.5, color: '#ef4444', fontWeight: 600, whiteSpace: 'nowrap' as const }}>Apagar tudo?</span>
+                            <button
+                              onClick={() => deleteEdition(e.editionId)}
+                              disabled={deletingId === e.editionId}
+                              style={{ all: 'unset', fontSize: 10.5, fontWeight: 700, color: '#fff', background: '#ef4444', padding: '2px 8px', borderRadius: 4, cursor: 'pointer', opacity: deletingId === e.editionId ? 0.5 : 1 }}>
+                              {deletingId === e.editionId ? '...' : 'Sim'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmId(null)}
+                              style={{ all: 'unset', fontSize: 10.5, fontWeight: 600, color: '#555555', background: '#222', padding: '2px 8px', borderRadius: 4, cursor: 'pointer' }}>
+                              Não
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmId(e.editionId)}
+                            title="Excluir edição completa"
+                            style={{ all: 'unset', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 5, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: '#ef4444', cursor: 'pointer' }}>
+                            <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                            </svg>
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
-                  {!data?.allEditions?.length && (
-                    <tr><td colSpan={6} style={{ textAlign: 'center', color: '#333333', padding: '24px 0', fontStyle: 'italic', fontSize: 12 }}>Sem histórico</td></tr>
+                  {!allEditions.length && (
+                    <tr><td colSpan={7} style={{ textAlign: 'center', color: '#333333', padding: '24px 0', fontStyle: 'italic', fontSize: 12 }}>Sem histórico</td></tr>
                   )}
                 </tbody>
               </table>

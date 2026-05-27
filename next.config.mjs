@@ -6,6 +6,7 @@ const nextConfig = {
   },
   webpack: (config) => {
     config.resolve.symlinks = false;
+    config.cache = false;
     return config;
   },
 };

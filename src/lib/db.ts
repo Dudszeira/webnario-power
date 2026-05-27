@@ -387,6 +387,28 @@ export async function replyToComment(id: string, replyText: string | null, reply
   }
 }
 
+export async function deleteRegistration(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('registrations')
+    .delete()
+    .eq('id', id);
+  if (error) {
+    console.error('deleteRegistration error:', error);
+    throw error;
+  }
+}
+
+export async function deleteEditionData(editionId: string): Promise<void> {
+  await supabase.from('events').delete().eq('edition_id', editionId);
+  await supabase.from('comments').delete().eq('edition_id', editionId);
+  await supabase.from('registrations').delete().eq('edition_id', editionId);
+  const { error } = await supabase.from('editions').delete().eq('id', editionId);
+  if (error) {
+    console.error('deleteEditionData error:', error);
+    throw error;
+  }
+}
+
 export async function clearSimulatedComments(editionId: string): Promise<void> {
   const { error } = await supabase
     .from('comments')

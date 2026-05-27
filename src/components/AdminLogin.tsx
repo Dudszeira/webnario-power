@@ -14,7 +14,7 @@ export default function AdminLogin() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const res = await fetch('/api/admin/auth', {
+    const res = await fetch('/api/admin/auth-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
