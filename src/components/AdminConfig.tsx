@@ -142,8 +142,7 @@ export default function AdminConfig() {
               </Field>
             </SectionCard>
 
-            <SectionCard title="Chat" description="Visibilidade e modo do chat ao vivo." accent="#10b981">
-              <Toggle checked={config.chat_enabled} onChange={v => set('chat_enabled', v)} label="Chat habilitado" />
+            <SectionCard title="Chat" description="Modo de visibilidade do chat. Habilitar/desabilitar é controlado pelo painel staff no chat." accent="#10b981">
               <Field label="Modo de visibilidade">
                 <select className="input-admin" value={config.chat_mode} onChange={e => set('chat_mode', e.target.value)}>
                   <option value="general">Geral — todos veem todos os comentários</option>
@@ -152,8 +151,7 @@ export default function AdminConfig() {
               </Field>
             </SectionCard>
 
-            <SectionCard title="CTA / Oferta" description="Banner de oferta exibido no chat durante a live." accent="#f59e0b">
-              <Toggle checked={config.cta_enabled} onChange={v => set('cta_enabled', v)} label="Exibir CTA no chat" />
+            <SectionCard title="CTA / Oferta" description="Banner de oferta no chat. Ativar/desativar é controlado pelo painel staff no chat." accent="#f59e0b">
               <Field label="URL do CTA">
                 <input className="input-admin" type="url" value={config.cta_url} onChange={e => set('cta_url', e.target.value)} placeholder="https://..." />
               </Field>

@@ -334,6 +334,11 @@ export default function ChatPanel({
     } catch {}
   }
 
+  function handleReply(comment: ChatComment) {
+    setReplyTarget(comment);
+    setReplyText(comment.reply || '');
+  }
+
   const scrollToBottom = () => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; };
 
   // Ref so poll closure always has current staffToken
@@ -585,7 +590,7 @@ export default function ChatPanel({
           <p style={{ textAlign: 'center', fontSize: 12, color: T.textMuted, marginTop: 32, fontStyle: 'italic' }}>Seja o primeiro a comentar!</p>
         )}
         {comments.map(c => (
-          <CommentRow key={c.id} comment={c} isOwn={c.author_name === sessionName && c.type === 'real_user'} isStaff={isStaff} onReply={setReplyTarget} T={T} />
+          <CommentRow key={c.id} comment={c} isOwn={c.author_name === sessionName && c.type === 'real_user'} isStaff={isStaff} onReply={handleReply} T={T} />
         ))}
       </div>
 

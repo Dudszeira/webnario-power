@@ -133,7 +133,7 @@ function TestModePanel({ currentEdition }: { currentEdition?: string }) {
         <div style={{ marginTop: 12, display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap' as const }}>
           <div style={{ flex: 1, minWidth: 200 }}>
             <label style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: '#555555', textTransform: 'uppercase' as const, letterSpacing: '.1em', marginBottom: 5 }}>
-              Data/hora fictícia (ex: terça 20:05 para simular 5min de live)
+              Início da live simulada — a sala de espera conta até este momento
             </label>
             <input
               type="datetime-local"

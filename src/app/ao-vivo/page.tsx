@@ -1,13 +1,13 @@
 import { redirect } from 'next/navigation';
 import { verifyUserSession, verifyAdminSession } from '@/lib/auth';
-import { getCurrentEditionId, isLiveActive, isLiveOver, getVideoOffset, getLiveStartMs, getSimulatedNow } from '@/lib/edition';
-import { 
-  getEdition, 
-  getRegistrationById, 
-  markRegistrationConsumed, 
-  createEvent, 
-  getSimulatedComments, 
-  getPinnedComments 
+import { getCurrentEditionId, getLiveStartMs } from '@/lib/edition';
+import {
+  getEdition,
+  getRegistrationById,
+  markRegistrationConsumed,
+  createEvent,
+  getSimulatedComments,
+  getPinnedComments
 } from '@/lib/db';
 import AoVivoContent from '@/components/AoVivoContent';
 
@@ -19,15 +19,22 @@ export default async function AoVivoPage() {
   const editionId = getCurrentEditionId();
 
   const edition = await getEdition(editionId);
-  const simulatedNow = getSimulatedNow(edition);
   const videoDuration = edition?.video_duration ?? 7200;
   const salesUrl = edition?.sales_page_url ?? '';
+
+  // In test mode, test_time is the simulated live start; outside test mode, use real Tuesday start.
+  const testLiveStartMs = (edition?.test_mode === 1 && edition?.test_time)
+    ? new Date(edition.test_time).getTime()
+    : null;
+  const liveStartMs = testLiveStartMs ?? getLiveStartMs(editionId);
+  const liveEndMs = liveStartMs + videoDuration * 1000;
+  const now = Date.now();
 
   // Admin bypasses all time and session guards
   if (!isAdmin) {
     if (!session) redirect('/espera');
     if (session.editionId !== editionId) redirect('/espera');
-    if (!isLiveActive(editionId, videoDuration, simulatedNow)) redirect('/espera');
+    if (now < liveStartMs || now > liveEndMs) redirect('/espera');
 
     // Mark registration as consumed on first access
     const reg = await getRegistrationById(session.registrationId);
@@ -45,9 +52,8 @@ export default async function AoVivoPage() {
     }
   }
 
-  // Admins see offset=0 (start of video) unless test_mode is on — then simulate the real position
-  const offset = (isAdmin && !edition?.test_mode) ? 0 : getVideoOffset(editionId, simulatedNow);
-  const liveStartMs = getLiveStartMs(editionId);
+  // Admins see offset=0 (start of video) unless test_mode is on — then show elapsed since test_time
+  const offset = (isAdmin && !edition?.test_mode) ? 0 : Math.max(0, Math.floor((now - liveStartMs) / 1000));
 
   const simulatedComments = await getSimulatedComments(editionId);
   const pinnedComments = await getPinnedComments(editionId);
