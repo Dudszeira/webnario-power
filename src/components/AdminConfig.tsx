@@ -144,6 +144,7 @@ export default function AdminConfig() {
   const [saveError, setSaveError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState('');
+  const [detectedVideo, setDetectedVideo] = useState<{ filename: string; url: string; sizeMB: number } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -171,6 +172,15 @@ export default function AdminConfig() {
       finally { setLoading(false); }
     })();
   }, [router]);
+
+  // Detect existing video on disk whenever upload mode is active
+  useEffect(() => {
+    if (config.video_source !== 'upload') return;
+    fetch('/api/admin/video-status')
+      .then(r => r.json())
+      .then(d => setDetectedVideo(d.exists ? d : null))
+      .catch(() => setDetectedVideo(null));
+  }, [config.video_source]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -201,6 +211,20 @@ export default function AdminConfig() {
   }
 
   const set = (key: string, val: any) => setConfig(c => ({ ...c, [key]: val }));
+
+  async function useExistingVideo(url: string) {
+    set('video_url', url);
+    try {
+      const dur = await new Promise<number>(resolve => {
+        const v = document.createElement('video');
+        v.preload = 'metadata';
+        v.onloadedmetadata = () => resolve(Math.round(v.duration));
+        v.onerror = () => resolve(0);
+        v.src = url;
+      });
+      if (dur > 0) set('video_duration', dur);
+    } catch { /* skip duration detection */ }
+  }
 
   function getVideoDuration(file: File): Promise<number> {
     return new Promise(resolve => {
@@ -287,18 +311,57 @@ export default function AdminConfig() {
                     placeholder="https://youtube.com/watch?v=..." />
                 </Field>
               ) : (
-                <Field label="Arquivo de vídeo" hint={config.video_url ? `Arquivo atual: ${config.video_url}` : 'Nenhum arquivo enviado'}>
-                  <label style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, cursor: 'pointer' }}>
-                    <div style={{ background: cyber.bg, border: `2px dashed ${uploading ? cyber.accent : cyber.accentBorderDim}`, borderRadius: 6, padding: '14px 16px', textAlign: 'center' as const, transition: 'border-color .15s' }}>
-                      {uploading
-                        ? <p style={{ fontSize: 12, color: cyber.accent, margin: 0 }}>Enviando...</p>
-                        : uploadMsg
-                        ? <p style={{ fontSize: 12, color: uploadMsg.startsWith('✓') ? cyber.green : cyber.error, margin: 0 }}>{uploadMsg}</p>
-                        : <p style={{ fontSize: 12, color: cyber.textLabel, margin: 0 }}>Clique para selecionar o vídeo <span style={{ color: cyber.textDecorative }}>(mp4, webm, mov)</span></p>
-                      }
+                <Field label="Arquivo de vídeo">
+                  {config.video_url ? (
+                    // File already configured — show it and allow replacing
+                    <div style={{ background: cyber.bg, border: `1px solid ${cyber.green}33`, borderRadius: 6, padding: '12px 14px' }}>
+                      <p style={{ fontSize: 12, color: cyber.green, margin: '0 0 6px', fontWeight: 600 }}>
+                        Arquivo em uso: <span style={{ color: cyber.textPrimary, fontWeight: 400 }}>{config.video_url.split('/').pop()}</span>
+                      </p>
+                      <label style={{ cursor: 'pointer' }}>
+                        <span style={{ fontSize: 11, color: cyber.textDecorative, textDecoration: 'underline' }}>
+                          {uploading ? 'Enviando...' : uploadMsg ? uploadMsg : 'Trocar arquivo (upload)'}
+                        </span>
+                        <input type="file" accept="video/*" style={{ display: 'none' }} disabled={uploading} onChange={handleVideoFile} />
+                      </label>
                     </div>
-                    <input type="file" accept="video/*" style={{ display: 'none' }} disabled={uploading} onChange={handleVideoFile} />
-                  </label>
+                  ) : detectedVideo ? (
+                    // File found on disk — offer to use it without re-uploading
+                    <div style={{ background: cyber.bg, border: `1px solid ${cyber.accent}44`, borderRadius: 6, padding: '12px 14px', display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                      <p style={{ fontSize: 12, color: cyber.accent, margin: 0, fontWeight: 600 }}>
+                        Arquivo detectado na pasta do projeto:
+                      </p>
+                      <p style={{ fontSize: 12, color: cyber.textPrimary, margin: 0 }}>
+                        {detectedVideo.filename} <span style={{ color: cyber.textDecorative }}>({detectedVideo.sizeMB >= 1024 ? `${(detectedVideo.sizeMB / 1024).toFixed(1)} GB` : `${detectedVideo.sizeMB} MB`})</span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => useExistingVideo(detectedVideo.url)}
+                        style={{ alignSelf: 'flex-start', background: cyber.accent, color: cyber.bg, border: 'none', borderRadius: 4, padding: '6px 14px', fontSize: 12, fontFamily: cyberFonts.body, fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Usar este arquivo
+                      </button>
+                      <label style={{ cursor: 'pointer' }}>
+                        <span style={{ fontSize: 11, color: cyber.textDecorative, textDecoration: 'underline' }}>
+                          {uploading ? 'Enviando...' : uploadMsg ? uploadMsg : 'Ou fazer upload de outro arquivo'}
+                        </span>
+                        <input type="file" accept="video/*" style={{ display: 'none' }} disabled={uploading} onChange={handleVideoFile} />
+                      </label>
+                    </div>
+                  ) : (
+                    // No file found — show upload UI
+                    <label style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, cursor: 'pointer' }}>
+                      <div style={{ background: cyber.bg, border: `2px dashed ${uploading ? cyber.accent : cyber.accentBorderDim}`, borderRadius: 6, padding: '14px 16px', textAlign: 'center' as const, transition: 'border-color .15s' }}>
+                        {uploading
+                          ? <p style={{ fontSize: 12, color: cyber.accent, margin: 0 }}>Enviando...</p>
+                          : uploadMsg
+                          ? <p style={{ fontSize: 12, color: uploadMsg.startsWith('✓') ? cyber.green : cyber.error, margin: 0 }}>{uploadMsg}</p>
+                          : <p style={{ fontSize: 12, color: cyber.textLabel, margin: 0 }}>Clique para selecionar o vídeo <span style={{ color: cyber.textDecorative }}>(mp4, webm, mov)</span></p>
+                        }
+                      </div>
+                      <input type="file" accept="video/*" style={{ display: 'none' }} disabled={uploading} onChange={handleVideoFile} />
+                    </label>
+                  )}
                 </Field>
               )}
 
