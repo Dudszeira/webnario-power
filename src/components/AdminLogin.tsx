@@ -15,16 +15,21 @@ export default function AdminLogin() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const res = await fetch('/api/admin/auth-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-    setLoading(false);
-    if (res.ok) {
-      router.push('/admin');
-    } else {
-      setError('Senha incorreta.');
+    try {
+      const res = await fetch('/api/admin/auth-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        router.push('/admin');
+      } else {
+        setError('Senha incorreta.');
+      }
+    } catch {
+      setError('Erro de conexão. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -84,7 +89,7 @@ export default function AdminLogin() {
             {/* Logo */}
             <Image
               src="/logo.webp"
-              alt="Logo"
+              alt="Webnario Power"
               width={130}
               height={44}
               style={{ display: 'block', margin: '0 auto 20px' }}
@@ -99,7 +104,6 @@ export default function AdminLogin() {
                 letterSpacing: 2,
                 color: cyber.white,
                 textAlign: 'center',
-                marginBottom: 20,
                 margin: '0 0 20px 0',
               }}
             >
@@ -110,6 +114,7 @@ export default function AdminLogin() {
               <div style={{ marginBottom: 16 }}>
                 {/* Subtitle / label */}
                 <label
+                  htmlFor="admin-password"
                   style={{
                     display: 'block',
                     fontFamily: cyberFonts.body,
@@ -125,6 +130,7 @@ export default function AdminLogin() {
 
                 {/* Password input */}
                 <input
+                  id="admin-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -149,6 +155,7 @@ export default function AdminLogin() {
               {/* Error message */}
               {error && (
                 <p
+                  role="alert"
                   style={{
                     fontFamily: cyberFonts.body,
                     fontSize: 13,
