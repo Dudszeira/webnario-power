@@ -73,30 +73,30 @@ export default function AdminConfig() {
   const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    fetch('/api/admin/config').then(async r => {
-      if (r.status === 401) { router.replace('/admin/login'); return; }
-      const d = await r.json();
-      if (d.edition) {
-        let testTimeLocal = '';
-        if (d.edition.test_time) {
-          try {
-            const dateObj = new Date(d.edition.test_time);
-            testTimeLocal = new Date(dateObj).toLocaleString('sv-SE', { hour12: false }).slice(0, 16);
-          } catch (e) {
-            console.error('Erro ao formatar data de teste:', e);
+    (async () => {
+      try {
+        const r = await fetch('/api/admin/config');
+        if (r.status === 401) { router.replace('/admin/login'); return; }
+        const d = await r.json();
+        if (d.edition) {
+          let testTimeLocal = '';
+          if (d.edition.test_time) {
+            try {
+              testTimeLocal = new Date(d.edition.test_time).toLocaleString('sv-SE', { hour12: false }).slice(0, 16);
+            } catch { /* malformed date — leave empty */ }
           }
+          setConfig({
+            ...defaultConfig,
+            ...d.edition,
+            chat_enabled: !!d.edition.chat_enabled,
+            cta_enabled: !!d.edition.cta_enabled,
+            test_mode: !!d.edition.test_mode,
+            test_time: testTimeLocal,
+          });
         }
-        setConfig({
-          ...defaultConfig,
-          ...d.edition,
-          chat_enabled: !!d.edition.chat_enabled,
-          cta_enabled: !!d.edition.cta_enabled,
-          test_mode: !!d.edition.test_mode,
-          test_time: testTimeLocal
-        });
-      }
-      setLoading(false);
-    });
+      } catch { /* network error — spinner clears, config stays at defaults */ }
+      finally { setLoading(false); }
+    })();
   }, [router]);
 
   async function save(e: React.FormEvent) {

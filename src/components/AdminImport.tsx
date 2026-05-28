@@ -41,10 +41,12 @@ export default function AdminImport() {
 
   async function loadComments() {
     setLoadingList(true);
-    const r = await fetch('/api/admin/import');
-    const d = await r.json();
-    setComments(d.comments || []);
-    setLoadingList(false);
+    try {
+      const r = await fetch('/api/admin/import');
+      const d = await r.json();
+      setComments(d.comments || []);
+    } catch { /* network error — keep previous list */ }
+    finally { setLoadingList(false); }
   }
 
   useEffect(() => { loadComments(); }, []);
@@ -53,18 +55,22 @@ export default function AdminImport() {
     e.preventDefault();
     if (!file) return;
     setUploading(true); setResult(null);
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('replace', replace ? 'true' : 'false');
-    const res = await fetch('/api/admin/import', { method: 'POST', body: fd });
-    const data = await res.json();
-    setResult(data); setUploading(false);
-    if (data.ok) loadComments();
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('replace', replace ? 'true' : 'false');
+      const res = await fetch('/api/admin/import', { method: 'POST', body: fd });
+      const data = await res.json();
+      setResult(data);
+      if (data.ok) loadComments();
+    } catch { setResult({ inserted: 0, errors: ['Erro de conexão. Tente novamente.'] }); }
+    finally { setUploading(false); }
   }
 
   async function clearAll() {
     if (!confirm('Excluir todos os comentários simulados desta edição?')) return;
-    await fetch('/api/admin/import', { method: 'DELETE' });
+    try { await fetch('/api/admin/import', { method: 'DELETE' }); }
+    catch { /* ignore */ }
     loadComments();
   }
 

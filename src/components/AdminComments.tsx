@@ -41,21 +41,25 @@ export default function AdminComments() {
   const [sending, setSending] = useState(false);
 
   async function load() {
-    const r = await fetch('/api/admin/comments');
-    const d = await r.json();
-    setComments(d.comments || []);
-    setLoading(false);
+    try {
+      const r = await fetch('/api/admin/comments');
+      const d = await r.json();
+      setComments(d.comments || []);
+    } catch { /* network error — keep previous list */ }
+    finally { setLoading(false); }
   }
 
   useEffect(() => { load(); }, []);
 
   async function toggleVisible(id: string, visible: number) {
-    await fetch('/api/admin/comments', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, visible: visible ? 0 : 1 }) });
+    try { await fetch('/api/admin/comments', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, visible: visible ? 0 : 1 }) }); }
+    catch { /* ignore */ }
     load();
   }
 
   async function togglePin(id: string, pinned: number) {
-    await fetch('/api/admin/comments', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, is_pinned: pinned ? 0 : 1 }) });
+    try { await fetch('/api/admin/comments', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, is_pinned: pinned ? 0 : 1 }) }); }
+    catch { /* ignore */ }
     load();
   }
 
@@ -63,12 +67,15 @@ export default function AdminComments() {
     e.preventDefault();
     if (!newText.trim()) return;
     setSending(true);
-    await fetch('/api/admin/comments', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'real_staff', author_name: newName, text: newText, is_pinned: isPinned, pin_start_seconds: pinStart ? parseInt(pinStart) : null, pin_end_seconds: pinEnd ? parseInt(pinEnd) : null }),
-    });
-    setNewText(''); setIsPinned(false); setPinStart(''); setPinEnd('');
-    setSending(false); load();
+    try {
+      await fetch('/api/admin/comments', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'real_staff', author_name: newName, text: newText, is_pinned: isPinned, pin_start_seconds: pinStart ? parseInt(pinStart) : null, pin_end_seconds: pinEnd ? parseInt(pinEnd) : null }),
+      });
+      setNewText(''); setIsPinned(false); setPinStart(''); setPinEnd('');
+      load();
+    } catch { /* network error — leave form intact so user can retry */ }
+    finally { setSending(false); }
   }
 
   if (loading) return (
@@ -185,7 +192,7 @@ export default function AdminComments() {
                             <button onClick={() => toggleVisible(c.id, c.visible)} style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, cursor: 'pointer', background: c.visible ? 'rgba(239,68,68,0.07)' : 'rgba(16,185,129,0.07)', border: `1px solid ${c.visible ? 'rgba(239,68,68,0.18)' : 'rgba(16,185,129,0.18)'}`, color: c.visible ? '#f87171' : '#34d399' }}>
                               {c.visible ? 'Ocultar' : 'Mostrar'}
                             </button>
-                            <button onClick={() => togglePin(c.id, c.is_pinned)} style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, cursor: 'pointer', background: c.is_pinned ? 'rgba(37,99,235,0.1)' : 'rgba(85,85,85,0.07)', border: `1px solid ${c.is_pinned ? 'rgba(37,99,235,0.25)' : 'rgba(85,85,85,0.18)'}`, color: c.is_pinned ? '#60a5fa' : cyber.textDecorative }}>
+                            <button onClick={() => togglePin(c.id, c.is_pinned)} style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, cursor: 'pointer', background: c.is_pinned ? 'rgba(37,99,235,0.1)' : 'rgba(85,85,85,0.07)', border: `1px solid ${c.is_pinned ? cyber.accentBorderDim : 'rgba(85,85,85,0.18)'}`, color: c.is_pinned ? '#60a5fa' : cyber.textDecorative }}>
                               {c.is_pinned ? '📌 Fixado' : 'Fixar'}
                             </button>
                           </div>
