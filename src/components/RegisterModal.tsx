@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { cyber, cyberFonts } from '@/lib/cybertheme';
 
 type Props = {
   onSuccess: () => void;
@@ -45,9 +46,30 @@ export default function RegisterModal({ onSuccess, onBlocked }: Props) {
       style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(6px)' }}
     >
       <div
-        className="w-full max-w-md rounded-2xl p-8"
-        style={{ background: '#1c1c1c' }}
+        style={{
+          position: 'relative',
+          background: cyber.surface,
+          border: `1px solid ${cyber.accentBorder}`,
+          borderRadius: 12,
+          boxShadow: `0 0 60px ${cyber.accentGlow}`,
+          padding: 32,
+          maxWidth: 420,
+          width: '100%',
+        }}
       >
+        {/* Corner accent triangle */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            borderWidth: '0 16px 16px 0',
+            borderStyle: 'solid',
+            borderColor: `transparent ${cyber.accentBorder} transparent transparent`,
+            borderRadius: '0 12px 0 0',
+          }}
+        />
+
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <Image
@@ -60,21 +82,46 @@ export default function RegisterModal({ onSuccess, onBlocked }: Props) {
         </div>
 
         {/* Heading */}
-        <h2 className="text-2xl font-bold text-white text-center mb-2">
+        <h2
+          style={{
+            fontFamily: cyberFonts.body,
+            fontSize: 22,
+            fontWeight: 700,
+            color: cyber.textPrimary,
+            textAlign: 'center',
+            marginBottom: 8,
+          }}
+        >
           Você está a um passo!
         </h2>
-        <p className="text-sm text-center leading-relaxed mb-7" style={{ color: '#9ca3af' }}>
+        <p
+          style={{
+            fontSize: 13,
+            color: cyber.textLabel,
+            textAlign: 'center',
+            lineHeight: 1.6,
+            marginBottom: 24,
+          }}
+        >
           Você está a um passo de descobrir os 3 pilares para faturar mais de{' '}
-          <span className="text-white font-semibold">10 mil reais por mês!</span> Para
+          <span style={{ color: cyber.accent, fontWeight: 600 }}>10 mil reais por mês!</span> Para
           acessar a imersão, adicione seus dados abaixo:
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Nome */}
           <div>
             <label
-              className="block text-xs font-bold uppercase tracking-widest mb-1.5"
-              style={{ color: '#6b7280' }}
+              style={{
+                display: 'block',
+                fontSize: 10,
+                fontFamily: cyberFonts.body,
+                color: cyber.textLabel,
+                letterSpacing: '3px',
+                textTransform: 'uppercase',
+                marginBottom: 6,
+                fontWeight: 600,
+              }}
             >
               Primeiro Nome
             </label>
@@ -85,22 +132,36 @@ export default function RegisterModal({ onSuccess, onBlocked }: Props) {
               onChange={(e) => setName(e.target.value)}
               disabled={loading}
               required
-              className="w-full rounded-lg px-4 py-3 text-white text-sm outline-none transition focus:ring-2"
               style={{
-                background: '#2a2a2a',
-                border: '1px solid #333',
-                color: '#fff',
+                width: '100%',
+                background: cyber.bg,
+                border: `1px solid ${cyber.accentBorderDim}`,
+                borderRadius: 6,
+                padding: '10px 14px',
+                color: cyber.textPrimary,
+                fontFamily: cyberFonts.body,
+                fontSize: 13,
+                outline: 'none',
+                boxSizing: 'border-box',
               }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = '#3b82f6')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = '#333')}
+              onFocus={(e) => (e.currentTarget.style.borderColor = cyber.accent)}
+              onBlur={(e) => (e.currentTarget.style.borderColor = cyber.accentBorderDim)}
             />
           </div>
 
           {/* Email */}
           <div>
             <label
-              className="block text-xs font-bold uppercase tracking-widest mb-1.5"
-              style={{ color: '#6b7280' }}
+              style={{
+                display: 'block',
+                fontSize: 10,
+                fontFamily: cyberFonts.body,
+                color: cyber.textLabel,
+                letterSpacing: '3px',
+                textTransform: 'uppercase',
+                marginBottom: 6,
+                fontWeight: 600,
+              }}
             >
               Seu E-mail
             </label>
@@ -111,26 +172,47 @@ export default function RegisterModal({ onSuccess, onBlocked }: Props) {
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
               required
-              className="w-full rounded-lg px-4 py-3 text-sm outline-none transition"
               style={{
-                background: '#2a2a2a',
-                border: '1px solid #333',
-                color: '#fff',
+                width: '100%',
+                background: cyber.bg,
+                border: `1px solid ${cyber.accentBorderDim}`,
+                borderRadius: 6,
+                padding: '10px 14px',
+                color: cyber.textPrimary,
+                fontFamily: cyberFonts.body,
+                fontSize: 13,
+                outline: 'none',
+                boxSizing: 'border-box',
               }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = '#3b82f6')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = '#333')}
+              onFocus={(e) => (e.currentTarget.style.borderColor = cyber.accent)}
+              onBlur={(e) => (e.currentTarget.style.borderColor = cyber.accentBorderDim)}
             />
           </div>
 
           {error && (
-            <p className="text-red-400 text-sm text-center">{error}</p>
+            <p style={{ color: cyber.error, fontSize: 13, textAlign: 'center' }}>{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full font-bold py-4 rounded-xl text-sm uppercase tracking-wide transition-opacity disabled:opacity-60 text-white mt-2"
-            style={{ background: '#1e3a8a', letterSpacing: '0.08em' }}
+            style={{
+              width: '100%',
+              background: loading
+                ? 'rgba(0,180,255,0.3)'
+                : `linear-gradient(135deg, ${cyber.accent}, ${cyber.accentDim})`,
+              border: 'none',
+              color: cyber.black,
+              fontFamily: cyberFonts.display,
+              fontWeight: 700,
+              fontSize: 13,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              padding: '13px 0',
+              borderRadius: 8,
+              marginTop: 8,
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
           >
             {loading ? 'Aguarde...' : 'Quero Entrar na Imersão'}
           </button>
