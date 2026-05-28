@@ -189,7 +189,7 @@ function CommentRow({
 }
 
 // ── Pinned banner ─────────────────────────────────────────────────────────────
-function PinnedBanner({ comment, ctaUrl, ctaText }: { comment: ChatComment; ctaUrl: string; ctaText: string }) {
+function PinnedBanner({ comment, ctaUrl, ctaText, dark }: { comment: ChatComment; ctaUrl: string; ctaText: string; dark: boolean }) {
   const authorName = comment.author_name || 'Robison Kunz';
   const initial = authorName.charAt(0).toUpperCase();
 
@@ -210,7 +210,7 @@ function PinnedBanner({ comment, ctaUrl, ctaText }: { comment: ChatComment; ctaU
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', padding: '2px 6px', borderRadius: 3, background: 'rgba(224,160,48,0.15)', color: '#e0a030', border: '1px solid rgba(224,160,48,0.3)' }}>HOST</span>
         </div>
       </div>
-      <p style={{ fontSize: 13, fontWeight: 500, color: '#fff', margin: 0, fontFamily: "'Montserrat', sans-serif", lineHeight: 1.5, paddingLeft: 36 }}>{comment.text}</p>
+      <p style={{ fontSize: 13, fontWeight: 500, color: dark ? '#fff' : 'rgba(0,0,0,0.78)', margin: 0, fontFamily: "'Montserrat', sans-serif", lineHeight: 1.5, paddingLeft: 36 }}>{comment.text}</p>
       {ctaUrl && (
         <a href={ctaUrl} target="_blank" rel="noopener noreferrer"
           onClick={() => fetch('/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'cta_click', meta: { url: ctaUrl } }) })}
@@ -654,8 +654,8 @@ export default function ChatPanel({
       {/* ── Pinned ─────────────────────────────────────────── */}
       <div style={{ paddingBottom: 8, flexShrink: 0 }}>
         {activePins.length > 0
-          ? activePins.map(p => <PinnedBanner key={p.id} comment={p} ctaUrl={ctaUrl} ctaText={ctaText} />)
-          : <PinnedBanner key="__welcome__" comment={DEFAULT_WELCOME_PIN} ctaUrl="" ctaText="" />
+          ? activePins.map(p => <PinnedBanner key={p.id} comment={p} ctaUrl={ctaUrl} ctaText={ctaText} dark={isDark} />)
+          : <PinnedBanner key="__welcome__" comment={DEFAULT_WELCOME_PIN} ctaUrl="" ctaText="" dark={isDark} />
         }
       </div>
 

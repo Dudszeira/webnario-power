@@ -49,14 +49,12 @@ function StatCard({ label, value, sub, accent, icon }: { label: string; value: n
   );
 }
 
-function RouteCard({ route, index }: { route: typeof ROUTES[0]; index: number }) {
+function RouteCard({ route }: { route: typeof ROUTES[0] }) {
   const badge = BADGE[route.status];
-  const indexLabel = `[${String(index + 1).padStart(2, '0')}]`;
   return (
     <div style={{ background: cyber.surface, border: `1px solid ${cyber.accentBorderDim}`, borderRadius: 8, padding: '14px 16px', display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, fontFamily: cyberFonts.display, color: cyber.textDecorative, flexShrink: 0 }}>{indexLabel}</span>
           <div>
             <p style={{ fontSize: 12.5, fontWeight: 600, color: cyber.textPrimary, margin: 0, lineHeight: 1.2, fontFamily: cyberFonts.body }}>{route.label}</p>
             <code style={{ fontSize: 10.5, color: cyber.accent }}>{route.path}</code>
@@ -168,8 +166,8 @@ const adminStyles = `
   @keyframes adminSpin { to { transform: rotate(360deg) } }
   .admin-spin { animation: adminSpin 0.8s linear infinite; }
   .admin-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .admin-table th { padding: 9px 14px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; border-bottom: 1px solid; }
-  .admin-table td { padding: 9px 14px; border-bottom: 1px solid; vertical-align: middle; }
+  .admin-table th { padding: 9px 14px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; background: #020810; color: #6a9ab8; border-bottom: 1px solid rgba(0,180,255,0.2); }
+  .admin-table td { padding: 9px 14px; border-bottom: 1px solid rgba(0,180,255,0.1); vertical-align: middle; }
   .admin-table tbody tr:last-child td { border-bottom: none; }
 `;
 
@@ -316,7 +314,7 @@ export default function AdminDashboard() {
           <div style={{ marginBottom: 24 }}>
             <h2 style={{ fontSize: 11, fontWeight: 700, color: cyber.textLabel, marginBottom: 12, fontFamily: cyberFonts.display, textTransform: 'uppercase' as const, letterSpacing: '3px' }}>Páginas da plataforma</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style={{ gap: 10 }}>
-              {ROUTES.map((r, i) => <RouteCard key={r.path} route={r} index={i} />)}
+              {ROUTES.map(r => <RouteCard key={r.path} route={r} />)}
             </div>
           </div>
 

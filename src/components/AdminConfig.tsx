@@ -13,14 +13,16 @@ const adminStyles = `
   .admin-table td { padding: 9px 14px; font-size: 12px; border-bottom: 1px solid rgba(0,180,255,0.1); vertical-align: middle; }
   .admin-table tr:last-child td { border-bottom: none; }
   .label-admin { display: block; font-size: 10px; font-family: 'Exo 2', sans-serif; color: #6a9ab8; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
-  .input-admin { width: 100%; background: #020810; border: 1px solid rgba(0,180,255,0.2); border-radius: 4px; padding: 10px 12px; color: #c8e4f4; font-family: 'Exo 2', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
+  .input-admin { width: 100%; background: #020810; border: 1px solid rgba(0,180,255,0.2); border-radius: 4px; padding: 10px 12px; color: #c8e4f4; font-family: 'Exo 2', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s; box-sizing: border-box; appearance: none; -webkit-appearance: none; }
   .input-admin:focus { border-color: #00B4FF; box-shadow: 0 0 0 2px rgba(0,180,255,0.05); }
+  .input-admin::placeholder { color: #4a7a96; opacity: 1; }
+  select.input-admin { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236a9ab8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 34px; cursor: pointer; }
   select.input-admin option { background: #020810; color: #c8e4f4; }
 `;
 
 const defaultConfig = {
   video_source: 'youtube', video_url: '', video_duration: 7200,
-  sales_page_url: '', chat_enabled: true, chat_mode: 'general',
+  sales_page_url: '', chat_enabled: true, chat_mode: 'isolated',
   cta_enabled: false, cta_url: '', cta_text: '',
   cta_start_seconds: 0, cta_end_seconds: 3600,
   viewer_min: 210, viewer_max: 220,
@@ -71,6 +73,8 @@ export default function AdminConfig() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -129,6 +133,41 @@ export default function AdminConfig() {
 
   const set = (key: string, val: any) => setConfig(c => ({ ...c, [key]: val }));
 
+  function getVideoDuration(file: File): Promise<number> {
+    return new Promise(resolve => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      const url = URL.createObjectURL(file);
+      video.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(Math.round(video.duration)); };
+      video.onerror = () => { URL.revokeObjectURL(url); resolve(0); };
+      video.src = url;
+    });
+  }
+
+  async function handleVideoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true); setUploadMsg('');
+    try {
+      const duration = await getVideoDuration(file);
+      if (duration > 0) set('video_duration', duration);
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/admin/upload-video', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (res.ok) {
+        set('video_url', data.url);
+        setUploadMsg(`✓ ${file.name} enviado`);
+      } else {
+        setUploadMsg(data.error || 'Erro no upload.');
+      }
+    } catch {
+      setUploadMsg('Erro de conexão.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   if (loading) return (
     <div className="flex flex-col md:flex-row" style={{ minHeight: '100vh', background: cyber.bg }}>
       <style>{adminStyles}</style>
@@ -161,12 +200,30 @@ export default function AdminConfig() {
                   <option value="upload">Upload local</option>
                 </select>
               </Field>
-              <Field label={config.video_source === 'youtube' ? 'URL ou ID do YouTube' : 'Caminho do arquivo'}>
-                <input className="input-admin" type="text" value={config.video_url} onChange={e => set('video_url', e.target.value)}
-                  placeholder={config.video_source === 'youtube' ? 'https://youtube.com/watch?v=...' : '/uploads/video.mp4'} />
-              </Field>
-              <Field label="Duração (segundos)" hint={`${Math.floor(Number(config.video_duration)/3600)}h ${Math.floor((Number(config.video_duration)%3600)/60)}min`}>
-                <input className="input-admin" type="number" value={config.video_duration} onChange={e => set('video_duration', Number(e.target.value))} min={60} />
+
+              {config.video_source === 'youtube' ? (
+                <Field label="URL ou ID do YouTube">
+                  <input className="input-admin" type="text" value={config.video_url} onChange={e => set('video_url', e.target.value)}
+                    placeholder="https://youtube.com/watch?v=..." />
+                </Field>
+              ) : (
+                <Field label="Arquivo de vídeo" hint={config.video_url ? `Arquivo atual: ${config.video_url}` : 'Nenhum arquivo enviado'}>
+                  <label style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, cursor: 'pointer' }}>
+                    <div style={{ background: cyber.bg, border: `2px dashed ${uploading ? cyber.accent : cyber.accentBorderDim}`, borderRadius: 6, padding: '14px 16px', textAlign: 'center' as const, transition: 'border-color .15s' }}>
+                      {uploading
+                        ? <p style={{ fontSize: 12, color: cyber.accent, margin: 0 }}>Enviando...</p>
+                        : uploadMsg
+                        ? <p style={{ fontSize: 12, color: uploadMsg.startsWith('✓') ? cyber.green : cyber.error, margin: 0 }}>{uploadMsg}</p>
+                        : <p style={{ fontSize: 12, color: cyber.textLabel, margin: 0 }}>Clique para selecionar o vídeo <span style={{ color: cyber.textDecorative }}>(mp4, webm, mov)</span></p>
+                      }
+                    </div>
+                    <input type="file" accept="video/*" style={{ display: 'none' }} disabled={uploading} onChange={handleVideoFile} />
+                  </label>
+                </Field>
+              )}
+
+              <Field label="Duração" hint={`${Math.floor(Number(config.video_duration)/3600)}h ${Math.floor((Number(config.video_duration)%3600)/60)}min — ${config.video_source === 'upload' ? 'detectada automaticamente ao enviar' : 'preencha manualmente'}`}>
+                <input className="input-admin" type="number" value={config.video_duration} onChange={e => set('video_duration', Number(e.target.value))} min={60} readOnly={config.video_source === 'upload' && uploading} />
               </Field>
             </SectionCard>
 
