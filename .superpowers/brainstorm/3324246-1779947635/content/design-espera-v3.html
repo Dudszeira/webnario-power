@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Preview v3 — Página de Espera Completa</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #020810;
+  color: #a8d8f0;
+  font-family: 'Exo 2', sans-serif;
+  min-height: 100vh;
+  position: relative;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(rgba(0,180,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,180,255,0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 40% at 50% 20%, rgba(0,180,255,0.07) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px 40px;
+}
+
+/* LOGO */
+.logo-area {
+  padding: 28px 0 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.logo-placeholder {
+  width: 180px;
+  height: 60px;
+  border: 1px solid rgba(0,180,255,0.3);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #00B4FF;
+  letter-spacing: 2px;
+  background: rgba(0,180,255,0.04);
+}
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: #3a6b8a;
+  text-transform: uppercase;
+}
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00ff9d;
+  box-shadow: 0 0 8px #00ff9d;
+  animation: blink 1.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+/* COUNTDOWN */
+.countdown-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0 28px;
+}
+.countdown-label {
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: #3a6b8a;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.countdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.cd-block {
+  border: 1px solid rgba(0,180,255,0.3);
+  border-radius: 8px;
+  padding: 14px 20px;
+  background: rgba(0,180,255,0.05);
+  min-width: 72px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.cd-block::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  border-width: 0 8px 8px 0;
+  border-style: solid;
+  border-color: transparent rgba(0,180,255,0.3) transparent transparent;
+}
+.cd-num {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #00B4FF;
+  line-height: 1;
+  text-shadow: 0 0 16px rgba(0,180,255,0.3);
+}
+.cd-sep {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 26px;
+  color: rgba(0,180,255,0.3);
+  padding-bottom: 8px;
+}
+.cd-unit {
+  font-size: 9px;
+  color: #3a6b8a;
+  letter-spacing: 3px;
+  margin-top: 5px;
+  text-transform: uppercase;
+}
+
+/* CONTENT CARD */
+.content-card {
+  width: 100%;
+  max-width: 600px;
+  border: 1px solid rgba(0,180,255,0.2);
+  border-radius: 10px;
+  padding: 28px 28px;
+  background: rgba(4,13,26,0.7);
+  backdrop-filter: blur(4px);
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.content-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  border-width: 0 14px 14px 0;
+  border-style: solid;
+  border-color: transparent rgba(0,180,255,0.3) transparent transparent;
+}
+.card-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #00B4FF;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+.bullet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.bullet-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.bullet-icon {
+  color: #00B4FF;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  line-height: 1.5;
+}
+.bullet-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #a8d8f0;
+  font-weight: 400;
+}
+
+/* REDIRECT NOTICE */
+.redirect-notice {
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(0,180,255,0.15);
+  border-radius: 8px;
+  background: rgba(0,180,255,0.03);
+}
+.redirect-notice p {
+  font-size: 13px;
+  color: #3a6b8a;
+  line-height: 1.6;
+  font-weight: 300;
+}
+.redirect-notice strong {
+  color: #a8d8f0;
+  font-weight: 600;
+}
+
+/* FOOTER */
+.footer {
+  margin-top: auto;
+  padding-top: 24px;
+  text-align: center;
+}
+.footer p {
+  font-size: 11px;
+  color: #3a6b8a;
+  letter-spacing: 1px;
+}
+
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2,8,16,0.88);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 24px;
+}
+.modal {
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid rgba(0,180,255,0.4);
+  border-radius: 10px;
+  background: #040d1a;
+  padding: 32px;
+  position: relative;
+  box-shadow: 0 0 60px rgba(0,180,255,0.15);
+}
+.modal::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  border-width: 0 16px 16px 0;
+  border-style: solid;
+  border-color: transparent rgba(0,180,255,0.5) transparent transparent;
+}
+.modal-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.modal-logo-ph {
+  width: 130px;
+  height: 44px;
+  border: 1px solid rgba(0,180,255,0.25);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  color: #00B4FF;
+  letter-spacing: 2px;
+  background: rgba(0,180,255,0.04);
+}
+.modal-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+.modal-sub {
+  font-size: 13px;
+  color: #3a6b8a;
+  text-align: center;
+  margin-bottom: 24px;
+  line-height: 1.5;
+  font-weight: 300;
+}
+.modal-sub strong { color: #a8d8f0; font-weight: 600; }
+.form-field { margin-bottom: 14px; }
+.form-label {
+  display: block;
+  font-size: 10px;
+  color: #3a6b8a;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.form-input {
+  width: 100%;
+  background: #020810;
+  border: 1px solid rgba(0,180,255,0.25);
+  border-radius: 4px;
+  padding: 11px 14px;
+  color: #a8d8f0;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 14px;
+  outline: none;
+}
+.form-input::placeholder { color: #3a6b8a; }
+.form-submit {
+  width: 100%;
+  background: linear-gradient(135deg, #00B4FF, #0077aa);
+  border: none;
+  border-radius: 4px;
+  padding: 14px;
+  color: #000;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  margin-top: 6px;
+  box-shadow: 0 0 20px rgba(0,180,255,0.25);
+  text-transform: uppercase;
+}
+
+/* TOGGLE BUTTONS */
+.toggle-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 200;
+  background: rgba(4,13,26,0.95);
+  border: 1px solid rgba(0,180,255,0.3);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.toggle-btn {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #3a6b8a;
+  background: none;
+  border: 1px solid rgba(0,180,255,0.2);
+  border-radius: 4px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.toggle-btn:hover, .toggle-btn.active {
+  color: #00B4FF;
+  border-color: rgba(0,180,255,0.5);
+  background: rgba(0,180,255,0.06);
+}
+
+/* PREVIEW LABEL */
+.preview-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: rgba(0,180,255,0.1);
+  border-bottom: 1px solid rgba(0,180,255,0.3);
+  text-align: center;
+  padding: 6px;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 10px;
+  color: #00B4FF;
+  letter-spacing: 3px;
+  z-index: 100;
+  text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<div class="preview-banner">Mockup v3 — Página de Espera Completa — Webnario Power</div>
+
+<!-- PÁGINA PRINCIPAL -->
+<div class="page" style="padding-top: 40px;" id="main-page">
+
+  <!-- Logo -->
+  <div class="logo-area">
+    <div class="logo-placeholder">LOGO.WEBP</div>
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      Evento ao Vivo
+    </div>
+  </div>
+
+  <!-- Countdown -->
+  <div class="countdown-section">
+    <div class="countdown-label">O evento começa em</div>
+    <div class="countdown">
+      <div class="cd-block">
+        <div class="cd-num">03</div>
+        <div class="cd-unit">Dias</div>
+      </div>
+      <div class="cd-sep">:</div>
+      <div class="cd-block">
+        <div class="cd-num">02</div>
+        <div class="cd-unit">Hrs</div>
+      </div>
+      <div class="cd-sep">:</div>
+      <div class="cd-block">
+        <div class="cd-num">45</div>
+        <div class="cd-unit">Min</div>
+      </div>
+      <div class="cd-sep">:</div>
+      <div class="cd-block">
+        <div class="cd-num">12</div>
+        <div class="cd-unit">Seg</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content card com bullets -->
+  <div class="content-card">
+    <div class="card-title">Enquanto você aguarda, veja o<br>que vai descobrir hoje:</div>
+    <div class="bullet-list">
+      <div class="bullet-item">
+        <span class="bullet-icon">›</span>
+        <p class="bullet-text">O erro que fez meu pai quebrar o negócio de fotografia dele e o que fizemos depois para faturar R$ 1 milhão em um ano.</p>
+      </div>
+      <div class="bullet-item">
+        <span class="bullet-icon">›</span>
+        <p class="bullet-text">Os 3 pilares de um negócio de fotografia que fatura mais de R$ 10 mil por mês.</p>
+      </div>
+      <div class="bullet-item">
+        <span class="bullet-icon">›</span>
+        <p class="bullet-text">Jeito certo vs. jeito errado de fazer marketing — com exemplos reais de fotógrafos que acertaram e erraram na prática.</p>
+      </div>
+      <div class="bullet-item">
+        <span class="bullet-icon">›</span>
+        <p class="bullet-text">Análise ao vivo dos 3 pilares do SEU negócio — descubra qual dos 3 pilares está travando o seu crescimento e o que fazer para resolver ainda hoje.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Redirect notice -->
+  <div class="redirect-notice" style="max-width:600px;width:100%">
+    <p>
+      Quando chegar às 20h,{' '}
+      <strong>você será redirecionado automaticamente para a Imersão ao vivo.</strong>{' '}
+      Não precisa fazer nada, é só aguardar!
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Robison Kunz © 2025 · Todos os direitos reservados</p>
+  </div>
+
+</div>
+
+<!-- MODAL DE CADASTRO (Nome + Email — campos atuais mantidos) -->
+<div class="modal-overlay" id="modal" style="display:flex">
+  <div class="modal">
+    <div class="modal-logo">
+      <div class="modal-logo-ph">LOGO.WEBP</div>
+    </div>
+    <div class="modal-title">Você está a um passo!</div>
+    <div class="modal-sub">
+      Você está a um passo de descobrir os 3 pilares para faturar mais de
+      <strong>10 mil reais por mês!</strong> Para acessar a imersão, adicione seus dados abaixo:
+    </div>
+    <div class="form-field">
+      <label class="form-label">Primeiro Nome</label>
+      <input class="form-input" type="text" placeholder="Seu primeiro nome">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Seu E-mail</label>
+      <input class="form-input" type="email" placeholder="seu@email.com">
+    </div>
+    <button class="form-submit">Quero Entrar na Imersão</button>
+  </div>
+</div>
+
+<!-- BARRA DE NAVEGAÇÃO DO MOCKUP -->
+<div class="toggle-bar">
+  <button class="toggle-btn active" onclick="showModal()">Ver Modal Cadastro</button>
+  <button class="toggle-btn" onclick="hideModal()">Ver Página</button>
+</div>
+
+<script>
+function showModal() { document.getElementById('modal').style.display='flex'; document.querySelectorAll('.toggle-btn')[0].classList.add('active'); document.querySelectorAll('.toggle-btn')[1].classList.remove('active'); }
+function hideModal() { document.getElementById('modal').style.display='none'; document.querySelectorAll('.toggle-btn')[1].classList.add('active'); document.querySelectorAll('.toggle-btn')[0].classList.remove('active'); }
+</script>
+
+</body>
+</html>

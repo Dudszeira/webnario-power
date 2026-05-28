@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Preview — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #020810;
+  color: #a8d8f0;
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  position: relative;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.07) 0px, rgba(0,0,0,0.07) 1px, transparent 1px, transparent 3px);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(rgba(0,180,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,180,255,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(0,180,255,0.3);
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(4,13,26,0.8);
+}
+.sidebar-logo {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid rgba(0,180,255,0.2);
+  margin-bottom: 20px;
+}
+.sidebar-logo .prefix {
+  font-family: 'Share Tech Mono', monospace;
+  color: #3a6b8a;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+.sidebar-logo .name {
+  font-family: 'Orbitron', sans-serif;
+  color: #00B4FF;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-shadow: 0 0 20px rgba(0,180,255,0.4);
+}
+.nav-section-label {
+  padding: 0 20px;
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: #3a6b8a;
+  margin-bottom: 8px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-size: 11px;
+  color: #3a6b8a;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.nav-item:hover, .nav-item.active {
+  color: #a8d8f0;
+  border-left-color: #00B4FF;
+  background: rgba(0,180,255,0.05);
+}
+.nav-item.active { color: #00B4FF; }
+.nav-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(0,180,255,0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00ff9d;
+  box-shadow: 0 0 8px #00ff9d;
+  animation: blink 1.8s ease-in-out infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+.status-text { font-size: 9px; color: #3a6b8a; letter-spacing: 2px; }
+
+/* MAIN */
+.main {
+  flex: 1;
+  padding: 28px 32px;
+  overflow: auto;
+}
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(0,180,255,0.2);
+  margin-bottom: 28px;
+}
+.page-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: #00B4FF;
+  letter-spacing: 3px;
+  text-shadow: 0 0 20px rgba(0,180,255,0.3);
+}
+.page-subtitle {
+  font-size: 10px;
+  color: #3a6b8a;
+  letter-spacing: 2px;
+  margin-top: 4px;
+}
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(0,255,157,0.4);
+  border-radius: 3px;
+  padding: 5px 12px;
+  font-size: 10px;
+  color: #00ff9d;
+  letter-spacing: 2px;
+}
+
+/* METRICS GRID */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.metric-card {
+  border: 1px solid rgba(0,180,255,0.3);
+  border-radius: 4px;
+  padding: 16px;
+  background: #040d1a;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  border-width: 0 10px 10px 0;
+  border-style: solid;
+  border-color: transparent rgba(0,180,255,0.4) transparent transparent;
+}
+.metric-label {
+  font-size: 9px;
+  color: #3a6b8a;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+.metric-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #00B4FF;
+  line-height: 1;
+}
+.metric-value.green { color: #00ff9d; }
+.metric-sub {
+  font-size: 9px;
+  color: #3a6b8a;
+  margin-top: 6px;
+}
+
+/* ACTION CARDS */
+.section-label {
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: #3a6b8a;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0,180,255,0.3), transparent);
+}
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.action-card {
+  border: 1px solid rgba(0,180,255,0.3);
+  border-radius: 4px;
+  padding: 16px;
+  background: #040d1a;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.action-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  border-width: 0 8px 8px 0;
+  border-style: solid;
+  border-color: transparent rgba(0,180,255,0.3) transparent transparent;
+}
+.action-card:hover {
+  border-color: #00B4FF;
+  background: #071428;
+  box-shadow: 0 0 20px rgba(0,180,255,0.15), inset 0 0 20px rgba(0,180,255,0.04);
+  transform: translateY(-2px);
+}
+.action-index {
+  font-size: 9px;
+  color: #3a6b8a;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+.action-name {
+  font-size: 12px;
+  color: #a8d8f0;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+.action-desc {
+  font-size: 9px;
+  color: #3a6b8a;
+  line-height: 1.4;
+}
+.action-arrow {
+  font-size: 10px;
+  color: #00B4FF;
+  margin-top: 10px;
+  display: block;
+}
+
+/* PREVIEW LABEL */
+.preview-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: rgba(0,180,255,0.1);
+  border-bottom: 1px solid rgba(0,180,255,0.3);
+  text-align: center;
+  padding: 6px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: #00B4FF;
+  letter-spacing: 3px;
+  z-index: 100;
+}
+</style>
+</head>
+<body>
+
+<div class="preview-banner">// MOCKUP — ADMIN PANEL — WEBNARIO POWER //</div>
+
+<div class="layout" style="padding-top: 32px;">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="prefix">// SISTEMA</div>
+      <div class="name">WEBNARIO</div>
+    </div>
+
+    <div class="nav-section-label">NAVEGAÇÃO</div>
+
+    <div class="nav-item active">
+      <span class="nav-dot"></span>
+      Dashboard
+    </div>
+    <div class="nav-item">
+      <span class="nav-dot"></span>
+      Configurações
+    </div>
+    <div class="nav-item">
+      <span class="nav-dot"></span>
+      Comentários
+    </div>
+    <div class="nav-item">
+      <span class="nav-dot"></span>
+      Importar
+    </div>
+    <div class="nav-item">
+      <span class="nav-dot"></span>
+      Live Monitor
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="status-dot"></div>
+      <span class="status-text">ONLINE</span>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">DASHBOARD</div>
+        <div class="page-subtitle">// PAINEL DE CONTROLE</div>
+      </div>
+      <div class="badge">
+        <div class="status-dot" style="width:6px;height:6px"></div>
+        TRANSMISSÃO ATIVA
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-label">VIEWERS</div>
+        <div class="metric-value">247</div>
+        <div class="metric-sub">ao vivo agora</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">INSCRITOS</div>
+        <div class="metric-value">1.2k</div>
+        <div class="metric-sub">total registrado</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">STATUS</div>
+        <div class="metric-value green" style="font-size:14px;padding-top:6px">● LIVE</div>
+        <div class="metric-sub">transmitindo</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">CHAT</div>
+        <div class="metric-value">89</div>
+        <div class="metric-sub">msgs / min</div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="section-label">ACESSO RÁPIDO</div>
+    <div class="action-grid">
+      <div class="action-card">
+        <div class="action-index">[01]</div>
+        <div class="action-name">Configurações</div>
+        <div class="action-desc">Vídeo, CTA, chat e contagem de viewers</div>
+        <span class="action-arrow">›</span>
+      </div>
+      <div class="action-card">
+        <div class="action-index">[02]</div>
+        <div class="action-name">Comentários</div>
+        <div class="action-desc">Moderação e fila de comentários simulados</div>
+        <span class="action-arrow">›</span>
+      </div>
+      <div class="action-card">
+        <div class="action-index">[03]</div>
+        <div class="action-name">Live Monitor</div>
+        <div class="action-desc">Métricas em tempo real da transmissão</div>
+        <span class="action-arrow">›</span>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+</body>
+</html>

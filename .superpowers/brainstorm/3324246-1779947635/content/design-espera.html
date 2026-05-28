@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Preview — Página de Espera</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #020810;
+  color: #a8d8f0;
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+/* Subtle grid only — sem scan lines */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(rgba(0,180,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,180,255,0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
+}
+/* Glow radial no centro */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0,180,255,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 560px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+/* HEADER */
+.event-tag {
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: #3a6b8a;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00ff9d;
+  box-shadow: 0 0 8px #00ff9d;
+  animation: blink 1.8s ease-in-out infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.event-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(24px, 5vw, 38px);
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 2px;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.event-title span {
+  color: #00B4FF;
+  text-shadow: 0 0 30px rgba(0,180,255,0.4);
+}
+.event-subtitle {
+  font-size: 11px;
+  color: #3a6b8a;
+  letter-spacing: 2px;
+  margin-bottom: 36px;
+}
+
+/* COUNTDOWN */
+.countdown-label {
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: #3a6b8a;
+  margin-bottom: 14px;
+}
+.countdown {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+.countdown-block {
+  border: 1px solid rgba(0,180,255,0.3);
+  border-radius: 8px;
+  padding: 14px 20px;
+  background: rgba(0,180,255,0.05);
+  min-width: 72px;
+  position: relative;
+  overflow: hidden;
+}
+.countdown-block::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  border-width: 0 8px 8px 0;
+  border-style: solid;
+  border-color: transparent rgba(0,180,255,0.3) transparent transparent;
+}
+.countdown-num {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #00B4FF;
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(0,180,255,0.3);
+}
+.countdown-sep {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 28px;
+  color: rgba(0,180,255,0.3);
+  align-self: center;
+  padding-bottom: 4px;
+}
+.countdown-unit {
+  font-size: 8px;
+  color: #3a6b8a;
+  letter-spacing: 3px;
+  margin-top: 6px;
+}
+
+/* CTA */
+.cta-wrapper {
+  margin-bottom: 24px;
+}
+.cta-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, #00B4FF, #0077aa);
+  color: #000;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 14px 36px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 0 24px rgba(0,180,255,0.3);
+  transition: all 0.2s;
+}
+.cta-btn:hover {
+  box-shadow: 0 0 36px rgba(0,180,255,0.5);
+  transform: translateY(-2px);
+}
+.cta-sub {
+  font-size: 9px;
+  color: #3a6b8a;
+  letter-spacing: 2px;
+  margin-top: 10px;
+}
+
+/* VIEWER COUNT */
+.viewer-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(0,180,255,0.2);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 10px;
+  color: #3a6b8a;
+  letter-spacing: 2px;
+  margin-bottom: 36px;
+}
+
+/* DIVIDER */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,180,255,0.3), transparent);
+  margin: 0 0 28px;
+}
+
+/* REGISTER FORM (modal preview) */
+.form-preview {
+  border: 1px solid rgba(0,180,255,0.3);
+  border-radius: 8px;
+  padding: 24px;
+  background: rgba(4,13,26,0.9);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+.form-preview::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  border-width: 0 14px 14px 0;
+  border-style: solid;
+  border-color: transparent rgba(0,180,255,0.4) transparent transparent;
+}
+.form-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #00B4FF;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+.form-sub {
+  font-size: 9px;
+  color: #3a6b8a;
+  letter-spacing: 2px;
+  margin-bottom: 18px;
+}
+.form-field {
+  margin-bottom: 12px;
+}
+.form-label {
+  font-size: 9px;
+  color: #3a6b8a;
+  letter-spacing: 3px;
+  margin-bottom: 5px;
+  display: block;
+}
+.form-input {
+  width: 100%;
+  background: #040d1a;
+  border: 1px solid rgba(0,180,255,0.3);
+  border-radius: 4px;
+  padding: 9px 12px;
+  color: #a8d8f0;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  outline: none;
+}
+.form-input:focus { border-color: #00B4FF; box-shadow: 0 0 12px rgba(0,180,255,0.15); }
+.form-input::placeholder { color: #3a6b8a; }
+.form-submit {
+  width: 100%;
+  background: linear-gradient(135deg, #00B4FF, #0077aa);
+  border: none;
+  border-radius: 4px;
+  padding: 11px;
+  color: #000;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  margin-top: 4px;
+  box-shadow: 0 0 20px rgba(0,180,255,0.25);
+}
+
+/* PREVIEW LABEL */
+.preview-banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: rgba(0,180,255,0.1);
+  border-bottom: 1px solid rgba(0,180,255,0.3);
+  text-align: center;
+  padding: 6px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: #00B4FF;
+  letter-spacing: 3px;
+  z-index: 100;
+}
+</style>
+</head>
+<body>
+
+<div class="preview-banner">// MOCKUP — PÁGINA DE ESPERA — WEBNARIO POWER //</div>
+
+<div class="container" style="margin-top: 32px;">
+
+  <div class="event-tag">
+    <div class="live-dot"></div>
+    EVENTO AO VIVO
+  </div>
+
+  <h1 class="event-title">WEBNARIO<br><span>POWER</span></h1>
+  <p class="event-subtitle">// ACESSE E TRANSFORME SEU NEGÓCIO</p>
+
+  <div class="countdown-label">COMEÇA EM</div>
+  <div class="countdown">
+    <div class="countdown-block">
+      <div class="countdown-num">02</div>
+      <div class="countdown-unit">HRS</div>
+    </div>
+    <div class="countdown-sep">:</div>
+    <div class="countdown-block">
+      <div class="countdown-num">45</div>
+      <div class="countdown-unit">MIN</div>
+    </div>
+    <div class="countdown-sep">:</div>
+    <div class="countdown-block">
+      <div class="countdown-num">12</div>
+      <div class="countdown-unit">SEG</div>
+    </div>
+  </div>
+
+  <div class="viewer-count">
+    <div class="live-dot" style="width:5px;height:5px"></div>
+    312 PESSOAS AGUARDANDO
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Form de cadastro (estado expandido) -->
+  <div class="form-preview">
+    <div class="form-title">GARANTIR MINHA VAGA</div>
+    <div class="form-sub">// ACESSO GRATUITO — VAGAS LIMITADAS</div>
+    <div class="form-field">
+      <label class="form-label">NOME</label>
+      <input class="form-input" type="text" placeholder="Seu nome completo">
+    </div>
+    <div class="form-field">
+      <label class="form-label">WHATSAPP</label>
+      <input class="form-input" type="text" placeholder="(00) 00000-0000">
+    </div>
+    <button class="form-submit">QUERO PARTICIPAR ›</button>
+  </div>
+
+</div>
+
+</body>
+</html>

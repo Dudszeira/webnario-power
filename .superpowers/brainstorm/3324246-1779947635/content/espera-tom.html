@@ -1,0 +1,74 @@
+<h2>Qual tom para a Página de Espera?</h2>
+<p class="subtitle">A página de espera é vista pelo público. Qual intensidade da identidade visual você quer?</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="full-cyber" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#020810;padding:16px;font-family:monospace;height:200px;position:relative;overflow:hidden;border-bottom:1px solid rgba(0,180,255,0.3)">
+      <!-- scan lines effect -->
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,0.07) 0px,rgba(0,0,0,0.07) 1px,transparent 1px,transparent 3px);pointer-events:none;z-index:1"></div>
+      <!-- grid -->
+      <div style="position:absolute;inset:0;background:linear-gradient(rgba(0,180,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,180,255,0.04) 1px,transparent 1px);background-size:30px 30px;pointer-events:none;z-index:0"></div>
+      <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center">
+        <div style="color:#3a6b8a;font-size:8px;letter-spacing:4px;margin-bottom:6px">// EVENTO AO VIVO</div>
+        <div style="color:#00B4FF;font-size:18px;font-weight:900;letter-spacing:2px;text-shadow:0 0 20px rgba(0,180,255,0.4);font-family:'Courier New',monospace">WEBNARIO_</div>
+        <div style="color:#a8d8f0;font-size:9px;margin:8px 0;letter-spacing:1px">INICIANDO EM</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <div style="border:1px solid rgba(0,180,255,0.4);padding:4px 8px;border-radius:3px">
+            <div style="color:#00B4FF;font-size:16px;font-weight:bold">02</div>
+            <div style="color:#3a6b8a;font-size:7px">HRS</div>
+          </div>
+          <div style="border:1px solid rgba(0,180,255,0.4);padding:4px 8px;border-radius:3px">
+            <div style="color:#00B4FF;font-size:16px;font-weight:bold">45</div>
+            <div style="color:#3a6b8a;font-size:7px">MIN</div>
+          </div>
+          <div style="border:1px solid rgba(0,180,255,0.4);padding:4px 8px;border-radius:3px">
+            <div style="color:#00B4FF;font-size:16px;font-weight:bold">12</div>
+            <div style="color:#3a6b8a;font-size:7px">SEG</div>
+          </div>
+        </div>
+        <div style="background:rgba(0,180,255,0.1);border:1px solid rgba(0,180,255,0.4);color:#a8d8f0;font-size:8px;padding:4px 12px;border-radius:3px">[ GARANTIR MINHA VAGA ]</div>
+        <div style="color:#3a6b8a;font-size:7px;margin-top:6px">● 312 pessoas aguardando</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Full Cyberpunk</h3>
+      <p>Mesmo estilo do admin — scan lines, grid, monospace total. Muito impactante, atmosfera de "evento tech exclusivo".</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="cyber-clean" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#020810;padding:16px;font-family:sans-serif;height:200px;position:relative;overflow:hidden;border-bottom:1px solid rgba(0,180,255,0.3)">
+      <!-- subtle grid only -->
+      <div style="position:absolute;inset:0;background:linear-gradient(rgba(0,180,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,180,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none"></div>
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center">
+        <div style="color:#3a6b8a;font-size:8px;letter-spacing:4px;margin-bottom:4px;font-family:monospace">EVENTO AO VIVO</div>
+        <div style="color:#fff;font-size:16px;font-weight:700;letter-spacing:1px;margin-bottom:2px">Webnario Power</div>
+        <div style="color:#a8d8f0;font-size:9px;margin:6px 0">COMEÇA EM</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div style="border:1px solid rgba(0,180,255,0.3);border-radius:6px;padding:4px 10px;background:rgba(0,180,255,0.06)">
+            <div style="color:#00B4FF;font-size:16px;font-weight:bold">02</div>
+            <div style="color:#3a6b8a;font-size:7px">HRS</div>
+          </div>
+          <div style="border:1px solid rgba(0,180,255,0.3);border-radius:6px;padding:4px 10px;background:rgba(0,180,255,0.06)">
+            <div style="color:#00B4FF;font-size:16px;font-weight:bold">45</div>
+            <div style="color:#3a6b8a;font-size:7px">MIN</div>
+          </div>
+          <div style="border:1px solid rgba(0,180,255,0.3);border-radius:6px;padding:4px 10px;background:rgba(0,180,255,0.06)">
+            <div style="color:#00B4FF;font-size:16px;font-weight:bold">12</div>
+            <div style="color:#3a6b8a;font-size:7px">SEG</div>
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg,#00B4FF,#0077aa);color:#000;font-size:9px;font-weight:700;padding:5px 16px;border-radius:20px;letter-spacing:1px">GARANTIR MINHA VAGA</div>
+        <div style="color:#3a6b8a;font-size:7px;margin-top:6px;font-family:monospace">● 312 pessoas aguardando</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Cyber Clean</h3>
+      <p>Mesma paleta e atmosfera, mas mais limpo e acolhedor para o público. Botão de CTA mais chamativo. Sem scan lines.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px">Clique para selecionar e me confirme no terminal.</p>
