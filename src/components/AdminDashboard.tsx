@@ -91,8 +91,7 @@ function TestModePanel({ currentEdition: _currentEdition }: { currentEdition?: s
         if (d.edition.test_time) {
           try {
             const dt = new Date(d.edition.test_time);
-            const offset = dt.getTimezoneOffset() * 60000;
-            setTestTime(new Date(dt.getTime() - offset).toISOString().slice(0, 16));
+            setTestTime(new Date(dt).toLocaleString('sv-SE', { hour12: false }).slice(0, 16));
           } catch {}
         }
       }
@@ -101,16 +100,19 @@ function TestModePanel({ currentEdition: _currentEdition }: { currentEdition?: s
 
   async function save() {
     setSaving(true);
-    await fetch('/api/admin/config', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        test_mode: testMode,
-        test_time: (testMode && testTime) ? new Date(testTime).toISOString() : null,
-      }),
-    });
-    setSaving(false); setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    try {
+      const res = await fetch('/api/admin/config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          test_mode: testMode,
+          test_time: (testMode && testTime) ? new Date(testTime).toISOString() : null,
+        }),
+      });
+      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
+    } finally {
+      setSaving(false);
+    }
   }
 
   const accent = testMode ? cyber.pink : cyber.textDecorative;
@@ -162,6 +164,15 @@ function TestModePanel({ currentEdition: _currentEdition }: { currentEdition?: s
   );
 }
 
+const adminStyles = `
+  @keyframes adminSpin { to { transform: rotate(360deg) } }
+  .admin-spin { animation: adminSpin 0.8s linear infinite; }
+  .admin-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .admin-table th { padding: 9px 14px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; border-bottom: 1px solid; }
+  .admin-table td { padding: 9px 14px; border-bottom: 1px solid; vertical-align: middle; }
+  .admin-table tbody tr:last-child td { border-bottom: none; }
+`;
+
 export default function AdminDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -171,19 +182,22 @@ export default function AdminDashboard() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/admin/metrics').then(r => r.json()).then(d => {
-      setData(d);
-      setRecentRegs(d.recentRegs || []);
-      setAllEditions(d.allEditions || []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    fetch('/api/admin/metrics')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(d => {
+        setData(d);
+        setRecentRegs(d.recentRegs || []);
+        setAllEditions(d.allEditions || []);
+      })
+      .catch(() => {/* errors: loading stops, data stays null */})
+      .finally(() => setLoading(false));
   }, []);
 
   async function deleteReg(id: string) {
     setDeletingId(id);
     try {
-      await fetch(`/api/admin/registrations?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-      setRecentRegs(prev => prev.filter(r => r.id !== id));
+      const res = await fetch(`/api/admin/registrations?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (res.ok) setRecentRegs(prev => prev.filter(r => r.id !== id));
     } finally {
       setDeletingId(null);
       setConfirmId(null);
@@ -193,8 +207,8 @@ export default function AdminDashboard() {
   async function deleteEdition(editionId: string) {
     setDeletingId(editionId);
     try {
-      await fetch(`/api/admin/editions?id=${encodeURIComponent(editionId)}`, { method: 'DELETE' });
-      setAllEditions(prev => prev.filter(e => e.editionId !== editionId));
+      const res = await fetch(`/api/admin/editions?id=${encodeURIComponent(editionId)}`, { method: 'DELETE' });
+      if (res.ok) setAllEditions(prev => prev.filter(e => e.editionId !== editionId));
     } finally {
       setDeletingId(null);
       setConfirmId(null);
@@ -203,7 +217,7 @@ export default function AdminDashboard() {
 
   if (loading) return (
     <div className="flex flex-col md:flex-row" style={{ minHeight: '100vh', background: cyber.bg }}>
-      <style>{`@keyframes adminSpin { to { transform: rotate(360deg) } } .admin-spin { animation: adminSpin 0.8s linear infinite; }`}</style>
+      <style>{adminStyles}</style>
       <AdminNav />
       <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 12 }}>
@@ -224,15 +238,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex flex-col md:flex-row" style={{ minHeight: '100vh', background: cyber.bg }}>
-      <style>{`
-        @keyframes adminSpin { to { transform: rotate(360deg) } }
-        .admin-spin { animation: adminSpin 0.8s linear infinite; }
-        .admin-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .admin-table th { padding: 9px 14px; text-align: left; font-size: 9px; font-weight: 700; color: ${cyber.textLabel}; text-transform: uppercase; letter-spacing: .12em; background: ${cyber.bg}; font-family: ${cyberFonts.body}; border-bottom: 1px solid ${cyber.accentBorderDim}; }
-        .admin-table td { padding: 9px 14px; color: ${cyber.textPrimary}; border-bottom: 1px solid ${cyber.accentBorderDim}; vertical-align: middle; }
-        .admin-table tbody tr:last-child td { border-bottom: none; }
-        .admin-table tbody tr:hover td { background: ${cyber.accentGlowInset}; }
-      `}</style>
+      <style>{adminStyles}</style>
       <AdminNav />
 
       <main style={{ flex: 1, minWidth: 0 }}>
@@ -245,7 +251,7 @@ export default function AdminDashboard() {
               <p style={{ color: cyber.textLabel, fontSize: 12.5, marginTop: 4, fontFamily: cyberFonts.body }}>
                 Edição{' '}
                 <code style={{ color: cyber.accent, background: cyber.accentOverlay, padding: '1px 6px', borderRadius: 4, fontSize: 11 }}>
-                  {data?.currentEdition}
+                  {data?.currentEdition ?? '—'}
                 </code>
                 <span style={{ margin: '0 6px', color: cyber.textDecorative }}>·</span>
                 <span style={{ color: cyber.textLabel }}>{liveDate}</span>
@@ -258,7 +264,7 @@ export default function AdminDashboard() {
                   : <span style={{ width: 6, height: 6, borderRadius: '50%', background: sc.dot, display: 'block', flexShrink: 0 }} />}
                 <span style={{ fontSize: 11, fontWeight: 700, color: sc.color }}>{sc.label}</span>
               </div>
-              <a href={`/api/admin/export?edition=${data?.currentEdition}`}
+              <a href={data?.currentEdition ? `/api/admin/export?edition=${data.currentEdition}` : '#'}
                 style={{ display: 'flex', alignItems: 'center', gap: 5, background: cyber.surface, border: `1px solid ${cyber.accentBorderDim}`, color: cyber.textLabel, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 500, textDecoration: 'none' }}>
                 <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -343,11 +349,13 @@ export default function AdminDashboard() {
                             <button
                               onClick={() => deleteReg(r.id)}
                               disabled={deletingId === r.id}
+                              aria-label={`Confirmar exclusão de ${r.name}`}
                               style={{ all: 'unset', fontSize: 10.5, fontWeight: 700, color: '#fff', background: '#ef4444', padding: '2px 8px', borderRadius: 4, cursor: 'pointer', opacity: deletingId === r.id ? 0.5 : 1 }}>
                               {deletingId === r.id ? '...' : 'Sim'}
                             </button>
                             <button
                               onClick={() => setConfirmId(null)}
+                              aria-label="Cancelar exclusão"
                               style={{ all: 'unset', fontSize: 10.5, fontWeight: 600, color: cyber.textLabel, background: cyber.bg, padding: '2px 8px', borderRadius: 4, cursor: 'pointer' }}>
                               Não
                             </button>
@@ -416,11 +424,13 @@ export default function AdminDashboard() {
                             <button
                               onClick={() => deleteEdition(e.editionId)}
                               disabled={deletingId === e.editionId}
+                              aria-label={`Confirmar exclusão da edição ${e.editionId}`}
                               style={{ all: 'unset', fontSize: 10.5, fontWeight: 700, color: '#fff', background: '#ef4444', padding: '2px 8px', borderRadius: 4, cursor: 'pointer', opacity: deletingId === e.editionId ? 0.5 : 1 }}>
                               {deletingId === e.editionId ? '...' : 'Sim'}
                             </button>
                             <button
                               onClick={() => setConfirmId(null)}
+                              aria-label="Cancelar exclusão"
                               style={{ all: 'unset', fontSize: 10.5, fontWeight: 600, color: cyber.textLabel, background: cyber.bg, padding: '2px 8px', borderRadius: 4, cursor: 'pointer' }}>
                               Não
                             </button>
