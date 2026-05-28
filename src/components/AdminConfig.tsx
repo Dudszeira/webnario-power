@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminNav from './AdminNav';
 import { cyber, cyberFonts } from '@/lib/cybertheme';
@@ -51,6 +51,75 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
       <label className="label-admin">{label}</label>
       {children}
       {hint && <p style={{ fontSize: 11, color: cyber.textDecorative, marginTop: 4 }}>{hint}</p>}
+    </div>
+  );
+}
+
+function CyberSelect({ value, onChange, options }: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, []);
+
+  const selected = options.find(o => o.value === value);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', background: cyber.bg,
+          border: `1px solid ${open ? cyber.accent : cyber.accentBorderDim}`,
+          borderRadius: 4, padding: '10px 34px 10px 12px',
+          color: cyber.textPrimary, fontFamily: cyberFonts.body, fontSize: 13,
+          cursor: 'pointer', userSelect: 'none' as const, boxSizing: 'border-box' as const,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          transition: 'border-color .2s',
+        }}
+      >
+        <span>{selected?.label}</span>
+        <svg width="12" height="12" fill="none" stroke={cyber.textLabel} strokeWidth={2.5} viewBox="0 0 24 24"
+          strokeLinecap="round" strokeLinejoin="round"
+          style={{ flexShrink: 0, transition: 'transform .15s', transform: open ? 'rotate(180deg)' : 'none' }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </div>
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 200,
+          background: cyber.surface, border: `1px solid ${cyber.accentBorderDim}`,
+          borderRadius: 6, overflow: 'hidden', boxShadow: `0 8px 32px rgba(0,0,0,0.6)`,
+        }}>
+          {options.map((opt, i) => (
+            <div
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              onMouseEnter={() => setHovered(opt.value)}
+              onMouseLeave={() => setHovered(null)}
+              style={{
+                padding: '10px 14px', fontSize: 13, fontFamily: cyberFonts.body, cursor: 'pointer',
+                color: opt.value === value ? cyber.accent : cyber.textPrimary,
+                background: opt.value === value ? cyber.accentOverlay : hovered === opt.value ? 'rgba(0,180,255,0.04)' : 'transparent',
+                borderBottom: i < options.length - 1 ? `1px solid ${cyber.accentBorderDim}` : 'none',
+                transition: 'background .1s',
+              }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -195,10 +264,14 @@ export default function AdminConfig() {
 
             <SectionCard title="Vídeo" description="Fonte e duração do player de vídeo da live." accent={cyber.accent}>
               <Field label="Fonte">
-                <select className="input-admin" value={config.video_source} onChange={e => set('video_source', e.target.value)}>
-                  <option value="youtube">YouTube</option>
-                  <option value="upload">Upload local</option>
-                </select>
+                <CyberSelect
+                  value={config.video_source}
+                  onChange={v => set('video_source', v)}
+                  options={[
+                    { value: 'youtube', label: 'YouTube' },
+                    { value: 'upload',  label: 'Upload local' },
+                  ]}
+                />
               </Field>
 
               {config.video_source === 'youtube' ? (
@@ -229,10 +302,14 @@ export default function AdminConfig() {
 
             <SectionCard title="Chat" description="Modo de visibilidade do chat. Habilitar/desabilitar é controlado pelo painel staff no chat." accent={cyber.green}>
               <Field label="Modo de visibilidade">
-                <select className="input-admin" value={config.chat_mode} onChange={e => set('chat_mode', e.target.value)}>
-                  <option value="general">Geral — todos veem todos os comentários</option>
-                  <option value="isolated">Isolado — cada usuário vê apenas os próprios</option>
-                </select>
+                <CyberSelect
+                  value={config.chat_mode}
+                  onChange={v => set('chat_mode', v)}
+                  options={[
+                    { value: 'general',  label: 'Geral — todos veem todos os comentários' },
+                    { value: 'isolated', label: 'Isolado — cada usuário vê apenas os próprios' },
+                  ]}
+                />
               </Field>
             </SectionCard>
 
