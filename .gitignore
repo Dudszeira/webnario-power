@@ -42,6 +42,9 @@ next-env.d.ts
 /data/*.db-wal
 /data/uploads/
 
+# video files (large assets, not tracked in git)
+/public/videos/
+
 # wordpress plugin outputs
 /Plugin Wordpress/wp-live-comments.zip
 /Plugin Wordpress/.claude/
