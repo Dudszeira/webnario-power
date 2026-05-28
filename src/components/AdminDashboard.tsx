@@ -127,7 +127,7 @@ function TestModePanel({ currentEdition: _currentEdition }: { currentEdition?: s
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => setTestMode(v => !v)}>
           <div style={{ width: 36, height: 20, borderRadius: 10, background: testMode ? cyber.pink : cyber.bg, border: `1px solid ${testMode ? cyber.pink : cyber.accentBorderDim}`, position: 'relative', transition: 'all .18s', flexShrink: 0 }}>
-            <div style={{ position: 'absolute', top: 3, left: testMode ? 17 : 3, width: 12, height: 12, borderRadius: '50%', background: '#fff', transition: 'left .18s' }} />
+            <div style={{ position: 'absolute', top: 3, left: testMode ? 17 : 3, width: 12, height: 12, borderRadius: '50%', background: cyber.white, transition: 'left .18s' }} />
           </div>
           <span style={{ fontSize: 12, color: accent, fontWeight: 600 }}>{testMode ? 'Ativo' : 'Inativo'}</span>
         </label>
@@ -149,7 +149,7 @@ function TestModePanel({ currentEdition: _currentEdition }: { currentEdition?: s
           <button
             onClick={save}
             disabled={saving}
-            style={{ padding: '8px 16px', borderRadius: 7, background: saved ? cyber.green : cyber.pink, border: 'none', color: '#fff', fontWeight: 700, fontSize: 12, cursor: saving ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: saving ? 0.6 : 1 }}>
+            style={{ padding: '8px 16px', borderRadius: 7, background: saved ? cyber.green : cyber.pink, border: 'none', color: cyber.black, fontWeight: 700, fontSize: 12, cursor: saving ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: saving ? 0.6 : 1 }}>
             {saved ? '✓ Salvo' : saving ? '...' : 'Salvar'}
           </button>
         </div>
@@ -393,7 +393,7 @@ export default function AdminDashboard() {
                         <div style={{ display: 'flex', gap: 5 }}>
                           {/* Chat export — green status indicator, kept as-is */}
                           <a href={`/api/admin/export-comments?edition=${e.editionId}`}
-                            style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.18)', color: '#34d399', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, background: 'rgba(52,211,153,0.07)', border: '1px solid rgba(52,211,153,0.18)', color: '#34d399', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
                             <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                             </svg>
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
                           </a>
                           {/* Data export — blue status indicator, kept as-is */}
                           <a href={`/api/admin/export?edition=${e.editionId}`}
-                            style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.18)', color: '#60a5fa', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)', color: '#60a5fa', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
                             <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                             </svg>
