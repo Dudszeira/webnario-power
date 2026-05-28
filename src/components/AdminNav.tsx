@@ -16,6 +16,17 @@ const NAV = [
     ),
   },
   {
+    href: '/admin/live',
+    label: 'Monitor Live',
+    icon: (
+      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
+        <path d="M6.34 6.34a8 8 0 1 0 11.32 11.32A8 8 0 0 0 6.34 6.34"/>
+        <path d="M2 12h2M20 12h2M12 2v2M12 20v2"/>
+      </svg>
+    ),
+  },
+  {
     href: '/admin/configuracoes',
     label: 'Configurações',
     icon: (

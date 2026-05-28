@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEdition, upsertEdition } from '@/lib/db';
+import { getEdition, getEditionsList, upsertEdition } from '@/lib/db';
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
 
@@ -8,7 +8,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const editionId = getCurrentEditionId();
-  const edition = await getEdition(editionId);
+  let edition = await getEdition(editionId);
+
+  // If the upcoming edition has no data yet, fall back to the most recently saved edition
+  // so configs don't appear to vanish the day after a live.
+  if (!edition) {
+    const all = await getEditionsList(); // ordered by id desc
+    if (all.length > 0) edition = all[0];
+  }
+
   return NextResponse.json({ edition: edition || { id: editionId } });
 }
 

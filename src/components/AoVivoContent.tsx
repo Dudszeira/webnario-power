@@ -47,10 +47,22 @@ export default function AoVivoContent({
 }: Props) {
   const videoOffsetRef = useRef<number>(initialOffset);
   const [liveEnded, setLiveEnded] = useState(false);
+  const [chatMinimized, setChatMinimized] = useState(() => {
+    try { return typeof window !== 'undefined' && localStorage.getItem('lc_chat_minimized') === '1'; } catch { return false; }
+  });
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
 
   const handleTimeUpdate = useCallback((secs: number) => {
     videoOffsetRef.current = secs;
   }, []);
+
+  function toggleChat() {
+    setChatMinimized(v => {
+      const next = !v;
+      try { localStorage.setItem('lc_chat_minimized', next ? '1' : '0'); } catch {}
+      return next;
+    });
+  }
 
   useEffect(() => {
     const check = () => {
@@ -60,6 +72,32 @@ export default function AoVivoContent({
     const t = setInterval(check, 10000);
     return () => clearInterval(t);
   }, [liveStartMs, videoDuration]);
+
+  // Heartbeat: track watch time every 60s (skips admin preview)
+  useEffect(() => {
+    if (isAdminPreview) return;
+    const t = setInterval(() => {
+      fetch('/api/click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'heartbeat', meta: { video_offset: videoOffsetRef.current } }),
+      }).catch(() => {});
+    }, 60000);
+    return () => clearInterval(t);
+  }, [isAdminPreview]);
+
+  // Redirect countdown when live ends (skip admin)
+  useEffect(() => {
+    if (!liveEnded || !salesUrl || isAdminPreview) return;
+    setRedirectCountdown(10);
+  }, [liveEnded, salesUrl, isAdminPreview]);
+
+  useEffect(() => {
+    if (redirectCountdown === null) return;
+    if (redirectCountdown <= 0) { window.location.href = salesUrl; return; }
+    const t = setTimeout(() => setRedirectCountdown(c => (c ?? 1) - 1), 1000);
+    return () => clearTimeout(t);
+  }, [redirectCountdown, salesUrl]);
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: '#0d0d0d' }}>
@@ -153,32 +191,63 @@ export default function AoVivoContent({
         </div>
 
         {/* Right column — chat card (desktop only) */}
-        <div
-          className="hidden md:flex flex-col flex-shrink-0 overflow-hidden"
-          style={{
-            width: 420,
-            borderRadius: 20,
-            border: '1px solid #222222',
-            background: '#111111',
-          }}
-        >
-          <ChatPanel
-            editionId={editionId}
-            sessionName={session.name}
-            chatEnabled={chatEnabled}
-            chatMode={chatMode}
-            simulatedComments={simulatedComments as any}
-            pinnedComments={pinnedComments as any}
-            videoOffsetRef={videoOffsetRef}
-            ctaEnabled={ctaEnabled}
-            ctaUrl={ctaUrl}
-            ctaText={ctaText}
-            ctaStartSecs={ctaStartSecs}
-            ctaEndSecs={ctaEndSecs}
-            viewerMin={viewerMin}
-            viewerMax={viewerMax}
-          />
-        </div>
+        {chatMinimized ? (
+          <button
+            onClick={toggleChat}
+            title="Abrir chat"
+            className="hidden md:flex"
+            style={{
+              flexShrink: 0,
+              width: 44,
+              alignSelf: 'stretch',
+              background: '#111111',
+              border: '1px solid #222222',
+              borderRadius: 20,
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              cursor: 'pointer',
+              color: 'rgba(255,255,255,0.4)',
+              padding: 0,
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+        ) : (
+          <div
+            className="hidden md:flex flex-col flex-shrink-0 overflow-hidden"
+            style={{
+              width: 420,
+              borderRadius: 20,
+              border: '1px solid #222222',
+              background: '#111111',
+            }}
+          >
+            <ChatPanel
+              editionId={editionId}
+              sessionName={session.name}
+              chatEnabled={chatEnabled}
+              chatMode={chatMode}
+              simulatedComments={simulatedComments as any}
+              pinnedComments={pinnedComments as any}
+              videoOffsetRef={videoOffsetRef}
+              ctaEnabled={ctaEnabled}
+              ctaUrl={ctaUrl}
+              ctaText={ctaText}
+              ctaStartSecs={ctaStartSecs}
+              ctaEndSecs={ctaEndSecs}
+              viewerMin={viewerMin}
+              viewerMax={viewerMax}
+              onMinimize={toggleChat}
+            />
+          </div>
+        )}
       </div>
 
       {/* Purchase notifications */}
@@ -200,18 +269,20 @@ export default function AoVivoContent({
             <div className="text-5xl mb-4">🏁</div>
             <h2 className="text-2xl font-bold text-white mb-3">Transmissão encerrada</h2>
             <p className="text-sm leading-relaxed mb-6" style={{ color: '#9ca3af' }}>
-              A transmissão ao vivo chegou ao fim. Obrigado por participar! Fique atento aos
-              nossos canais para as próximas informações.
+              A transmissão ao vivo chegou ao fim. Obrigado por participar!
             </p>
+            {salesUrl && redirectCountdown !== null && (
+              <p className="text-xs mb-4" style={{ color: '#6b7280' }}>
+                Redirecionando em <strong style={{ color: '#f59e0b' }}>{redirectCountdown}s</strong>...
+              </p>
+            )}
             {salesUrl && (
               <a
                 href={salesUrl}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="block w-full font-bold py-3 rounded-xl text-sm text-white transition-opacity hover:opacity-90"
                 style={{ background: '#2563eb' }}
               >
-                Próximos passos →
+                {redirectCountdown !== null ? 'Ir agora →' : 'Próximos passos →'}
               </a>
             )}
           </div>

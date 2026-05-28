@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { 
-  getEdition, 
-  getRealComments, 
-  getIsolatedComments, 
-  insertComment 
+import {
+  getEdition,
+  getRealComments,
+  getRecentRealComments,
+  getIsolatedComments,
+  insertComment
 } from '@/lib/db';
 import { verifyUserSessionFromRequest, verifyStaffToken } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
   if (session && session.editionId !== editionId) return NextResponse.json({ comments: [] });
 
   const since = req.nextUrl.searchParams.get('since') || '1970-01-01T00:00:00.000Z';
+  const isFull = req.nextUrl.searchParams.get('full') === '1';
 
   // Read authoritative settings from DB
   const edition = await getEdition(editionId);
@@ -32,7 +34,11 @@ export async function GET(req: NextRequest) {
 
   let comments;
 
-  if (staffMember) {
+  if (isFull) {
+    // Full refresh: return latest 100 real comments (for picking up reply updates)
+    const latest = await getRecentRealComments(editionId, 100);
+    comments = latest.reverse(); // reverse DESC→ASC for chronological order
+  } else if (staffMember) {
     // Staff sees all real comments regardless of chat_mode
     comments = await getRealComments(editionId, since, 100);
   } else if (chatMode === 'isolated') {

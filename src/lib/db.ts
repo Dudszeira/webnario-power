@@ -451,6 +451,29 @@ export async function insertCommentsBatch(comments: Omit<Comment, 'created_at'>[
 }
 
 // Events Repositories
+export async function getLiveEventsForEdition(editionId: string) {
+  const { data, error } = await supabase
+    .from('events')
+    .select('registration_id, type, created_at')
+    .eq('edition_id', editionId)
+    .in('type', ['enter_live', 'cta_click', 'heartbeat'])
+    .order('created_at', { ascending: true });
+
+  if (error) console.error('getLiveEventsForEdition error:', error);
+  return data || [];
+}
+
+export async function getLiveCommentCountsPerUser(editionId: string) {
+  const { data, error } = await supabase
+    .from('comments')
+    .select('registration_id, count:id.count()')
+    .eq('edition_id', editionId)
+    .eq('type', 'real_user');
+
+  if (error) console.error('getLiveCommentCountsPerUser error:', error);
+  return (data || []) as { registration_id: string | null; count: number }[];
+}
+
 export async function createEvent(event: Omit<Event, 'created_at'>): Promise<void> {
   const { error } = await supabase
     .from('events')

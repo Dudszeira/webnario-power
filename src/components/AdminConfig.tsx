@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import AdminNav from './AdminNav';
 
 const defaultConfig = {
@@ -50,13 +51,17 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
 }
 
 export default function AdminConfig() {
+  const router = useRouter();
   const [config, setConfig] = useState(defaultConfig);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    fetch('/api/admin/config').then(r => r.json()).then(d => {
+    fetch('/api/admin/config').then(async r => {
+      if (r.status === 401) { router.replace('/admin/login'); return; }
+      const d = await r.json();
       if (d.edition) {
         let testTimeLocal = '';
         if (d.edition.test_time) {
@@ -79,26 +84,34 @@ export default function AdminConfig() {
       }
       setLoading(false);
     });
-  }, []);
+  }, [router]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
-    
+    setSaving(true); setSaveError('');
+
     const payload = {
       ...config,
-      test_time: (config.test_mode && config.test_time) 
-        ? new Date(config.test_time).toISOString() 
+      test_time: (config.test_mode && config.test_time)
+        ? new Date(config.test_time).toISOString()
         : null
     };
 
-    await fetch('/api/admin/config', { 
-      method: 'PUT', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify(payload) 
-    });
-    setSaving(false); setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    try {
+      const r = await fetch('/api/admin/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (r.status === 401) { router.replace('/admin/login'); return; }
+      if (!r.ok) { setSaveError('Erro ao salvar. Tente novamente.'); return; }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch {
+      setSaveError('Erro de conexão. Tente novamente.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   const set = (key: string, val: any) => setConfig(c => ({ ...c, [key]: val }));
@@ -193,6 +206,12 @@ export default function AdminConfig() {
                 <input className="input-admin" type="url" value={config.sales_page_url} onChange={e => set('sales_page_url', e.target.value)} placeholder="https://..." />
               </Field>
             </SectionCard>
+
+            {saveError && (
+              <p style={{ fontSize: 12, color: '#ef4444', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '8px 12px', margin: 0 }}>
+                {saveError}
+              </p>
+            )}
 
             <button type="submit" disabled={saving} style={{
               width: '100%',

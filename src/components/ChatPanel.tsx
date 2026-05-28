@@ -30,6 +30,7 @@ type Props = {
   ctaEndSecs: number;
   viewerMin: number;
   viewerMax: number;
+  onMinimize?: () => void;
 };
 
 // ── Theme tokens ─────────────────────────────────────────────────────────────
@@ -136,6 +137,13 @@ function CommentRow({
         display: 'flex', gap: 10,
         cursor: staffLogged ? 'pointer' : 'default',
         opacity: 1, transition: 'opacity .15s',
+        ...(host ? {
+          background: 'rgba(224,160,48,0.07)',
+          borderLeft: '2px solid rgba(224,160,48,0.35)',
+          borderRadius: 8,
+          padding: '8px 10px',
+          margin: '0 -10px',
+        } : {}),
       }}
       onMouseEnter={e => { if (staffLogged) (e.currentTarget as HTMLElement).style.opacity = '0.8'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
@@ -182,17 +190,31 @@ function CommentRow({
 
 // ── Pinned banner ─────────────────────────────────────────────────────────────
 function PinnedBanner({ comment, ctaUrl, ctaText }: { comment: ChatComment; ctaUrl: string; ctaText: string }) {
+  const authorName = comment.author_name || 'Robison Kunz';
+  const initial = authorName.charAt(0).toUpperCase();
+
   return (
     <div style={{ margin: '8px 12px 0', padding: '10px 12px', background: 'rgba(85,160,238,0.08)', border: '1px solid rgba(85,160,238,0.25)', borderRadius: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+      {/* Header: pin icon + label */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="#55A0EE"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
         <span style={{ fontSize: 10, fontWeight: 700, color: '#55A0EE', textTransform: 'uppercase', letterSpacing: '.07em', fontFamily: "'Montserrat', sans-serif" }}>Fixado</span>
       </div>
-      <p style={{ fontSize: 13, fontWeight: 500, color: '#fff', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>{comment.text}</p>
+      {/* Author row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(224,160,48,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#e0a030', flexShrink: 0 }}>
+          {initial}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#e0a030', fontFamily: "'Montserrat', sans-serif" }}>{authorName}</span>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', padding: '2px 6px', borderRadius: 3, background: 'rgba(224,160,48,0.15)', color: '#e0a030', border: '1px solid rgba(224,160,48,0.3)' }}>HOST</span>
+        </div>
+      </div>
+      <p style={{ fontSize: 13, fontWeight: 500, color: '#fff', margin: 0, fontFamily: "'Montserrat', sans-serif", lineHeight: 1.5, paddingLeft: 36 }}>{comment.text}</p>
       {ctaUrl && (
         <a href={ctaUrl} target="_blank" rel="noopener noreferrer"
           onClick={() => fetch('/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'cta_click', meta: { url: ctaUrl } }) })}
-          style={{ display: 'inline-block', marginTop: 8, background: '#55A0EE', color: '#fff', fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 6, textDecoration: 'none', fontFamily: "'Montserrat', sans-serif" }}>
+          style={{ display: 'inline-block', marginTop: 10, marginLeft: 36, background: '#55A0EE', color: '#fff', fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 6, textDecoration: 'none', fontFamily: "'Montserrat', sans-serif" }}>
           {ctaText || 'Acessar agora →'}
         </a>
       )}
@@ -200,12 +222,19 @@ function PinnedBanner({ comment, ctaUrl, ctaText }: { comment: ChatComment; ctaU
   );
 }
 
+const DEFAULT_WELCOME_PIN: ChatComment = {
+  id: '__welcome__',
+  type: 'real_staff',
+  author_name: 'Robison Kunz',
+  text: '👋 Seja bem-vindo(a) à imersão! Estamos muito felizes em ter você aqui. Fique à vontade para comentar e interagir conosco ao longo da live!',
+};
+
 // ── Main component ────────────────────────────────────────────────────────────
 export default function ChatPanel({
   editionId, sessionName, chatEnabled, chatMode,
   simulatedComments, pinnedComments, videoOffsetRef,
   ctaEnabled, ctaUrl, ctaText, ctaStartSecs, ctaEndSecs,
-  viewerMin, viewerMax,
+  viewerMin, viewerMax, onMinimize,
 }: Props) {
   const [isDark, setIsDark] = useState(true);
   const [comments, setComments] = useState<ChatComment[]>([]);
@@ -238,6 +267,17 @@ export default function ChatPanel({
   const typingSimIds = useRef<Set<string>>(new Set());
   const mountTimeRef = useRef(Date.now());
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pollCountRef = useRef(0);
+
+  // Track video offset as state so CTA and pinned comments react to video progress
+  const [videoOffset, setVideoOffset] = useState(() => videoOffsetRef.current ?? 0);
+  useEffect(() => {
+    const t = setInterval(() => {
+      const cur = videoOffsetRef.current ?? 0;
+      setVideoOffset(prev => prev !== cur ? cur : prev);
+    }, 1000);
+    return () => clearInterval(t);
+  }, [videoOffsetRef]);
 
   const T = theme(isDark);
 
@@ -345,26 +385,48 @@ export default function ChatPanel({
   const staffTokenRef = useRef(staffToken);
   useEffect(() => { staffTokenRef.current = staffToken; }, [staffToken]);
 
-  // Poll real comments every 3s
+  // Poll real comments every 3s; every 5th poll (~15s) does a full refresh to pick up reply updates
   useEffect(() => {
     let active = true;
     const poll = async () => {
       if (!active) return;
+      pollCountRef.current += 1;
+      const isFull = pollCountRef.current % 5 === 0;
       try {
         const headers: HeadersInit = {};
         if (staffTokenRef.current) headers['Authorization'] = `Bearer ${staffTokenRef.current}`;
-        const res = await fetch(`/api/chat?since=${encodeURIComponent(lastPoll)}`, { headers });
+        const url = isFull
+          ? `/api/chat?full=1`
+          : `/api/chat?since=${encodeURIComponent(lastPoll)}`;
+        const res = await fetch(url, { headers });
         const data = await res.json();
         // Only sync CTA state from poll for non-staff — staff controls it directly via toggle
         if (data.cta_enabled !== undefined && !staffTokenRef.current) setServerCtaEnabled(!!data.cta_enabled);
         if (data.comments?.length) {
+          const incoming = data.comments as ChatComment[];
           setComments(prev => {
-            const ids = new Set(prev.map(c => c.id));
-            const next = (data.comments as ChatComment[]).filter(c => !ids.has(c.id));
-            return [...prev, ...next];
+            // Build index of existing comments for fast lookup
+            const prevIndexMap = new Map(prev.map((c, i) => [c.id, i]));
+            const result = [...prev];
+            const toAppend: ChatComment[] = [];
+
+            for (const ic of incoming) {
+              const existingIdx = prevIndexMap.get(ic.id);
+              if (existingIdx !== undefined) {
+                // Update reply data if staff replied to this comment
+                if (ic.reply && ic.reply !== result[existingIdx].reply) {
+                  result[existingIdx] = { ...result[existingIdx], reply: ic.reply, reply_author: ic.reply_author };
+                }
+              } else {
+                toAppend.push(ic);
+              }
+            }
+            return [...result, ...toAppend];
           });
-          const newest = data.comments[data.comments.length - 1].created_at;
-          if (newest) setLastPoll(newest);
+          const newest = incoming[incoming.length - 1].created_at;
+          if (newest && !isFull) setLastPoll(newest);
+          // On full refresh update lastPoll to newest found so incremental stays current
+          if (isFull && newest && newest > lastPoll) setLastPoll(newest);
         }
       } catch {}
     };
@@ -415,14 +477,12 @@ export default function ChatPanel({
     return () => clearInterval(t);
   }, [isStaff, staffToken]);
 
-  const offset = videoOffsetRef.current ?? 0;
   const activePins = pinnedComments.filter(p => {
     if (!p.pin_start_seconds && !p.pin_end_seconds) return true;
-    return offset >= (p.pin_start_seconds ?? 0) && offset <= (p.pin_end_seconds ?? Infinity);
+    return videoOffset >= (p.pin_start_seconds ?? 0) && videoOffset <= (p.pin_end_seconds ?? Infinity);
   });
-  // Staff sees CTA immediately when toggled ON (no time restriction); viewers follow the time window
-  const showCta = serverCtaEnabled && ctaUrl && ctaVisible &&
-    (isStaff || (offset >= ctaStartSecs && offset <= ctaEndSecs));
+  // CTA shows for everyone when staff has enabled it — no time-window restriction for viewers
+  const showCta = serverCtaEnabled && ctaUrl && ctaVisible;
 
   async function sendComment() {
     const text = input.trim();
@@ -550,6 +610,20 @@ export default function ChatPanel({
           <span style={{ fontSize: 13, fontWeight: 700, color: T.textTitle, letterSpacing: '.05em', textTransform: 'uppercase' }}>Comentários ao Vivo</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* Minimize button */}
+          {onMinimize && (
+            <button
+              onClick={onMinimize}
+              title="Minimizar chat"
+              style={btnBase}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = T.toggleBg; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          )}
           {/* Staff lock button */}
           <button
             onClick={() => isStaff ? null : setShowStaffModal(true)}
@@ -578,11 +652,12 @@ export default function ChatPanel({
       </div>
 
       {/* ── Pinned ─────────────────────────────────────────── */}
-      {activePins.length > 0 && (
-        <div style={{ paddingBottom: 8, flexShrink: 0 }}>
-          {activePins.map(p => <PinnedBanner key={p.id} comment={p} ctaUrl={ctaUrl} ctaText={ctaText} />)}
-        </div>
-      )}
+      <div style={{ paddingBottom: 8, flexShrink: 0 }}>
+        {activePins.length > 0
+          ? activePins.map(p => <PinnedBanner key={p.id} comment={p} ctaUrl={ctaUrl} ctaText={ctaText} />)
+          : <PinnedBanner key="__welcome__" comment={DEFAULT_WELCOME_PIN} ctaUrl="" ctaText="" />
+        }
+      </div>
 
       {/* ── Comment list ───────────────────────────────────── */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 14, scrollBehavior: 'smooth', scrollbarWidth: 'thin', scrollbarColor: `${T.scrollbar} transparent` }}>

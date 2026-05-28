@@ -6,9 +6,10 @@ type Props = {
   source: 'upload' | 'youtube';
   url: string;
   initialOffset: number; // seconds to seek to on load
-  videoDuration: number;  // total video length in seconds (used for stable progress bar)
+  videoDuration?: number; // accepted for API compatibility but not rendered
   onTimeUpdate?: (seconds: number) => void;
   onStarted?: () => void;
+  allowPause?: boolean; // if false (default for upload), hides play/pause button
 };
 
 function extractYouTubeId(url: string): string | null {
@@ -23,17 +24,17 @@ declare global {
   }
 }
 
-export default function VideoPlayer({ source, url, initialOffset, videoDuration, onTimeUpdate, onStarted }: Props) {
+export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, onStarted, allowPause = false }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const ytPlayerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const autoStartAttemptedRef = useRef(false);
 
   const [started, setStarted] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(100);
   const [muted, setMuted] = useState(false);
 
-  const [currentTime, setCurrentTime] = useState(0);
   const [showToast, setShowToast] = useState(false);
 
   const playTimestampRef = useRef<number | null>(null);
@@ -52,6 +53,37 @@ export default function VideoPlayer({ source, url, initialOffset, videoDuration,
     if (!started) return;
     playTimestampRef.current = Date.now();
   }, [started]);
+
+  // Auto-start upload video on mount (muted to satisfy browser autoplay policy)
+  useEffect(() => {
+    if (source !== 'upload' || !url || autoStartAttemptedRef.current) return;
+    autoStartAttemptedRef.current = true;
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    const tryStart = () => {
+      video.currentTime = initialOffset;
+      video.muted = true;
+      setMuted(true);
+      video.play()
+        .then(() => {
+          setStarted(true);
+          setPlaying(true);
+          onStarted?.();
+        })
+        .catch(() => {
+          // Autoplay blocked — cover screen stays so user can click to start
+        });
+    };
+
+    if (video.readyState >= 2) {
+      tryStart();
+    } else {
+      video.addEventListener('canplay', tryStart, { once: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, url]);
 
   // Sync volume & mute for both players
   useEffect(() => {
@@ -80,7 +112,6 @@ export default function VideoPlayer({ source, url, initialOffset, videoDuration,
 
     const handleTime = () => {
       const cur = Math.floor(video.currentTime);
-      setCurrentTime(cur);
       onTimeUpdate?.(cur);
 
       // Security Guard: Prevent skipping forward beyond live simulation
@@ -142,7 +173,6 @@ export default function VideoPlayer({ source, url, initialOffset, videoDuration,
         const player = ytPlayerRef.current;
         if (player && typeof player.getCurrentTime === 'function') {
           const cur = Math.floor(player.getCurrentTime());
-          setCurrentTime(cur);
           onTimeUpdate?.(cur);
 
           // Security Guard: Prevent skipping forward beyond live simulation
@@ -184,6 +214,7 @@ export default function VideoPlayer({ source, url, initialOffset, videoDuration,
 
   function togglePlay() {
     if (source === 'upload') {
+      if (!allowPause) return; // upload leads cannot pause
       const video = videoRef.current;
       if (video) {
         if (playing) {
@@ -214,8 +245,6 @@ export default function VideoPlayer({ source, url, initialOffset, videoDuration,
     else setMuted(false);
   }
 
-  const progressPercent = videoDuration > 0 ? Math.min(100, (currentTime / videoDuration) * 100) : 0;
-
   // RENDER PLAYER
   return (
     <div
@@ -230,6 +259,21 @@ export default function VideoPlayer({ source, url, initialOffset, videoDuration,
           <span className="w-2 h-2 absolute top-[9px] left-[13px] rounded-full bg-red-500 flex-shrink-0" />
           <span className="text-[10.5px] font-bold tracking-widest text-white uppercase">AO VIVO</span>
         </div>
+      )}
+
+      {/* 🔇 MUTED NUDGE — shown when upload starts muted */}
+      {source === 'upload' && started && muted && (
+        <button
+          onClick={() => setMuted(false)}
+          className="absolute top-3 right-3 z-30 flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-white text-[10.5px] font-bold tracking-wide hover:bg-black/90 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5 fill-none stroke-current" strokeWidth="2" viewBox="0 0 24 24">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19" fill="currentColor" stroke="none" />
+            <line x1="23" y1="9" x2="17" y2="15" />
+            <line x1="17" y1="9" x2="23" y2="15" />
+          </svg>
+          Clique para ativar o som
+        </button>
       )}
 
       {/* ⏱ TOAST DE SEGURANÇA */}
@@ -286,32 +330,26 @@ export default function VideoPlayer({ source, url, initialOffset, videoDuration,
       {/* 🎛️ CONTROLES PERSONALIZADOS (Z-INDEX 20) */}
       {started && (
         <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col px-4 pb-3 pt-8 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 select-none">
-          {/* Progress Bar (Read Only) */}
-          <div className="w-full h-1 bg-white/10 rounded-full mb-3 overflow-hidden cursor-not-allowed">
-            <div
-              className="h-full bg-blue-500 rounded-full transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              {/* Play / Pause button */}
-              <button
-                onClick={togglePlay}
-                className="w-8 h-8 flex items-center justify-center text-white hover:text-blue-400 transition-colors"
-                title={playing ? 'Pausar' : 'Reproduzir'}
-              >
-                {playing ? (
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                )}
-              </button>
+              {/* Play / Pause button — only for YouTube or when allowPause is true */}
+              {(source === 'youtube' || allowPause) && (
+                <button
+                  onClick={togglePlay}
+                  className="w-8 h-8 flex items-center justify-center text-white hover:text-blue-400 transition-colors"
+                  title={playing ? 'Pausar' : 'Reproduzir'}
+                >
+                  {playing ? (
+                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </button>
+              )}
 
               {/* Status Indicator */}
               <div className="flex items-center gap-1 bg-red-600/20 border border-red-600/30 px-2.5 py-0.5 rounded text-[9.5px] font-bold text-red-500 uppercase tracking-widest pointer-events-none">
