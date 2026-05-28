@@ -28,22 +28,22 @@ export const cyberEffects = {
   scanLines: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.07) 0px, rgba(0,0,0,0.07) 1px, transparent 1px, transparent 3px)',
   grid40:    'linear-gradient(rgba(0,180,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,180,255,0.04) 1px, transparent 1px)',
   grid50:    'linear-gradient(rgba(0,180,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,180,255,0.03) 1px, transparent 1px)',
-  radialGlow:'radial-gradient(ellipse 70% 40% at 50% 20%, rgba(0,180,255,0.07) 0%, transparent 70%)',
+  radialGlow: 'radial-gradient(ellipse 70% 40% at 50% 20%, rgba(0,180,255,0.07) 0%, transparent 70%)',
 } as const;
 
 export const cyberCard = {
   base: {
-    border:        '1px solid rgba(0,180,255,0.2)',
-    borderRadius:  4,
-    background:    '#040d1a',
-    position:      'relative' as const,
-    overflow:      'hidden' as const,
-    transition:    'all 0.2s ease',
+    border:       `1px solid ${cyber.accentBorderDim}`,
+    borderRadius: 4,
+    background:   cyber.surface,
+    position:     'relative' as const,
+    overflow:     'hidden' as const,
+    transition:   'all 0.2s ease',
   },
   hover: {
-    border:        '1px solid #00B4FF',
-    background:    '#071428',
-    boxShadow:     '0 0 20px rgba(0,180,255,0.25), inset 0 0 20px rgba(0,180,255,0.05)',
-    transform:     'translateY(-2px)',
+    border:       `1px solid ${cyber.accent}`,
+    background:   cyber.surfaceHover,
+    boxShadow:    `0 0 20px ${cyber.accentGlow}, inset 0 0 20px ${cyber.accentGlowInset}`,
+    transform:    'translateY(-2px)',
   },
 } as const;
