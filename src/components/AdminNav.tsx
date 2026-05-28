@@ -73,7 +73,11 @@ export default function AdminNav() {
   const router = useRouter();
 
   async function logout() {
-    await fetch('/api/admin/auth-session', { method: 'DELETE' });
+    try {
+      await fetch('/api/admin/auth-session', { method: 'DELETE' });
+    } catch {
+      // navigate anyway — server will reject the invalid session on next request
+    }
     router.push('/admin/login');
   }
 
@@ -83,6 +87,7 @@ export default function AdminNav() {
 
       {/* Desktop sidebar */}
       <aside
+        aria-label="Navegação do admin"
         className="hidden md:flex flex-col flex-shrink-0"
         style={{
           width: 220,
@@ -108,9 +113,9 @@ export default function AdminNav() {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '16px 0' }}>
-          <p style={{ fontSize: 9, color: cyber.textLabel, letterSpacing: 4, textTransform: 'uppercase', padding: '0 20px 10px', fontFamily: cyberFonts.body }}>
+          <span aria-hidden="true" style={{ display: 'block', fontSize: 9, color: cyber.textLabel, letterSpacing: 4, textTransform: 'uppercase', padding: '0 20px 10px', fontFamily: cyberFonts.body }}>
             Navegação
-          </p>
+          </span>
           {NAV.map((item) => {
             const active = pathname === item.href;
             return (
@@ -133,7 +138,7 @@ export default function AdminNav() {
                   transition: 'all 0.2s',
                 }}
               >
-                <span className={active ? undefined : 'nav-icon'} style={{ color: active ? cyber.accent : undefined, flexShrink: 0 }}>
+                <span aria-hidden="true" className={active ? undefined : 'nav-icon'} style={{ color: active ? cyber.accent : undefined, flexShrink: 0 }}>
                   {item.icon}
                 </span>
                 {item.label}
@@ -206,7 +211,7 @@ export default function AdminNav() {
                   background: active ? cyber.accentOverlay : 'transparent',
                 }}
               >
-                <span className={active ? undefined : 'nav-icon'} style={{ color: active ? cyber.accent : undefined }}>{item.icon}</span>
+                <span aria-hidden="true" className={active ? undefined : 'nav-icon'} style={{ color: active ? cyber.accent : undefined }}>{item.icon}</span>
                 {item.label}
               </Link>
             );
