@@ -19,6 +19,8 @@ export const cyber = {
   textLabel:        '#6a9ab8',
   textDecorative:   '#3a6b8a',
   white:            '#ffffff',
+  black:            '#000000',
+  error:            'rgba(255,68,102,0.9)',
 } as const;
 
 export const cyberFonts = {

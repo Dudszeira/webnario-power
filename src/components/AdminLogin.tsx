@@ -152,7 +152,7 @@ export default function AdminLogin() {
                   style={{
                     fontFamily: cyberFonts.body,
                     fontSize: 13,
-                    color: 'rgba(255,68,102,0.9)',
+                    color: cyber.error,
                     marginTop: 4,
                     marginBottom: 8,
                   }}
@@ -172,7 +172,7 @@ export default function AdminLogin() {
                   border: 'none',
                   borderRadius: 4,
                   padding: 14,
-                  color: '#000',
+                  color: cyber.black,
                   fontFamily: cyberFonts.display,
                   fontWeight: 700,
                   fontSize: 12,
