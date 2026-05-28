@@ -152,6 +152,7 @@ export default function AdminConfig() {
         const r = await fetch('/api/admin/config');
         if (r.status === 401) { router.replace('/admin/login'); return; }
         const d = await r.json();
+        if (d.detectedVideo) setDetectedVideo(d.detectedVideo);
         if (d.edition) {
           let testTimeLocal = '';
           if (d.edition.test_time) {
@@ -173,14 +174,14 @@ export default function AdminConfig() {
     })();
   }, [router]);
 
-  // Detect existing video on disk whenever upload mode is active
+  // Re-detect video when user switches to upload mode
   useEffect(() => {
-    if (config.video_source !== 'upload') return;
+    if (config.video_source !== 'upload' || detectedVideo) return;
     fetch('/api/admin/video-status')
       .then(r => r.json())
-      .then(d => setDetectedVideo(d.exists ? d : null))
-      .catch(() => setDetectedVideo(null));
-  }, [config.video_source]);
+      .then(d => { if (d.exists) setDetectedVideo(d); })
+      .catch(() => {});
+  }, [config.video_source, detectedVideo]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();

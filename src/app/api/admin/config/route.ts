@@ -2,11 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getEdition, getEditionsList, upsertEdition } from '@/lib/db';
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
-import { readdirSync } from 'fs';
+import { readdirSync, statSync } from 'fs';
 import path from 'path';
 
 const VIDEO_EXTS = ['.mp4', '.webm', '.mov', '.avi'];
 const VIDEOS_DIR = path.join(process.cwd(), 'public', 'videos');
+
+function scanVideoOnDisk() {
+  try {
+    const files = readdirSync(VIDEOS_DIR);
+    const found = files.find(f => VIDEO_EXTS.includes(path.extname(f).toLowerCase()));
+    if (found) {
+      const stat = statSync(path.join(VIDEOS_DIR, found));
+      return { filename: found, url: `/videos/${found}`, sizeMB: Math.round(stat.size / (1024 * 1024)) };
+    }
+  } catch { /* dir may not exist */ }
+  return null;
+}
 
 export async function GET(req: NextRequest) {
   if (!(await verifyAdminFromRequest(req))) {
@@ -24,18 +36,17 @@ export async function GET(req: NextRequest) {
 
   // If upload mode but video_url is empty, detect any existing file on disk and persist it
   if (edition && edition.video_source === 'upload' && !edition.video_url) {
-    try {
-      const files = readdirSync(VIDEOS_DIR);
-      const found = files.find(f => VIDEO_EXTS.includes(path.extname(f).toLowerCase()));
-      if (found) {
-        const detectedUrl = `/videos/${found}`;
-        edition = { ...edition, video_url: detectedUrl };
-        await upsertEdition(edition);
-      }
-    } catch { /* videos dir may not exist yet */ }
+    const disk = scanVideoOnDisk();
+    if (disk) {
+      edition = { ...edition, video_url: disk.url };
+      await upsertEdition(edition);
+    }
   }
 
-  return NextResponse.json({ edition: edition || { id: editionId } });
+  // Always scan disk and include in response so the frontend can show detected files
+  const detectedVideo = scanVideoOnDisk();
+
+  return NextResponse.json({ edition: edition || { id: editionId }, detectedVideo });
 }
 
 export async function PUT(req: NextRequest) {
