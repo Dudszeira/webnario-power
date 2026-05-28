@@ -173,7 +173,7 @@ export default function AdminComments() {
                 <thead><tr><th>Tipo</th><th>Autor</th><th>Texto</th><th>Data</th><th>Ações</th></tr></thead>
                 <tbody>
                   {comments.map(c => {
-                    const ts = TYPE_STYLES[c.type] || { bg: 'rgba(85,85,85,0.1)', color: '#555555', label: c.type };
+                    const ts = TYPE_STYLES[c.type] || { bg: 'rgba(85,85,85,0.1)', color: cyber.textDecorative, label: c.type };
                     return (
                       <tr key={c.id} style={{ opacity: c.visible ? 1 : 0.35 }}>
                         <td><span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: ts.bg, color: ts.color }}>{ts.label}</span></td>
@@ -185,7 +185,7 @@ export default function AdminComments() {
                             <button onClick={() => toggleVisible(c.id, c.visible)} style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, cursor: 'pointer', background: c.visible ? 'rgba(239,68,68,0.07)' : 'rgba(16,185,129,0.07)', border: `1px solid ${c.visible ? 'rgba(239,68,68,0.18)' : 'rgba(16,185,129,0.18)'}`, color: c.visible ? '#f87171' : '#34d399' }}>
                               {c.visible ? 'Ocultar' : 'Mostrar'}
                             </button>
-                            <button onClick={() => togglePin(c.id, c.is_pinned)} style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, cursor: 'pointer', background: c.is_pinned ? 'rgba(37,99,235,0.1)' : 'rgba(85,85,85,0.07)', border: `1px solid ${c.is_pinned ? 'rgba(37,99,235,0.25)' : 'rgba(85,85,85,0.18)'}`, color: c.is_pinned ? '#60a5fa' : '#555555' }}>
+                            <button onClick={() => togglePin(c.id, c.is_pinned)} style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, cursor: 'pointer', background: c.is_pinned ? 'rgba(37,99,235,0.1)' : 'rgba(85,85,85,0.07)', border: `1px solid ${c.is_pinned ? 'rgba(37,99,235,0.25)' : 'rgba(85,85,85,0.18)'}`, color: c.is_pinned ? '#60a5fa' : cyber.textDecorative }}>
                               {c.is_pinned ? '📌 Fixado' : 'Fixar'}
                             </button>
                           </div>

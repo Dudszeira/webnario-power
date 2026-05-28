@@ -198,7 +198,7 @@ export default function AdminImport() {
                     : comments.length === 0
                     ? <tr><td colSpan={4} style={{ textAlign: 'center', color: cyber.textDecorative, padding: '24px 0', fontStyle: 'italic', fontSize: 12 }}>Nenhum comentário simulado importado</td></tr>
                     : comments.map(c => {
-                      const ts = TYPE_STYLES[c.type] || { bg: 'rgba(85,85,85,0.1)', color: '#555555', label: c.type };
+                      const ts = TYPE_STYLES[c.type] || { bg: 'rgba(85,85,85,0.1)', color: cyber.textDecorative, label: c.type };
                       return (
                         <tr key={c.id}>
                           <td><code style={{ fontSize: 12, color: cyber.accent }}>{formatTs(c.video_timestamp)}</code></td>
