@@ -12,6 +12,8 @@ export const cyber = {
   accentOverlay:    'rgba(0,180,255,0.06)',
   green:            '#00ff9d',
   greenGlow:        'rgba(0,255,157,0.4)',
+  surfaceNav:       'rgba(4,13,26,0.8)',
+  surfaceNavMobile: 'rgba(4,13,26,0.95)',
   textPrimary:      '#c8e4f4',
   textSupport:      '#8cb8d4',
   textLabel:        '#6a9ab8',

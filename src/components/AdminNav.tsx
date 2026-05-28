@@ -48,7 +48,7 @@ const NAV = [
   },
   {
     href: '/admin/comentarios',
-    label: 'Moderação',
+    label: 'Comentários',
     icon: (
       <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -63,6 +63,9 @@ const blinkStyle = `
     50% { opacity: 0.2; }
   }
   .cyber-blink { animation: cyberBlink 1.8s ease-in-out infinite; }
+  .nav-link-inactive { color: ${cyber.textDecorative}; transition: color 0.2s; }
+  .nav-link-inactive:hover { color: ${cyber.textPrimary}; }
+  .nav-link-inactive:hover .nav-icon { color: ${cyber.textPrimary}; }
 `;
 
 export default function AdminNav() {
@@ -87,7 +90,7 @@ export default function AdminNav() {
           top: 0,
           alignSelf: 'flex-start',
           height: '100vh',
-          background: 'rgba(4,13,26,0.9)',
+          background: cyber.surfaceNav,
           borderRight: `1px solid ${cyber.accentBorderDim}`,
           overflowY: 'auto',
           fontFamily: cyberFonts.body,
@@ -105,7 +108,7 @@ export default function AdminNav() {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '16px 0' }}>
-          <p style={{ fontSize: 9, color: cyber.textDecorative, letterSpacing: 4, textTransform: 'uppercase', padding: '0 20px 10px', fontFamily: cyberFonts.body }}>
+          <p style={{ fontSize: 9, color: cyber.textLabel, letterSpacing: 4, textTransform: 'uppercase', padding: '0 20px 10px', fontFamily: cyberFonts.body }}>
             Navegação
           </p>
           {NAV.map((item) => {
@@ -114,6 +117,7 @@ export default function AdminNav() {
               <Link
                 key={item.href}
                 href={item.href}
+                className={active ? undefined : 'nav-link-inactive'}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -123,13 +127,13 @@ export default function AdminNav() {
                   fontSize: 12,
                   letterSpacing: 1,
                   fontFamily: cyberFonts.body,
-                  color: active ? cyber.accent : cyber.textDecorative,
+                  ...(active ? { color: cyber.accent } : {}),
                   borderLeft: active ? `2px solid ${cyber.accent}` : '2px solid transparent',
                   background: active ? cyber.accentOverlay : 'transparent',
                   transition: 'all 0.2s',
                 }}
               >
-                <span style={{ color: active ? cyber.accent : cyber.textDecorative, flexShrink: 0 }}>
+                <span className={active ? undefined : 'nav-icon'} style={{ color: active ? cyber.accent : undefined, flexShrink: 0 }}>
                   {item.icon}
                 </span>
                 {item.label}
@@ -175,7 +179,7 @@ export default function AdminNav() {
       {/* Mobile top bar */}
       <div
         className="md:hidden sticky top-0 z-50"
-        style={{ background: 'rgba(4,13,26,0.95)', borderBottom: `1px solid ${cyber.accentBorderDim}`, width: '100%' }}
+        style={{ background: cyber.surfaceNavMobile, borderBottom: `1px solid ${cyber.accentBorderDim}`, width: '100%' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px' }}>
           <div style={{ fontFamily: cyberFonts.display, fontSize: 13, fontWeight: 900, color: cyber.accent, letterSpacing: 2 }}>WEBNARIO</div>
@@ -190,18 +194,19 @@ export default function AdminNav() {
               <Link
                 key={item.href}
                 href={item.href}
+                className={active ? undefined : 'nav-link-inactive'}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '5px 12px', whiteSpace: 'nowrap',
                   textDecoration: 'none', fontSize: 11,
                   fontFamily: cyberFonts.body,
-                  color: active ? cyber.accent : cyber.textDecorative,
+                  ...(active ? { color: cyber.accent } : {}),
                   border: active ? `1px solid ${cyber.accentBorder}` : `1px solid transparent`,
                   borderRadius: 4, flexShrink: 0,
                   background: active ? cyber.accentOverlay : 'transparent',
                 }}
               >
-                <span style={{ color: active ? cyber.accent : cyber.textDecorative }}>{item.icon}</span>
+                <span className={active ? undefined : 'nav-icon'} style={{ color: active ? cyber.accent : undefined }}>{item.icon}</span>
                 {item.label}
               </Link>
             );
