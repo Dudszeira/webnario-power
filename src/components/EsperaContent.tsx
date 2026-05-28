@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Countdown from './Countdown';
 import RegisterModal from './RegisterModal';
+import { cyber, cyberFonts } from '@/lib/cybertheme';
 
 type Props = {
   editionId: string;
@@ -56,7 +57,7 @@ export default function EsperaContent({
   }, [isRegistered, liveStartMs, router]);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#000' }}>
+    <div style={{ background: cyber.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Logo ── */}
       <div className="flex flex-col items-center pt-8 pb-6 px-4">
@@ -75,26 +76,39 @@ export default function EsperaContent({
         <Countdown targetMs={liveStartMs} onReached={handleCountdownReached} />
       </div>
 
-      {/* ── White content card ── */}
-      <div className="w-full max-w-2xl mx-auto px-4 pb-4 flex-1">
+      {/* ── Content card ── */}
+      <div style={{ maxWidth: 672, margin: '0 auto', padding: '0 16px 16px', flex: 1, width: '100%' }}>
         <div
-          className="rounded-2xl px-8 py-8 w-full"
-          style={{ background: '#fff' }}
+          style={{
+            background: cyber.surface,
+            border: `1px solid ${cyber.accentBorderDim}`,
+            borderRadius: 12,
+            padding: '32px',
+            width: '100%',
+          }}
         >
           <h2
-            className="text-center font-bold text-lg mb-6 leading-snug"
-            style={{ color: '#111' }}
+            style={{
+              fontFamily: cyberFonts.body,
+              fontSize: 17,
+              fontWeight: 700,
+              color: cyber.textPrimary,
+              textAlign: 'center',
+              marginBottom: 24,
+              lineHeight: 1.4,
+            }}
           >
             Enquanto você aguarda, veja o<br />que vai descobrir hoje:
           </h2>
 
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {BULLETS.map((text, i) => (
-              <div key={i} className="flex gap-3 items-start">
-                <div className="flex-shrink-0 mt-0.5">
+              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <div style={{ flexShrink: 0, marginTop: 2 }}>
                   <svg
-                    className="w-5 h-5"
-                    style={{ color: '#9ca3af' }}
+                    style={{ color: cyber.accent }}
+                    width={18}
+                    height={18}
                     fill="none"
                     stroke="currentColor"
                     strokeWidth={2.5}
@@ -103,7 +117,7 @@ export default function EsperaContent({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
-                <p className="text-sm leading-relaxed" style={{ color: '#374151' }}>
+                <p style={{ fontSize: 13.5, color: cyber.textLabel, lineHeight: 1.65, margin: 0 }}>
                   {text}
                 </p>
               </div>
@@ -113,19 +127,19 @@ export default function EsperaContent({
       </div>
 
       {/* ── Redirect notice ── */}
-      <div className="text-center px-4 py-6 max-w-xl mx-auto">
-        <p className="text-sm leading-relaxed" style={{ color: '#6b7280' }}>
+      <div style={{ textAlign: 'center', padding: '24px 16px', maxWidth: 560, margin: '0 auto' }}>
+        <p style={{ fontSize: 13, color: cyber.textLabel, lineHeight: 1.6, margin: 0 }}>
           Quando chegar às 20h,{' '}
-          <strong className="text-white font-semibold">
+          <span style={{ color: cyber.textPrimary, fontWeight: 600 }}>
             você será redirecionado automaticamente para a Imersão ao vivo.
-          </strong>{' '}
+          </span>{' '}
           Não precisa fazer nada, é só aguardar!
         </p>
       </div>
 
       {/* ── Footer ── */}
-      <div className="text-center pb-6 px-4">
-        <p className="text-xs" style={{ color: '#374151' }}>
+      <div style={{ textAlign: 'center', padding: '16px' }}>
+        <p style={{ fontSize: 11, color: cyber.textDecorative, margin: 0 }}>
           Robison Kunz © {new Date().getFullYear()} · Todos os direitos reservados
         </p>
       </div>
@@ -138,23 +152,64 @@ export default function EsperaContent({
       {/* ── Success overlay ── */}
       {showSuccess && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.9)' }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.9)',
+          }}
         >
           <div
-            className="rounded-2xl p-10 text-center max-w-sm w-full mx-4"
-            style={{ background: '#1a1a1a' }}
+            style={{
+              background: cyber.surface,
+              border: `1px solid ${cyber.accentBorderDim}`,
+              borderRadius: 12,
+              padding: 40,
+              textAlign: 'center',
+              maxWidth: 360,
+              width: '100%',
+              margin: '0 16px',
+            }}
           >
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
-              style={{ border: '2px solid #3b82f6' }}
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                border: `2px solid ${cyber.green}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 20px',
+              }}
             >
-              <svg className="w-8 h-8" style={{ color: '#3b82f6' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg
+                style={{ color: cyber.green }}
+                width={32}
+                height={32}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Cadastro realizado!</h2>
-            <p style={{ color: '#9ca3af' }} className="text-sm">
+            <h2
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: cyber.textPrimary,
+                fontFamily: cyberFonts.body,
+                marginBottom: 8,
+              }}
+            >
+              Cadastro realizado!
+            </h2>
+            <p style={{ fontSize: 13, color: cyber.textLabel, margin: 0 }}>
               Redirecionando para o webinário em instantes...
             </p>
           </div>
@@ -164,18 +219,41 @@ export default function EsperaContent({
       {/* ── Live Over Modal ── */}
       {showLiveOver && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.92)' }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            padding: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.92)',
+          }}
         >
           <div
-            className="rounded-2xl border p-8 text-center max-w-md w-full"
-            style={{ background: '#1a1a1a', borderColor: '#2a2a2a' }}
+            style={{
+              background: cyber.surface,
+              border: `1px solid ${cyber.accentBorderDim}`,
+              borderRadius: 12,
+              padding: 32,
+              textAlign: 'center',
+              maxWidth: 440,
+              width: '100%',
+            }}
           >
-            <div className="text-5xl mb-4">📺</div>
-            <h2 className="text-2xl font-bold text-white mb-3">
+            <div style={{ fontSize: 48, marginBottom: 16 }}>📺</div>
+            <h2
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: cyber.textPrimary,
+                fontFamily: cyberFonts.body,
+                marginBottom: 12,
+              }}
+            >
               A transmissão ao vivo encerrou
             </h2>
-            <p className="leading-relaxed mb-6 text-sm" style={{ color: '#9ca3af' }}>
+            <p style={{ fontSize: 13, color: cyber.textLabel, lineHeight: 1.6, marginBottom: 24 }}>
               Você perdeu a transmissão ao vivo desta edição. Fique atento aos nossos
               canais — e-mail e grupo — onde avisaremos sobre o replay e as próximas edições.
             </p>
@@ -184,16 +262,33 @@ export default function EsperaContent({
                 href={salesUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full font-bold py-3 rounded-xl transition-colors text-white text-sm"
-                style={{ background: '#2563eb' }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  background: `linear-gradient(135deg, ${cyber.accent}, ${cyber.accentDim})`,
+                  border: 'none',
+                  color: cyber.black,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  padding: '12px 0',
+                  borderRadius: 8,
+                  textDecoration: 'none',
+                  fontFamily: cyberFonts.body,
+                }}
               >
                 Acessar canais oficiais
               </a>
             )}
             <button
               onClick={() => setShowLiveOver(false)}
-              className="mt-3 text-xs transition-colors"
-              style={{ color: '#4b5563' }}
+              style={{
+                marginTop: 12,
+                fontSize: 12,
+                color: cyber.textDecorative,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+              }}
             >
               Fechar
             </button>
