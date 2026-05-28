@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getEdition, getEditionsList, upsertEdition } from '@/lib/db';
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
+import { readdirSync } from 'fs';
+import path from 'path';
+
+const VIDEO_EXTS = ['.mp4', '.webm', '.mov', '.avi'];
+const VIDEOS_DIR = path.join(process.cwd(), 'public', 'videos');
 
 export async function GET(req: NextRequest) {
   if (!(await verifyAdminFromRequest(req))) {
@@ -15,6 +20,19 @@ export async function GET(req: NextRequest) {
   if (!edition) {
     const all = await getEditionsList(); // ordered by id desc
     if (all.length > 0) edition = all[0];
+  }
+
+  // If upload mode but video_url is empty, detect any existing file on disk and persist it
+  if (edition && edition.video_source === 'upload' && !edition.video_url) {
+    try {
+      const files = readdirSync(VIDEOS_DIR);
+      const found = files.find(f => VIDEO_EXTS.includes(path.extname(f).toLowerCase()));
+      if (found) {
+        const detectedUrl = `/videos/${found}`;
+        edition = { ...edition, video_url: detectedUrl };
+        await upsertEdition(edition);
+      }
+    } catch { /* videos dir may not exist yet */ }
   }
 
   return NextResponse.json({ edition: edition || { id: editionId } });

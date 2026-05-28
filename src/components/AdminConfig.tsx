@@ -219,6 +219,7 @@ export default function AdminConfig() {
     setUploading(true); setUploadMsg('');
     try {
       const duration = await getVideoDuration(file);
+      const newDuration = duration > 0 ? duration : Number(config.video_duration);
       if (duration > 0) set('video_duration', duration);
       const fd = new FormData();
       fd.append('file', file);
@@ -227,6 +228,12 @@ export default function AdminConfig() {
       if (res.ok) {
         set('video_url', data.url);
         setUploadMsg(`✓ ${file.name} enviado`);
+        // Auto-save so ao vivo picks up the new video immediately
+        await fetch('/api/admin/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...config, video_url: data.url, video_duration: newDuration }),
+        });
       } else {
         setUploadMsg(data.error || 'Erro no upload.');
       }
