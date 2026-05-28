@@ -1,0 +1,49 @@
+// src/lib/cybertheme.ts
+export const cyber = {
+  bg:               '#020810',
+  surface:          '#040d1a',
+  surfaceHover:     '#071428',
+  accent:           '#00B4FF',
+  accentDim:        '#0077aa',
+  accentBorder:     'rgba(0,180,255,0.4)',
+  accentBorderDim:  'rgba(0,180,255,0.2)',
+  accentGlow:       'rgba(0,180,255,0.25)',
+  accentGlowInset:  'rgba(0,180,255,0.05)',
+  accentOverlay:    'rgba(0,180,255,0.06)',
+  green:            '#00ff9d',
+  greenGlow:        'rgba(0,255,157,0.4)',
+  textPrimary:      '#c8e4f4',
+  textSupport:      '#8cb8d4',
+  textLabel:        '#6a9ab8',
+  textDecorative:   '#3a6b8a',
+  white:            '#ffffff',
+} as const;
+
+export const cyberFonts = {
+  display: "'Orbitron', sans-serif",
+  body:    "'Exo 2', sans-serif",
+} as const;
+
+export const cyberEffects = {
+  scanLines: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.07) 0px, rgba(0,0,0,0.07) 1px, transparent 1px, transparent 3px)',
+  grid40:    'linear-gradient(rgba(0,180,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,180,255,0.04) 1px, transparent 1px)',
+  grid50:    'linear-gradient(rgba(0,180,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,180,255,0.03) 1px, transparent 1px)',
+  radialGlow:'radial-gradient(ellipse 70% 40% at 50% 20%, rgba(0,180,255,0.07) 0%, transparent 70%)',
+} as const;
+
+export const cyberCard = {
+  base: {
+    border:        '1px solid rgba(0,180,255,0.2)',
+    borderRadius:  4,
+    background:    '#040d1a',
+    position:      'relative' as const,
+    overflow:      'hidden' as const,
+    transition:    'all 0.2s ease',
+  },
+  hover: {
+    border:        '1px solid #00B4FF',
+    background:    '#071428',
+    boxShadow:     '0 0 20px rgba(0,180,255,0.25), inset 0 0 20px rgba(0,180,255,0.05)',
+    transform:     'translateY(-2px)',
+  },
+} as const;
