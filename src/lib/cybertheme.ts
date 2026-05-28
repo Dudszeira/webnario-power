@@ -18,6 +18,7 @@ export const cyber = {
   textSupport:      '#8cb8d4',
   textLabel:        '#6a9ab8',
   textDecorative:   '#3a6b8a',
+  pink:             '#ec4899',
   white:            '#ffffff',
   black:            '#000000',
   error:            'rgba(255,68,102,0.9)',
