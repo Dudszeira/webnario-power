@@ -42,16 +42,7 @@ const AUTO_NAMES = [
   'Renata Q.', 'Fábio Z.', 'Isabela Y.', 'Marcelo U.', 'Tatiane I.',
 ];
 
-const AUTO_MESSAGES = [
-  'acabou de garantir sua vaga',
-  'acaba de adquirir o programa',
-  'acabou de se inscrever',
-  'acaba de investir no método',
-  'acabou de entrar para a turma',
-  'acabou de garantir o acesso completo',
-  'acaba de começar sua jornada',
-  'acabou de fazer sua inscrição',
-];
+const AUTO_MESSAGES = ['se juntou a Power Start'];
 
 function nameToCity(name: string): string {
   let h = 0;
