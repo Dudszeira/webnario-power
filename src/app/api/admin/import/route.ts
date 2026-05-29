@@ -82,21 +82,44 @@ export async function POST(req: NextRequest) {
     await clearSimulatedComments(editionId);
   }
 
+  // Detect webinar export format (Hour, Minute, Second, Name, Role, Message)
+  const isWebinarFormat = rows.length > 0 && ('hour' in rows[0] || 'minute' in rows[0]);
+
   rows.forEach((row, idx) => {
     const lineNum = idx + 2;
-    const tipoRaw = row.tipo || row.type || row.categoria || row.category || row.tipo_de_comentario || '';
-    const tipo = normalizeType(tipoRaw);
-    if (!tipo) {
-      errors.push(`Linha ${lineNum}: tipo inválido "${tipoRaw}" (use: usuario_simulado, staff_simulado, compra_simulada)`);
-      return;
-    }
-    const nome = String(row.nome_exibido || row.nome || row.author_name || row.autor || row.name || '').trim();
-    if (!nome) { errors.push(`Linha ${lineNum}: nome_exibido vazio`); return; }
 
-    const texto = String(row.texto || row.text || row.mensagem || row.message || row.comentario || '').trim();
+    let tipo: string;
+    let nome: string;
+    let texto: string;
+    let tsRaw: any;
+
+    if (isWebinarFormat) {
+      // Map Role to type: Admin/Host/Panelist → staff, everything else → user
+      const role = String(row.role || row.tipo || '').trim().toLowerCase();
+      tipo = ['admin', 'host', 'panelist', 'moderator', 'staff'].includes(role)
+        ? 'simulated_staff' : 'simulated_user';
+      nome = String(row.name || row.nome || '').trim();
+      texto = String(row.message || row.messages || row.texto || '').trim();
+      const h = Number(row.hour || row.hora || 0);
+      const m = Number(row.minute || row.minuto || 0);
+      const s = Number(row.second || row.segundo || 0);
+      tsRaw = h * 3600 + m * 60 + s;
+    } else {
+      const tipoRaw = row.tipo || row.type || row.categoria || row.category || '';
+      tipo = normalizeType(tipoRaw);
+      if (!tipo) {
+        errors.push(`Linha ${lineNum}: tipo inválido "${tipoRaw}" (use: usuario_simulado, staff_simulado, compra_simulada)`);
+        return;
+      }
+      nome = String(row.nome_exibido || row.nome || row.author_name || row.autor || row.name || '').trim();
+      texto = String(row.texto || row.text || row.mensagem || row.message || row.comentario || '').trim();
+      tsRaw = row.timestamp || row.minutagem || row.video_timestamp || row.tempo || row.minuto || 0;
+    }
+
+    if (!nome) { errors.push(`Linha ${lineNum}: nome vazio`); return; }
     if (!texto) { errors.push(`Linha ${lineNum}: texto vazio`); return; }
 
-    const ts = parseTimestamp(row.timestamp || row.minutagem || row.video_timestamp || row.tempo || row.minuto || 0);
+    const ts = isWebinarFormat ? tsRaw as number : parseTimestamp(tsRaw);
     if (ts === null) { errors.push(`Linha ${lineNum}: timestamp inválido`); return; }
 
     commentsToInsert.push({

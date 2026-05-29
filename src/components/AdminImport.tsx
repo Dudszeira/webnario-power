@@ -35,6 +35,7 @@ export default function AdminImport() {
   const [replace, setReplace] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<{ inserted: number; errors: string[] } | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
   const [comments, setComments] = useState<SimComment[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [dragOver, setDragOver] = useState(false);
@@ -61,7 +62,7 @@ export default function AdminImport() {
       fd.append('replace', replace ? 'true' : 'false');
       const res = await fetch('/api/admin/import', { method: 'POST', body: fd });
       const data = await res.json();
-      setResult(data);
+      setResult(data); setShowErrors(false);
       if (data.ok) loadComments();
     } catch { setResult({ inserted: 0, errors: ['Erro de conexão. Tente novamente.'] }); }
     finally { setUploading(false); }
@@ -150,10 +151,23 @@ export default function AdminImport() {
 
             {result && (
               <div style={{ marginTop: 14, borderRadius: 8, padding: '11px 14px', background: result.errors?.length ? 'rgba(245,158,11,0.06)' : 'rgba(0,255,157,0.06)', border: `1px solid ${result.errors?.length ? 'rgba(245,158,11,0.2)' : 'rgba(0,255,157,0.2)'}` }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: result.errors?.length ? '#f59e0b' : cyber.green, margin: '0 0 2px' }}>
-                  {result.inserted} linhas importadas com sucesso.
-                </p>
-                {result.errors?.map((err, i) => <p key={i} style={{ fontSize: 12, color: '#f59e0b', margin: '2px 0 0' }}>{err}</p>)}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: result.inserted > 0 ? cyber.green : '#f59e0b', margin: 0 }}>
+                    {result.inserted} linhas importadas com sucesso.
+                    {result.errors?.length > 0 && ` ${result.errors.length} erros.`}
+                  </p>
+                  {result.errors?.length > 0 && (
+                    <button type="button" onClick={() => setShowErrors(v => !v)}
+                      style={{ fontSize: 11, color: '#f59e0b', background: 'none', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', flexShrink: 0 }}>
+                      {showErrors ? 'Ocultar detalhes' : 'Ver detalhes'}
+                    </button>
+                  )}
+                </div>
+                {showErrors && result.errors?.length > 0 && (
+                  <div style={{ marginTop: 8, maxHeight: 200, overflowY: 'auto', borderTop: '1px solid rgba(245,158,11,0.15)', paddingTop: 8 }}>
+                    {result.errors.map((err, i) => <p key={i} style={{ fontSize: 11, color: '#f59e0b', margin: '1px 0' }}>{err}</p>)}
+                  </div>
+                )}
               </div>
             )}
           </div>
