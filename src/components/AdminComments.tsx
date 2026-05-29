@@ -30,6 +30,15 @@ const TYPE_STYLES: Record<string, { bg: string; color: string; label: string }> 
   simulated_purchase: { bg: 'rgba(16,185,129,0.1)',  color: '#34d399', label: 'Compra sim.' },
 };
 
+function fmtTimestamp(secs: number | null): string {
+  if (secs == null) return '—';
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
 export default function AdminComments() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,7 +186,7 @@ export default function AdminComments() {
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table className="admin-table">
-                <thead><tr><th>Tipo</th><th>Autor</th><th>Texto</th><th>Data</th><th>Ações</th></tr></thead>
+                <thead><tr><th>Tipo</th><th>Autor</th><th>Texto</th><th>Minutagem</th><th>Ações</th></tr></thead>
                 <tbody>
                   {comments.map(c => {
                     const ts = TYPE_STYLES[c.type] || { bg: 'rgba(85,85,85,0.1)', color: cyber.textDecorative, label: c.type };
@@ -186,7 +195,7 @@ export default function AdminComments() {
                         <td><span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: ts.bg, color: ts.color }}>{ts.label}</span></td>
                         <td style={{ fontWeight: 500, color: cyber.textPrimary }}>{c.author_name}</td>
                         <td><span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260, color: cyber.textLabel, fontSize: 12 }}>{c.text}</span></td>
-                        <td style={{ color: cyber.textDecorative, fontSize: 11 }}>{new Date(c.created_at).toLocaleString('pt-BR')}</td>
+                        <td style={{ color: cyber.textDecorative, fontSize: 11, fontFamily: 'monospace' }}>{fmtTimestamp(c.video_timestamp)}</td>
                         <td>
                           <div style={{ display: 'flex', gap: 5 }}>
                             <button onClick={() => toggleVisible(c.id, c.visible)} style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, cursor: 'pointer', background: c.visible ? 'rgba(239,68,68,0.07)' : 'rgba(16,185,129,0.07)', border: `1px solid ${c.visible ? 'rgba(239,68,68,0.18)' : 'rgba(16,185,129,0.18)'}`, color: c.visible ? '#f87171' : '#34d399' }}>
