@@ -4,15 +4,19 @@ import { clearSimulatedComments, insertCommentsBatch, getSimulatedComments } fro
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
 
-const VALID_TYPES = ['simulated_user', 'simulated_staff', 'simulated_purchase', 'usuario_simulado', 'staff_simulado', 'compra_simulada'];
-
 function normalizeType(t: string): string {
   const map: Record<string, string> = {
     usuario_simulado: 'simulated_user',
-    staff_simulado: 'simulated_staff',
-    compra_simulada: 'simulated_purchase',
+    usuario: 'simulated_user',
+    user: 'simulated_user',
     simulated_user: 'simulated_user',
+    staff_simulado: 'simulated_staff',
+    staff: 'simulated_staff',
+    host: 'simulated_staff',
     simulated_staff: 'simulated_staff',
+    compra_simulada: 'simulated_purchase',
+    compra: 'simulated_purchase',
+    purchase: 'simulated_purchase',
     simulated_purchase: 'simulated_purchase',
   };
   return map[t?.toLowerCase()?.trim()] || '';
@@ -49,14 +53,14 @@ export async function POST(req: NextRequest) {
   let rows: Record<string, any>[] = [];
 
   if (name.endsWith('.csv')) {
-    // Parse CSV
-    const text = buffer.toString('utf-8');
+    // Parse CSV — strip UTF-8 BOM if present
+    let text = buffer.toString('utf-8').replace(/^﻿/, '');
     const lines = text.split(/\r?\n/).filter(Boolean);
     if (lines.length < 2) return NextResponse.json({ error: 'CSV vazio' }, { status: 400 });
 
-    const headers = lines[0].split(/[;,]/).map((h) => h.trim().toLowerCase().replace(/"/g, ''));
+    const headers = lines[0].split(/[;,\t]/).map((h) => h.trim().toLowerCase().replace(/"/g, '').replace(/\s+/g, '_'));
     for (let i = 1; i < lines.length; i++) {
-      const cells = lines[i].split(/[;,]/).map((c) => c.trim().replace(/^"|"$/g, ''));
+      const cells = lines[i].split(/[;,\t]/).map((c) => c.trim().replace(/^"|"$/g, ''));
       const row: Record<string, any> = {};
       headers.forEach((h, idx) => { row[h] = cells[idx] || ''; });
       rows.push(row);
@@ -80,18 +84,19 @@ export async function POST(req: NextRequest) {
 
   rows.forEach((row, idx) => {
     const lineNum = idx + 2;
-    const tipo = normalizeType(row.tipo || row.type || '');
+    const tipoRaw = row.tipo || row.type || row.categoria || row.category || row.tipo_de_comentario || '';
+    const tipo = normalizeType(tipoRaw);
     if (!tipo) {
-      errors.push(`Linha ${lineNum}: tipo inválido "${row.tipo || row.type}"`);
+      errors.push(`Linha ${lineNum}: tipo inválido "${tipoRaw}" (use: usuario_simulado, staff_simulado, compra_simulada)`);
       return;
     }
-    const nome = String(row.nome_exibido || row.nome || row.author_name || '').trim();
+    const nome = String(row.nome_exibido || row.nome || row.author_name || row.autor || row.name || '').trim();
     if (!nome) { errors.push(`Linha ${lineNum}: nome_exibido vazio`); return; }
 
-    const texto = String(row.texto || row.text || '').trim();
+    const texto = String(row.texto || row.text || row.mensagem || row.message || row.comentario || '').trim();
     if (!texto) { errors.push(`Linha ${lineNum}: texto vazio`); return; }
 
-    const ts = parseTimestamp(row.timestamp || row.minutagem || row.video_timestamp || 0);
+    const ts = parseTimestamp(row.timestamp || row.minutagem || row.video_timestamp || row.tempo || row.minuto || 0);
     if (ts === null) { errors.push(`Linha ${lineNum}: timestamp inválido`); return; }
 
     commentsToInsert.push({

@@ -414,10 +414,10 @@ export async function updateEditionFields(id: string, fields: Partial<Omit<Editi
 }
 
 export async function deleteEditionData(editionId: string): Promise<void> {
+  // Clear data (events, comments, registrations) but PRESERVE the edition config row
   await supabase.from('events').delete().eq('edition_id', editionId);
   await supabase.from('comments').delete().eq('edition_id', editionId);
-  await supabase.from('registrations').delete().eq('edition_id', editionId);
-  const { error } = await supabase.from('editions').delete().eq('id', editionId);
+  const { error } = await supabase.from('registrations').delete().eq('edition_id', editionId);
   if (error) {
     console.error('deleteEditionData error:', error);
     throw error;
