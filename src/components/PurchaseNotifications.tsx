@@ -107,7 +107,7 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
 
   // On mount: show the most recent past purchases for late joiners (up to 3, staggered)
   useEffect(() => {
-    if (didMountRef.current || !purchases.length) return;
+    if (didMountRef.current || !purchases.length || !ctaEnabled) return;
     const joinOffset = videoOffsetRef.current ?? 0;
     if (joinOffset <= 5) return;
     didMountRef.current = true;
@@ -124,7 +124,7 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
 
   // Fire toasts based on video timestamp (5s window for reliability)
   useEffect(() => {
-    if (!purchases.length) return;
+    if (!purchases.length || !ctaEnabled) return;
     const interval = setInterval(() => {
       const offset = videoOffsetRef.current ?? 0;
       purchases.forEach((p) => {
@@ -134,7 +134,7 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [purchases, videoOffsetRef]);
+  }, [purchases, videoOffsetRef, ctaEnabled]);
 
   // Fire unshown DB purchases in staggered order when CTA is activated
   useEffect(() => {
@@ -227,12 +227,6 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)', fontFamily: "'Montserrat', sans-serif" }}>
                   {timeAgo(t.shownAt)}
-                </span>
-                <span style={{ fontSize: 10.5, color: '#4ade80', display: 'flex', alignItems: 'center', gap: 3, fontWeight: 600, fontFamily: "'Montserrat', sans-serif" }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                  </svg>
-                  Verificado
                 </span>
               </div>
             </div>

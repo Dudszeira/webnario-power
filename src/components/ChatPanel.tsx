@@ -461,7 +461,6 @@ export default function ChatPanel({
     const past = simulatedComments
       .filter(c =>
         c.type !== 'simulated_purchase' &&
-        !(chatMode === 'isolated' && c.type === 'simulated_user') &&
         c.video_timestamp != null &&
         (c.video_timestamp ?? 0) <= joinOffset
       )
@@ -476,8 +475,7 @@ export default function ChatPanel({
   // Dispatch simulated comments + typing indicator
   useEffect(() => {
     const chatSims = simulatedComments.filter(c =>
-      c.type !== 'simulated_purchase' &&
-      !(chatMode === 'isolated' && c.type === 'simulated_user')
+      c.type !== 'simulated_purchase'
     );
     const t = setInterval(() => {
       const offset = videoOffsetRef.current ?? 0;
