@@ -589,7 +589,6 @@ export default function ChatPanel({
           </div>
           {/* Toggles */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <ToggleSwitch on={chatPublic} onChange={toggleChatMode} label="Todos veem todos os comentários" T={T} />
             <ToggleSwitch on={serverCtaEnabled} onChange={toggleCta} label="CTA ativo" T={T} />
           </div>
           {/* Hint */}
