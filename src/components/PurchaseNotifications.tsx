@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 
 type SimComment = {
   id: string;
@@ -21,6 +21,7 @@ type Toast = {
 type Props = {
   simulatedComments: SimComment[];
   videoOffsetRef: React.RefObject<number>;
+  ctaEnabled?: boolean;
 };
 
 const CITIES = [
@@ -49,35 +50,57 @@ function timeAgo(ts: number): string {
   return `há ${Math.floor(secs / 60)}min`;
 }
 
-export default function PurchaseNotifications({ simulatedComments, videoOffsetRef }: Props) {
+function scheduleToast(
+  p: SimComment,
+  delayMs: number,
+  shownIds: React.RefObject<Set<string>>,
+  setToasts: React.Dispatch<React.SetStateAction<Toast[]>>,
+) {
+  setTimeout(() => {
+    if (shownIds.current!.has(p.id)) return;
+    shownIds.current!.add(p.id);
+    const toast: Toast = { id: p.id, name: p.author_name, text: p.text, shownAt: Date.now() };
+    setToasts((prev) => [...prev.slice(-3), toast]);
+    setTimeout(() => {
+      setToasts((prev) => prev.map((t) => t.id === p.id ? { ...t, exiting: true } : t));
+      setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== p.id)), 400);
+    }, 6000);
+  }, delayMs);
+}
+
+export default function PurchaseNotifications({ simulatedComments, videoOffsetRef, ctaEnabled }: Props) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [, setTick] = useState(0);
   const shownIds = useRef<Set<string>>(new Set());
+  const prevCtaRef = useRef(ctaEnabled ?? false);
 
-  const purchases = simulatedComments.filter((c) => c.type === 'simulated_purchase');
+  const purchases = useMemo(
+    () => simulatedComments.filter((c) => c.type === 'simulated_purchase'),
+    [simulatedComments],
+  );
 
-  // Fire toasts based on video timestamp
+  // Fire toasts based on video timestamp (5s window for reliability)
   useEffect(() => {
     if (!purchases.length) return;
     const interval = setInterval(() => {
       const offset = videoOffsetRef.current ?? 0;
       purchases.forEach((p) => {
-        if (!shownIds.current.has(p.id) && p.video_timestamp <= offset && p.video_timestamp > offset - 2) {
-          shownIds.current.add(p.id);
-          const toast: Toast = { id: p.id, name: p.author_name, text: p.text, shownAt: Date.now() };
-          setToasts((prev) => [...prev.slice(-3), toast]);
-
-          setTimeout(() => {
-            setToasts((prev) => prev.map((t) => t.id === p.id ? { ...t, exiting: true } : t));
-            setTimeout(() => {
-              setToasts((prev) => prev.filter((t) => t.id !== p.id));
-            }, 400);
-          }, 6000);
+        if (!shownIds.current.has(p.id) && p.video_timestamp <= offset && p.video_timestamp > offset - 5) {
+          scheduleToast(p, 0, shownIds, setToasts);
         }
       });
     }, 1000);
     return () => clearInterval(interval);
   }, [purchases, videoOffsetRef]);
+
+  // Fire unshown toasts in staggered order when CTA is activated
+  useEffect(() => {
+    if (!ctaEnabled) { prevCtaRef.current = false; return; }
+    if (prevCtaRef.current) return; // already was active
+    prevCtaRef.current = true;
+    const unshown = purchases.filter((p) => !shownIds.current.has(p.id));
+    unshown.forEach((p, i) => scheduleToast(p, i * 30000, shownIds, setToasts));
+  }, [ctaEnabled, purchases]);
 
   // Tick to refresh "há Xs" timestamps
   useEffect(() => {

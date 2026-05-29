@@ -31,6 +31,7 @@ type Props = {
   viewerMin: number;
   viewerMax: number;
   onMinimize?: () => void;
+  onCtaChange?: (val: boolean) => void;
 };
 
 // ── Theme tokens ─────────────────────────────────────────────────────────────
@@ -234,7 +235,7 @@ export default function ChatPanel({
   editionId, sessionName, chatEnabled, chatMode,
   simulatedComments, pinnedComments, videoOffsetRef,
   ctaEnabled, ctaUrl, ctaText, ctaStartSecs, ctaEndSecs,
-  viewerMin, viewerMax, onMinimize,
+  viewerMin, viewerMax, onMinimize, onCtaChange,
 }: Props) {
   const [isDark, setIsDark] = useState(true);
   const [comments, setComments] = useState<ChatComment[]>([]);
@@ -366,6 +367,7 @@ export default function ChatPanel({
 
   async function toggleCta(val: boolean) {
     setServerCtaEnabled(val);
+    onCtaChange?.(val);
     if (val) setCtaVisible(true); // restore if staff had previously dismissed the banner
     try {
       await fetch('/api/staff/settings', {
@@ -450,17 +452,20 @@ export default function ChatPanel({
 
   // Dispatch simulated comments + typing indicator
   useEffect(() => {
-    const chatSims = simulatedComments.filter(c => c.type !== 'simulated_purchase');
+    const chatSims = simulatedComments.filter(c =>
+      c.type !== 'simulated_purchase' &&
+      !(chatMode === 'isolated' && c.type === 'simulated_user')
+    );
     const t = setInterval(() => {
       const offset = videoOffsetRef.current ?? 0;
       const freshMount = Date.now() - mountTimeRef.current < 4000;
       chatSims.forEach(c => {
         if (shownSimIds.current.has(c.id) || c.video_timestamp == null) return;
-        if (!freshMount && !typingSimIds.current.has(c.id) && offset >= c.video_timestamp - 2 && offset < c.video_timestamp) {
+        if (!freshMount && !typingSimIds.current.has(c.id) && offset >= c.video_timestamp - 3 && offset < c.video_timestamp) {
           typingSimIds.current.add(c.id);
           setTypingName(c.author_name);
         }
-        if (c.video_timestamp <= offset && c.video_timestamp > offset - 2) {
+        if (c.video_timestamp <= offset && c.video_timestamp > offset - 5) {
           shownSimIds.current.add(c.id);
           setTypingName(null);
           setComments(prev => [...prev, { ...c, created_at: new Date().toISOString() }]);
@@ -483,6 +488,7 @@ export default function ChatPanel({
         const data = await res.json();
         if (data.online !== undefined) setStaffMetrics({ online: data.online, cta_clicks: data.cta_clicks });
         if (data.chat_mode !== undefined) setChatPublic(data.chat_mode === 'general');
+        if (data.cta_enabled !== undefined) setServerCtaEnabled(!!data.cta_enabled);
       } catch {}
     };
     fetchMetrics();

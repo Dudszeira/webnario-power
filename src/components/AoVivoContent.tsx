@@ -47,6 +47,8 @@ export default function AoVivoContent({
 }: Props) {
   const videoOffsetRef = useRef<number>(initialOffset);
   const [liveEnded, setLiveEnded] = useState(false);
+  // Lifted so PurchaseNotifications reacts to CTA activation and survives minimize/maximize
+  const [liveCta, setLiveCta] = useState(ctaEnabled);
   const [chatMinimized, setChatMinimized] = useState(() => {
     try { return typeof window !== 'undefined' && localStorage.getItem('lc_chat_minimized') === '1'; } catch { return false; }
   });
@@ -186,6 +188,7 @@ export default function AoVivoContent({
               ctaEndSecs={ctaEndSecs}
               viewerMin={viewerMin}
               viewerMax={viewerMax}
+              onCtaChange={setLiveCta}
             />
           </div>
         </div>
@@ -245,6 +248,7 @@ export default function AoVivoContent({
               viewerMin={viewerMin}
               viewerMax={viewerMax}
               onMinimize={toggleChat}
+              onCtaChange={setLiveCta}
             />
           </div>
         )}
@@ -254,6 +258,7 @@ export default function AoVivoContent({
       <PurchaseNotifications
         simulatedComments={simulatedComments as any}
         videoOffsetRef={videoOffsetRef}
+        ctaEnabled={liveCta}
       />
 
       {/* Live ended modal */}

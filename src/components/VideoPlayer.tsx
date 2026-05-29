@@ -318,6 +318,24 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
         )
       )}
 
+      {/* ▶ OVERLAY DE PLAY QUANDO PAUSADO */}
+      {started && !playing && (source === 'youtube' || allowPause) && (
+        <div
+          className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer"
+          style={{ background: 'rgba(0,0,0,0.38)' }}
+          onClick={togglePlay}
+        >
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center transition-transform hover:scale-105"
+            style={{ background: 'rgba(37,99,235,0.88)', boxShadow: '0 0 32px rgba(37,99,235,0.5)' }}
+          >
+            <svg className="w-6 h-6 fill-white ml-1" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+        </div>
+      )}
+
       {/* 🎬 COVER DE INÍCIO */}
       {!started && (
         <div

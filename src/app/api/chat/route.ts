@@ -36,19 +36,17 @@ export async function GET(req: NextRequest) {
 
   let comments;
 
-  if (isFull) {
-    // Full refresh: return latest 100 real comments (for picking up reply updates)
-    const latest = await getRecentRealComments(editionId, 100);
-    comments = latest.reverse(); // reverse DESC→ASC for chronological order
-  } else if (staffMember) {
+  if (staffMember) {
     // Staff sees all real comments regardless of chat_mode
     comments = await getRealComments(editionId, since, 100);
-  } else if (chatMode === 'isolated') {
-    // Isolated: user sees own comments + real_staff only
-    comments = await getIsolatedComments(editionId, since, session!.registrationId, 50);
+  } else if (chatMode === 'isolated' && session) {
+    // Isolated: user sees own comments + real_staff only (respects isolation on full refresh too)
+    const isoCutoff = isFull ? '1970-01-01T00:00:00.000Z' : since;
+    comments = await getIsolatedComments(editionId, isoCutoff, session.registrationId, 100);
   } else {
-    // General: all real comments
-    comments = await getRealComments(editionId, since, 50);
+    // General: all real comments (incremental or full)
+    const genCutoff = isFull ? '1970-01-01T00:00:00.000Z' : since;
+    comments = await getRealComments(editionId, genCutoff, 100);
   }
 
   return NextResponse.json({ comments, cta_enabled: ctaEnabled, cta_url: ctaUrl, cta_text: ctaText });
@@ -71,7 +69,7 @@ export async function POST(req: NextRequest) {
   }
 
   const edition = await getEdition(editionId);
-  if (!edition?.chat_enabled) {
+  if (!edition?.chat_enabled && !staffMember) {
     return NextResponse.json({ error: 'Chat desabilitado' }, { status: 403 });
   }
 
@@ -83,19 +81,24 @@ export async function POST(req: NextRequest) {
 
   const isStaffPost = !!staffMember;
   const commentId = `c_${uuidv4()}`;
-  await insertComment({
-    id: commentId,
-    edition_id: editionId,
-    registration_id: session?.registrationId ?? `staff_${commentId}`,
-    type: isStaffPost ? 'real_staff' : 'real_user',
-    author_name: isStaffPost ? 'Equipe Kunz' : session!.name,
-    text,
-    video_timestamp: null,
-    is_pinned: 0,
-    pin_start_seconds: null,
-    pin_end_seconds: null,
-    visible: 1
-  });
+  try {
+    await insertComment({
+      id: commentId,
+      edition_id: editionId,
+      registration_id: session?.registrationId ?? `staff_${commentId}`,
+      type: isStaffPost ? 'real_staff' : 'real_user',
+      author_name: isStaffPost ? 'Equipe Kunz' : session!.name,
+      text,
+      video_timestamp: null,
+      is_pinned: 0,
+      pin_start_seconds: null,
+      pin_end_seconds: null,
+      visible: 1
+    });
+  } catch (e: any) {
+    console.error('insertComment error:', e);
+    return NextResponse.json({ error: 'Erro ao salvar comentário' }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true, id: commentId });
 }
