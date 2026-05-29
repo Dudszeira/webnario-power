@@ -372,7 +372,8 @@ export default function AdminConfig() {
               </Field>
             </SectionCard>
 
-            <SectionCard title="Chat" description="Modo de visibilidade do chat. Habilitar/desabilitar é controlado pelo painel staff no chat." accent={cyber.green}>
+            <SectionCard title="Chat" description="Habilitar ou desabilitar o chat e definir o modo de visibilidade." accent={cyber.green}>
+              <Toggle checked={config.chat_enabled as unknown as boolean} onChange={v => set('chat_enabled', v)} label="Chat habilitado" />
               <Field label="Modo de visibilidade">
                 <CyberSelect
                   value={config.chat_mode}
