@@ -271,6 +271,7 @@ export default function ChatPanel({
   const mountTimeRef = useRef(Date.now());
   const scrollRef = useRef<HTMLDivElement>(null);
   const pollCountRef = useRef(0);
+  const didInitialReplayRef = useRef(false);
 
   // Track video offset as state so CTA and pinned comments react to video progress
   const [videoOffset, setVideoOffset] = useState(() => videoOffsetRef.current ?? 0);
@@ -449,6 +450,28 @@ export default function ChatPanel({
     poll();
     return () => { active = false; clearInterval(t); };
   }, [lastPoll]);
+
+  // On mount: replay simulated comments whose timestamp already passed (late joiners)
+  useEffect(() => {
+    if (didInitialReplayRef.current) return;
+    didInitialReplayRef.current = true;
+    const joinOffset = videoOffsetRef.current ?? 0;
+    if (joinOffset <= 5) return;
+
+    const past = simulatedComments
+      .filter(c =>
+        c.type !== 'simulated_purchase' &&
+        !(chatMode === 'isolated' && c.type === 'simulated_user') &&
+        c.video_timestamp != null &&
+        (c.video_timestamp ?? 0) <= joinOffset
+      )
+      .sort((a, b) => (a.video_timestamp ?? 0) - (b.video_timestamp ?? 0));
+
+    if (!past.length) return;
+    past.forEach(c => shownSimIds.current.add(c.id));
+    setComments(prev => [...prev, ...past.map(c => ({ ...c, created_at: new Date().toISOString() }))]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Dispatch simulated comments + typing indicator
   useEffect(() => {

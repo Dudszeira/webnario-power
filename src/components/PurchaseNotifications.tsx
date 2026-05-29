@@ -73,11 +73,29 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
   const [, setTick] = useState(0);
   const shownIds = useRef<Set<string>>(new Set());
   const prevCtaRef = useRef(ctaEnabled ?? false);
+  const didMountRef = useRef(false);
 
   const purchases = useMemo(
     () => simulatedComments.filter((c) => c.type === 'simulated_purchase'),
     [simulatedComments],
   );
+
+  // On mount: show the most recent past purchases for late joiners (up to 3, staggered)
+  useEffect(() => {
+    if (didMountRef.current || !purchases.length) return;
+    const joinOffset = videoOffsetRef.current ?? 0;
+    if (joinOffset <= 5) return;
+    didMountRef.current = true;
+
+    const past = purchases
+      .filter(p => p.video_timestamp <= joinOffset)
+      .sort((a, b) => b.video_timestamp - a.video_timestamp) // most recent first
+      .slice(0, 3)
+      .reverse();
+
+    past.forEach((p, i) => scheduleToast(p, i * 8000, shownIds, setToasts));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Fire toasts based on video timestamp (5s window for reliability)
   useEffect(() => {
