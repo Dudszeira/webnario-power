@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AdminNav from './AdminNav';
 import { cyber, cyberFonts } from '@/lib/cybertheme';
+import CyberDateTimePicker from './CyberDateTimePicker';
 
 type Metrics = {
   registrations: number; consumed: number; enterLive: number;
@@ -139,12 +140,7 @@ function TestModePanel({ currentEdition: _currentEdition }: { currentEdition?: s
             <label style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: cyber.textLabel, textTransform: 'uppercase' as const, letterSpacing: '.1em', marginBottom: 5 }}>
               Início da live simulada — a sala de espera conta até este momento
             </label>
-            <input
-              type="datetime-local"
-              value={testTime}
-              onChange={e => setTestTime(e.target.value)}
-              style={{ width: '100%', background: cyber.bg, border: `1px solid ${cyber.accentBorderDim}`, borderRadius: 7, padding: '7px 10px', color: cyber.textPrimary, fontSize: 13, outline: 'none' }}
-            />
+            <CyberDateTimePicker value={testTime} onChange={setTestTime} />
           </div>
           <button
             onClick={save}
