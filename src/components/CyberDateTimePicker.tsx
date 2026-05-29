@@ -28,23 +28,39 @@ export default function CyberDateTimePicker({
   onChange: (v: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0, width: 0 });
   const parsed = parse(value);
   const [viewYear, setViewYear] = useState(() => parsed?.year ?? new Date().getFullYear());
   const [viewMonth, setViewMonth] = useState(() => parsed?.month ?? new Date().getMonth());
-  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const p = parse(value);
     if (p) { setViewYear(p.year); setViewMonth(p.month); }
   }, [value]);
 
+  // Close on outside click or scroll
   useEffect(() => {
-    function onDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    if (!open) return;
+    function close(e: MouseEvent) {
+      if (triggerRef.current && !triggerRef.current.contains(e.target as Node)) setOpen(false);
     }
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, []);
+    function onScroll() { setOpen(false); }
+    document.addEventListener('mousedown', close);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      window.removeEventListener('scroll', onScroll, true);
+    };
+  }, [open]);
+
+  function openPicker() {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setDropPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    }
+    setOpen(o => !o);
+  }
 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
@@ -64,7 +80,7 @@ export default function CyberDateTimePicker({
     : 'Selecionar data e hora';
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={triggerRef} style={{ position: 'relative' }}>
       <style>{`
         .dtp-day:hover { background: rgba(0,180,255,0.12) !important; color: #c8e4f4 !important; }
         .dtp-nav:hover { border-color: #00B4FF !important; }
@@ -74,7 +90,7 @@ export default function CyberDateTimePicker({
 
       {/* Trigger */}
       <div
-        onClick={() => setOpen(o => !o)}
+        onClick={openPicker}
         style={{
           width: '100%', background: cyber.bg,
           border: `1px solid ${open ? cyber.accent : cyber.accentBorderDim}`,
@@ -96,12 +112,16 @@ export default function CyberDateTimePicker({
         </svg>
       </div>
 
+      {/* Dropdown — position:fixed so it never affects page scroll height */}
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 300,
+          position: 'fixed',
+          top: dropPos.top,
+          left: dropPos.left,
+          width: Math.max(dropPos.width, 272),
+          zIndex: 9999,
           background: cyber.surface, border: `1px solid ${cyber.accentBorderDim}`,
           borderRadius: 8, padding: 16, boxShadow: `0 8px 32px rgba(0,0,0,0.85)`,
-          minWidth: 272,
         }}>
           {/* Month navigation */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
