@@ -54,10 +54,18 @@ export default function CyberDateTimePicker({
     };
   }, [open]);
 
+  const DROP_HEIGHT = 340; // estimated dropdown height in px
+
   function openPicker() {
     if (triggerRef.current) {
       const r = triggerRef.current.getBoundingClientRect();
-      setDropPos({ top: r.bottom + 4, left: r.left, width: r.width });
+      const spaceBelow = window.innerHeight - r.bottom;
+      const opensUp = spaceBelow < DROP_HEIGHT + 8;
+      setDropPos({
+        top: opensUp ? r.top - DROP_HEIGHT - 4 : r.bottom + 4,
+        left: r.left,
+        width: r.width,
+      });
     }
     setOpen(o => !o);
   }
@@ -118,7 +126,7 @@ export default function CyberDateTimePicker({
           position: 'fixed',
           top: dropPos.top,
           left: dropPos.left,
-          width: Math.max(dropPos.width, 272),
+          minWidth: 272,
           zIndex: 9999,
           background: cyber.surface, border: `1px solid ${cyber.accentBorderDim}`,
           borderRadius: 8, padding: 16, boxShadow: `0 8px 32px rgba(0,0,0,0.85)`,
