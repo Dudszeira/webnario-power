@@ -252,14 +252,6 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
       className="relative w-full overflow-hidden select-none bg-black group"
       style={{ aspectRatio: '16/9', borderRadius: 12 }}
     >
-      {/* 🔴 BADGE AO VIVO */}
-      {started && (
-        <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 pointer-events-none transition-opacity duration-300">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping flex-shrink-0" />
-          <span className="w-2 h-2 absolute top-[9px] left-[13px] rounded-full bg-red-500 flex-shrink-0" />
-          <span className="text-[10.5px] font-bold tracking-widest text-white uppercase">AO VIVO</span>
-        </div>
-      )}
 
       {/* 🔇 MUTED NUDGE — shown when upload starts muted */}
       {source === 'upload' && started && muted && (
@@ -351,11 +343,6 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
                 </button>
               )}
 
-              {/* Status Indicator */}
-              <div className="flex items-center gap-1 bg-red-600/20 border border-red-600/30 px-2.5 py-0.5 rounded text-[9.5px] font-bold text-red-500 uppercase tracking-widest pointer-events-none">
-                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                AO VIVO
-              </div>
             </div>
 
             <div className="flex items-center gap-3">
