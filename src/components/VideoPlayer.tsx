@@ -156,13 +156,13 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
           modestbranding: 1,
           fs: 0,
           iv_load_policy: 3,
-          autoplay: 1,
-          mute: 1,
+          autoplay: 0,
           start: initialOffset,
         },
         events: {
           onReady: (event: any) => {
-            // Seek precisely to offset then play muted (browsers allow muted autoplay)
+            // Muted autoplay via JS API (browsers allow muted programmatic play)
+            event.target.mute();
             event.target.seekTo(initialOffset, true);
             event.target.playVideo();
           },
@@ -172,7 +172,7 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
             if (isPlaying) {
               setStarted(true);
               onStarted?.();
-              // Unmute after a brief moment — user already "joined" the live
+              // Unmute after a brief moment once playback is confirmed
               setTimeout(() => {
                 if (ytPlayerRef.current) {
                   ytPlayerRef.current.unMute?.();
