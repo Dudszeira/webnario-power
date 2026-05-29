@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import AdminNav from './AdminNav';
 import { cyber, cyberFonts } from '@/lib/cybertheme';
-import CyberDateTimePicker from './CyberDateTimePicker';
 
 type Metrics = {
   registrations: number; consumed: number; enterLive: number;
@@ -78,85 +77,6 @@ function RouteCard({ route }: { route: typeof ROUTES[0] }) {
   );
 }
 
-function TestModePanel({ currentEdition: _currentEdition }: { currentEdition?: string }) {
-  const [testMode, setTestMode] = useState(false);
-  const [testTime, setTestTime] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  useEffect(() => {
-    fetch('/api/admin/config').then(r => r.json()).then(d => {
-      if (d.edition) {
-        setTestMode(!!d.edition.test_mode);
-        if (d.edition.test_time) {
-          try {
-            const dt = new Date(d.edition.test_time);
-            setTestTime(new Date(dt).toLocaleString('sv-SE', { hour12: false }).slice(0, 16));
-          } catch {}
-        }
-      }
-    });
-  }, []);
-
-  async function save() {
-    setSaving(true);
-    try {
-      const res = await fetch('/api/admin/config', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          test_mode: testMode,
-          test_time: (testMode && testTime) ? new Date(testTime).toISOString() : null,
-        }),
-      });
-      if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const accent = testMode ? cyber.pink : cyber.textDecorative;
-
-  return (
-    <div style={{ background: cyber.surface, border: `1px solid ${testMode ? `${cyber.pink}30` : cyber.accentBorderDim}`, borderRadius: 12, padding: '14px 18px', marginBottom: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' as const }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: accent, flexShrink: 0 }} />
-          <div>
-            <p style={{ fontSize: 12.5, fontWeight: 700, color: cyber.textPrimary, margin: 0, fontFamily: cyberFonts.body }}>Modo Teste</p>
-            <p style={{ fontSize: 10.5, color: cyber.textLabel, margin: 0 }}>Simula um horário fictício para testar a plataforma</p>
-          </div>
-        </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => setTestMode(v => !v)}>
-          <div style={{ width: 36, height: 20, borderRadius: 10, background: testMode ? cyber.pink : cyber.bg, border: `1px solid ${testMode ? cyber.pink : cyber.accentBorderDim}`, position: 'relative', transition: 'all .18s', flexShrink: 0 }}>
-            <div style={{ position: 'absolute', top: 3, left: testMode ? 17 : 3, width: 12, height: 12, borderRadius: '50%', background: cyber.white, transition: 'left .18s' }} />
-          </div>
-          <span style={{ fontSize: 12, color: accent, fontWeight: 600 }}>{testMode ? 'Ativo' : 'Inativo'}</span>
-        </label>
-      </div>
-
-      {testMode && (
-        <div style={{ marginTop: 12, display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap' as const }}>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <label style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: cyber.textLabel, textTransform: 'uppercase' as const, letterSpacing: '.1em', marginBottom: 5 }}>
-              Início da live simulada — a sala de espera conta até este momento
-            </label>
-            <CyberDateTimePicker value={testTime} onChange={setTestTime} />
-          </div>
-          <button
-            onClick={save}
-            disabled={saving}
-            style={{ padding: '8px 16px', borderRadius: 7, background: saved ? cyber.green : cyber.pink, border: 'none', color: cyber.black, fontWeight: 700, fontSize: 12, cursor: saving ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: saving ? 0.6 : 1 }}>
-            {saved ? '✓ Salvo' : saving ? '...' : 'Salvar'}
-          </button>
-        </div>
-      )}
-
-      {!testMode && saved && (
-        <p style={{ fontSize: 11, color: cyber.green, marginTop: 8 }}>Modo teste desativado.</p>
-      )}
-    </div>
-  );
-}
 
 const adminStyles = `
   @keyframes adminSpin { to { transform: rotate(360deg) } }
@@ -288,9 +208,6 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>
-
-          {/* Test mode panel */}
-          <TestModePanel currentEdition={data?.currentEdition} />
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 lg:grid-cols-5" style={{ gap: 10, marginBottom: 24 }}>

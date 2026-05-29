@@ -497,10 +497,21 @@ export default function ChatPanel({
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       if (isStaff && staffToken) headers['Authorization'] = `Bearer ${staffToken}`;
       const res = await fetch('/api/chat', { method: 'POST', headers, body: JSON.stringify({ text }) });
+      // Only try to parse JSON if the response looks like JSON — avoids throwing on HTML error pages
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) {
+        // Non-JSON response (e.g. Vercel error page) — keep optimistic comment visible
+        setSending(false);
+        return;
+      }
       const data = await res.json();
-      if (data.id) setComments(prev => prev.map(c => c.id === tempId ? { ...c, id: data.id } : c));
+      if (data.id) {
+        setComments(prev => prev.map(c => c.id === tempId ? { ...c, id: data.id } : c));
+      }
+      // On server errors (403, 500 etc.) keep the optimistic comment visible — don't silently delete it
     } catch {
-      setComments(prev => prev.filter(c => c.id !== tempId));
+      // True network failure: keep the comment visible with a faded style rather than removing it
+      // (no-op — comment stays in state with temp id)
     }
     setSending(false);
   }
