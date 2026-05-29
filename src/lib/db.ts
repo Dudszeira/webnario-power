@@ -388,12 +388,24 @@ export async function replyToComment(id: string, replyText: string | null, reply
 }
 
 export async function deleteRegistration(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('registrations')
-    .delete()
-    .eq('id', id);
+  // Delete dependent records first to avoid FK constraint violations
+  await supabase.from('events').delete().eq('registration_id', id);
+  await supabase.from('comments').delete().eq('registration_id', id);
+  const { error } = await supabase.from('registrations').delete().eq('id', id);
   if (error) {
     console.error('deleteRegistration error:', error);
+    throw error;
+  }
+}
+
+// Partial update for edition fields — uses UPDATE instead of UPSERT to avoid replacing unspecified columns
+export async function updateEditionFields(id: string, fields: Partial<Omit<Edition, 'id' | 'created_at'>>): Promise<void> {
+  const { error } = await supabase
+    .from('editions')
+    .update(fields)
+    .eq('id', id);
+  if (error) {
+    console.error('updateEditionFields error:', error);
     throw error;
   }
 }

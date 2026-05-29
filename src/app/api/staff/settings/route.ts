@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyStaffToken } from '@/lib/auth';
-import { upsertEdition } from '@/lib/db';
+import { updateEditionFields } from '@/lib/db';
 import { getCurrentEditionId } from '@/lib/edition';
 
 export async function PATCH(req: NextRequest) {
@@ -12,7 +12,7 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const editionId = getCurrentEditionId();
 
-  const updateData: any = { id: editionId };
+  const updateData: any = {};
   let hasUpdates = false;
 
   if (body?.chat_mode !== undefined) {
@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    await upsertEdition(updateData);
+    await updateEditionFields(editionId, updateData);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Erro ao atualizar configurações da edição:', error);
