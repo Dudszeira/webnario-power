@@ -31,6 +31,8 @@ export async function GET(req: NextRequest) {
   const edition = await getEdition(editionId);
   const chatMode: string = edition?.chat_mode || 'general';
   const ctaEnabled: number = edition?.cta_enabled ?? 1;
+  const ctaUrl: string = edition?.cta_url || '';
+  const ctaText: string = edition?.cta_text || '';
 
   let comments;
 
@@ -49,7 +51,7 @@ export async function GET(req: NextRequest) {
     comments = await getRealComments(editionId, since, 50);
   }
 
-  return NextResponse.json({ comments, cta_enabled: ctaEnabled });
+  return NextResponse.json({ comments, cta_enabled: ctaEnabled, cta_url: ctaUrl, cta_text: ctaText });
 }
 
 // POST: Submit a real comment

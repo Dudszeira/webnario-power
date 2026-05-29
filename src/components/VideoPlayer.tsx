@@ -156,15 +156,31 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
           modestbranding: 1,
           fs: 0,
           iv_load_policy: 3,
-          autoplay: 0,
+          autoplay: 1,
+          mute: 1,
           start: initialOffset,
         },
         events: {
-          onReady: () => {},
+          onReady: (event: any) => {
+            // Seek precisely to offset then play muted (browsers allow muted autoplay)
+            event.target.seekTo(initialOffset, true);
+            event.target.playVideo();
+          },
           onStateChange: (e: any) => {
             const isPlaying = e.data === 1; // YT.PlayerState.PLAYING
             setPlaying(isPlaying);
-            if (isPlaying) onStarted?.();
+            if (isPlaying) {
+              setStarted(true);
+              onStarted?.();
+              // Unmute after a brief moment — user already "joined" the live
+              setTimeout(() => {
+                if (ytPlayerRef.current) {
+                  ytPlayerRef.current.unMute?.();
+                  ytPlayerRef.current.setVolume?.(100);
+                  setMuted(false);
+                }
+              }, 400);
+            }
           },
         },
       });

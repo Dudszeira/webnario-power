@@ -256,6 +256,8 @@ export default function ChatPanel({
   const [staffLogging, setStaffLogging] = useState(false);
   const [chatPublic, setChatPublic] = useState(chatMode === 'general');
   const [serverCtaEnabled, setServerCtaEnabled] = useState(ctaEnabled);
+  const [liveCtaUrl, setLiveCtaUrl] = useState(ctaUrl);
+  const [liveCtaText, setLiveCtaText] = useState(ctaText);
   const [staffMetrics, setStaffMetrics] = useState({ online: 0, cta_clicks: 0 });
 
   // Reply state
@@ -381,17 +383,19 @@ export default function ChatPanel({
 
   const scrollToBottom = () => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; };
 
-  // Ref so poll closure always has current staffToken
+  // Refs so poll closures always see current values
   const staffTokenRef = useRef(staffToken);
   useEffect(() => { staffTokenRef.current = staffToken; }, [staffToken]);
+  const serverCtaEnabledRef = useRef(serverCtaEnabled);
+  useEffect(() => { serverCtaEnabledRef.current = serverCtaEnabled; }, [serverCtaEnabled]);
 
-  // Poll real comments every 3s; every 5th poll (~15s) does a full refresh to pick up reply updates
+  // Poll real comments every 3s; every 2nd poll (~6s) does a full refresh to pick up reply updates
   useEffect(() => {
     let active = true;
     const poll = async () => {
       if (!active) return;
       pollCountRef.current += 1;
-      const isFull = pollCountRef.current % 5 === 0;
+      const isFull = pollCountRef.current % 2 === 0;
       try {
         const headers: HeadersInit = {};
         if (staffTokenRef.current) headers['Authorization'] = `Bearer ${staffTokenRef.current}`;
@@ -401,7 +405,16 @@ export default function ChatPanel({
         const res = await fetch(url, { headers });
         const data = await res.json();
         // Only sync CTA state from poll for non-staff — staff controls it directly via toggle
-        if (data.cta_enabled !== undefined && !staffTokenRef.current) setServerCtaEnabled(!!data.cta_enabled);
+        if (!staffTokenRef.current) {
+          if (data.cta_enabled !== undefined) {
+            const nowEnabled = !!data.cta_enabled;
+            // Reset ctaVisible when CTA transitions off→on (staff re-enabled it)
+            if (!serverCtaEnabledRef.current && nowEnabled) setCtaVisible(true);
+            setServerCtaEnabled(nowEnabled);
+          }
+          if (data.cta_url) setLiveCtaUrl(data.cta_url);
+          if (data.cta_text !== undefined) setLiveCtaText(data.cta_text);
+        }
         if (data.comments?.length) {
           const incoming = data.comments as ChatComment[];
           setComments(prev => {
@@ -482,7 +495,7 @@ export default function ChatPanel({
     return videoOffset >= (p.pin_start_seconds ?? 0) && videoOffset <= (p.pin_end_seconds ?? Infinity);
   });
   // CTA shows for everyone when staff has enabled it — no time-window restriction for viewers
-  const showCta = serverCtaEnabled && ctaUrl && ctaVisible;
+  const showCta = serverCtaEnabled && liveCtaUrl && ctaVisible;
 
   async function sendComment() {
     const text = input.trim();
@@ -528,13 +541,13 @@ export default function ChatPanel({
       {/* ── CTA Banner ─────────────────────────────────────── */}
       {showCta && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '10px 14px', background: 'linear-gradient(135deg,#e0a030,#e06020)', flexShrink: 0, animation: 'lcSlideIn .4s ease' }}>
-          <a href={ctaUrl} target="_blank" rel="noopener noreferrer"
-            onClick={() => fetch('/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'cta_click', meta: { url: ctaUrl } }) })}
+          <a href={liveCtaUrl} target="_blank" rel="noopener noreferrer"
+            onClick={() => fetch('/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'cta_click', meta: { url: liveCtaUrl } }) })}
             style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#fff', textDecoration: 'none', flex: 1, fontSize: 12, fontWeight: 700, letterSpacing: '.03em', transition: 'opacity .15s' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '.9'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}>
             <div className="lc-cta-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', flexShrink: 0 }} />
-            <span>{ctaText || '🔥 Vagas abertas! Garanta sua vaga agora'}</span>
+            <span>{liveCtaText || '🔥 Vagas abertas! Garanta sua vaga agora'}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
               <line x1="5" y1="12" x2="19" y2="12"/>
               <polyline points="12 5 19 12 12 19"/>
