@@ -65,7 +65,7 @@ export async function PUT(req: NextRequest) {
     video_url: body.video_url || '',
     video_duration: Number(body.video_duration) || 7200,
     sales_page_url: body.sales_page_url || '',
-    chat_enabled: body.chat_enabled ? 1 : 0,
+    chat_enabled: body.chat_enabled === false ? 0 : 1, // default 1 unless explicitly disabled
     chat_mode: body.chat_mode || 'general',
     cta_enabled: body.cta_enabled ? 1 : 0,
     cta_url: body.cta_url || '',

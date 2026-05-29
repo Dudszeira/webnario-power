@@ -247,21 +247,24 @@ export async function getRealComments(editionId: string, since: string, limit: n
 }
 
 export async function getIsolatedComments(editionId: string, since: string, registrationId: string, limit: number = 50): Promise<Comment[]> {
-  const { data, error } = await supabase
-    .from('comments')
-    .select('*')
-    .eq('edition_id', editionId)
-    .in('type', ['real_user', 'real_staff'])
-    .eq('visible', 1)
-    .gt('created_at', since)
-    .or(`type.eq.real_staff,registration_id.eq.${registrationId}`)
-    .order('created_at', { ascending: true })
-    .limit(limit);
+  // Two separate queries to avoid ambiguous .or() + .in() interaction in Supabase
+  const [userRes, staffRes] = await Promise.all([
+    supabase.from('comments').select('*')
+      .eq('edition_id', editionId).eq('type', 'real_user')
+      .eq('visible', 1).eq('registration_id', registrationId)
+      .gt('created_at', since).order('created_at', { ascending: true }).limit(limit),
+    supabase.from('comments').select('*')
+      .eq('edition_id', editionId).eq('type', 'real_staff')
+      .eq('visible', 1)
+      .gt('created_at', since).order('created_at', { ascending: true }).limit(20),
+  ]);
 
-  if (error) {
-    console.error('getIsolatedComments error:', error);
-  }
-  return data || [];
+  if (userRes.error) console.error('getIsolatedComments user error:', userRes.error);
+  if (staffRes.error) console.error('getIsolatedComments staff error:', staffRes.error);
+
+  const all = [...(userRes.data || []), ...(staffRes.data || [])];
+  all.sort((a, b) => a.created_at > b.created_at ? 1 : -1);
+  return all.slice(0, limit);
 }
 
 export async function insertComment(comment: Omit<Comment, 'created_at' | 'reply' | 'reply_author'>): Promise<void> {

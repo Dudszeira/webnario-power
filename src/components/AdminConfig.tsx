@@ -164,7 +164,7 @@ export default function AdminConfig() {
           setConfig({
             ...defaultConfig,
             ...d.edition,
-            chat_enabled: !!d.edition.chat_enabled,
+            chat_enabled: true, // always default to enabled; toggle off only if admin explicitly disables
             cta_enabled: !!d.edition.cta_enabled,
             test_mode: !!d.edition.test_mode,
             test_time: testTimeLocal,
