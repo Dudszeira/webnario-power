@@ -34,12 +34,12 @@ function SectionCard({ title, description, accent, children }: {
   title: string; description?: string; accent: string; children: React.ReactNode;
 }) {
   return (
-    <div style={{ background: cyber.surface, border: `1px solid ${cyber.accentBorderDim}`, borderRadius: 10, overflow: 'hidden' }}>
-      <div style={{ padding: '12px 18px', borderBottom: `1px solid ${cyber.accentBorderDim}`, borderLeft: `3px solid ${accent}` }}>
+    <div style={{ background: cyber.surface, border: `1px solid ${cyber.accentBorderDim}`, borderRadius: 10 }}>
+      <div style={{ padding: '12px 18px', borderBottom: `1px solid ${cyber.accentBorderDim}`, borderLeft: `3px solid ${accent}`, borderRadius: '10px 10px 0 0' }}>
         <p style={{ fontSize: 13, fontWeight: 700, color: cyber.textPrimary, fontFamily: cyberFonts.body, margin: 0 }}>{title}</p>
         {description && <p style={{ fontSize: 11, color: cyber.textLabel, margin: '3px 0 0' }}>{description}</p>}
       </div>
-      <div style={{ padding: '18px', display: 'flex', flexDirection: 'column' as const, gap: 14, background: cyber.surface }}>
+      <div style={{ padding: '18px', display: 'flex', flexDirection: 'column' as const, gap: 14, background: cyber.surface, borderRadius: '0 0 10px 10px' }}>
         {children}
       </div>
     </div>
