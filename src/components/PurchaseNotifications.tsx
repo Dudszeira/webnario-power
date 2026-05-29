@@ -32,6 +32,27 @@ const CITIES = [
   'Joinville, SC', 'Ribeirão Preto, SP', 'Uberlândia, MG', 'Brasília, DF',
 ];
 
+const AUTO_NAMES = [
+  'Ana Paula', 'Carlos Eduardo', 'Mariana S.', 'João Pedro', 'Fernanda Lima',
+  'Rafael Costa', 'Juliana M.', 'Bruno Souza', 'Camila F.', 'Diego Alves',
+  'Larissa B.', 'Thiago R.', 'Patrícia N.', 'Lucas Mendes', 'Gabriela O.',
+  'Rodrigo T.', 'Amanda G.', 'Felipe A.', 'Natalia C.', 'Gustavo P.',
+  'Beatriz L.', 'Leonardo S.', 'Andressa V.', 'Matheus H.', 'Sabrina D.',
+  'Victor M.', 'Caroline X.', 'Anderson J.', 'Priscila W.', 'Eduardo K.',
+  'Renata Q.', 'Fábio Z.', 'Isabela Y.', 'Marcelo U.', 'Tatiane I.',
+];
+
+const AUTO_MESSAGES = [
+  'acabou de garantir sua vaga',
+  'acaba de adquirir o programa',
+  'acabou de se inscrever',
+  'acaba de investir no método',
+  'acabou de entrar para a turma',
+  'acabou de garantir o acesso completo',
+  'acaba de começar sua jornada',
+  'acabou de fazer sua inscrição',
+];
+
 function nameToCity(name: string): string {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
@@ -68,12 +89,25 @@ function scheduleToast(
   }, delayMs);
 }
 
+function showAutoToast(setToasts: React.Dispatch<React.SetStateAction<Toast[]>>) {
+  const name = AUTO_NAMES[Math.floor(Math.random() * AUTO_NAMES.length)];
+  const text = AUTO_MESSAGES[Math.floor(Math.random() * AUTO_MESSAGES.length)];
+  const id = `auto_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const toast: Toast = { id, name, text, shownAt: Date.now() };
+  setToasts((prev) => [...prev.slice(-3), toast]);
+  setTimeout(() => {
+    setToasts((prev) => prev.map((t) => t.id === id ? { ...t, exiting: true } : t));
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 400);
+  }, 6000);
+}
+
 export default function PurchaseNotifications({ simulatedComments, videoOffsetRef, ctaEnabled }: Props) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [, setTick] = useState(0);
   const shownIds = useRef<Set<string>>(new Set());
   const prevCtaRef = useRef(ctaEnabled ?? false);
   const didMountRef = useRef(false);
+  const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const purchases = useMemo(
     () => simulatedComments.filter((c) => c.type === 'simulated_purchase'),
@@ -89,7 +123,7 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
 
     const past = purchases
       .filter(p => p.video_timestamp <= joinOffset)
-      .sort((a, b) => b.video_timestamp - a.video_timestamp) // most recent first
+      .sort((a, b) => b.video_timestamp - a.video_timestamp)
       .slice(0, 3)
       .reverse();
 
@@ -111,14 +145,40 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
     return () => clearInterval(interval);
   }, [purchases, videoOffsetRef]);
 
-  // Fire unshown toasts in staggered order when CTA is activated
+  // Fire unshown DB purchases in staggered order when CTA is activated
   useEffect(() => {
     if (!ctaEnabled) { prevCtaRef.current = false; return; }
-    if (prevCtaRef.current) return; // already was active
+    if (prevCtaRef.current) return;
     prevCtaRef.current = true;
     const unshown = purchases.filter((p) => !shownIds.current.has(p.id));
     unshown.forEach((p, i) => scheduleToast(p, i * 30000, shownIds, setToasts));
   }, [ctaEnabled, purchases]);
+
+  // Auto-generated purchase notifications while CTA is active
+  // First fires 30s after CTA is enabled, then every 25–40s (randomized)
+  useEffect(() => {
+    if (autoTimerRef.current) {
+      clearTimeout(autoTimerRef.current);
+      autoTimerRef.current = null;
+    }
+    if (!ctaEnabled) return;
+
+    const scheduleNext = (delay: number) => {
+      autoTimerRef.current = setTimeout(() => {
+        showAutoToast(setToasts);
+        scheduleNext(25000 + Math.floor(Math.random() * 15000));
+      }, delay);
+    };
+
+    scheduleNext(30000);
+
+    return () => {
+      if (autoTimerRef.current) {
+        clearTimeout(autoTimerRef.current);
+        autoTimerRef.current = null;
+      }
+    };
+  }, [ctaEnabled]);
 
   // Tick to refresh "há Xs" timestamps
   useEffect(() => {
