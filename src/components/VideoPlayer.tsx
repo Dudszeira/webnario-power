@@ -32,6 +32,7 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
 
   const [started, setStarted] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [buffering, setBuffering] = useState(false);
   const [volume, setVolume] = useState(100);
   const [muted, setMuted] = useState(false);
 
@@ -167,10 +168,13 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
             event.target.playVideo();
           },
           onStateChange: (e: any) => {
-            const isPlaying = e.data === 1; // YT.PlayerState.PLAYING
+            const isPlaying = e.data === 1;   // YT.PlayerState.PLAYING
+            const isBuffering = e.data === 3; // YT.PlayerState.BUFFERING
+            setBuffering(isBuffering);
             setPlaying(isPlaying);
             if (isPlaying) {
               setStarted(true);
+              setBuffering(false);
               onStarted?.();
               // Unmute after a brief moment once playback is confirmed
               setTimeout(() => {
@@ -319,7 +323,7 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
       )}
 
       {/* ▶ OVERLAY DE PLAY QUANDO PAUSADO */}
-      {started && !playing && (source === 'youtube' || allowPause) && (
+      {started && !playing && !buffering && (source === 'youtube' || allowPause) && (
         <div
           className="absolute inset-0 z-20 flex items-center justify-center cursor-pointer"
           style={{ background: 'rgba(0,0,0,0.38)' }}

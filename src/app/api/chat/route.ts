@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   getEdition,
   getRealComments,
-  getRecentRealComments,
   getIsolatedComments,
   getSimulatedWithReplies,
   insertComment
@@ -84,7 +83,10 @@ export async function POST(req: NextRequest) {
   }
 
   const edition = await getEdition(editionId);
-  if (!edition?.chat_enabled && !staffMember) {
+  if (!edition) {
+    return NextResponse.json({ error: 'Edição não encontrada' }, { status: 404 });
+  }
+  if (!edition.chat_enabled && !staffMember) {
     return NextResponse.json({ error: 'Chat desabilitado' }, { status: 403 });
   }
 
@@ -111,8 +113,8 @@ export async function POST(req: NextRequest) {
       visible: 1
     });
   } catch (e: any) {
-    console.error('insertComment error:', e);
-    return NextResponse.json({ error: 'Erro ao salvar comentário' }, { status: 500 });
+    console.error('insertComment error:', e?.code, e?.message, e);
+    return NextResponse.json({ error: 'Erro ao salvar comentário', code: e?.code ?? null }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, id: commentId });
