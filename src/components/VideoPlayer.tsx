@@ -41,6 +41,8 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
   const playTimestampRef = useRef<number | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ytIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Tracks whether the user intentionally paused (vs YouTube auto-pausing)
+  const userPausedRef = useRef(false);
 
   // Trigger Toast Notification
   function triggerToast() {
@@ -168,8 +170,25 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
             event.target.playVideo();
           },
           onStateChange: (e: any) => {
-            const isPlaying = e.data === 1;   // YT.PlayerState.PLAYING
-            const isBuffering = e.data === 3; // YT.PlayerState.BUFFERING
+            const YT_PAUSED = 2;
+            const YT_PLAYING = 1;
+            const YT_BUFFERING = 3;
+
+            if (e.data === YT_PAUSED) {
+              if (!userPausedRef.current) {
+                // YouTube auto-paused (e.g. "are you still watching?") — resume silently
+                if (ytPlayerRef.current) ytPlayerRef.current.playVideo();
+                return;
+              }
+              // User intentionally paused — show overlay
+              userPausedRef.current = false;
+              setPlaying(false);
+              setBuffering(false);
+              return;
+            }
+
+            const isPlaying = e.data === YT_PLAYING;
+            const isBuffering = e.data === YT_BUFFERING;
             setBuffering(isBuffering);
             setPlaying(isPlaying);
             if (isPlaying) {
@@ -249,9 +268,11 @@ export default function VideoPlayer({ source, url, initialOffset, onTimeUpdate, 
       const player = ytPlayerRef.current;
       if (player) {
         if (playing) {
+          userPausedRef.current = true;
           player.pauseVideo();
           setPlaying(false);
         } else {
+          userPausedRef.current = false;
           player.playVideo();
           setPlaying(true);
         }

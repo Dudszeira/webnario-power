@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { verifyUserSession } from '@/lib/auth';
 import { getCurrentEditionId, getLiveStartMs } from '@/lib/edition';
-import { getEdition } from '@/lib/db';
+import { getEdition, getRegistrationById } from '@/lib/db';
 import EsperaContent from '@/components/EsperaContent';
 
 export const dynamic = 'force-dynamic';
@@ -23,8 +23,15 @@ export default async function EsperaPage() {
   const effectiveLiveEndMs = effectiveLiveStartMs + videoDuration * 1000;
   const now = Date.now();
 
-  // Redirect registered users to live room when the (possibly simulated) live is active
+  // Verify session is still backed by a real DB registration (admin may have deleted it)
+  let registrationValid = false;
   if (session && session.editionId === editionId) {
+    const reg = await getRegistrationById(session.registrationId);
+    registrationValid = !!reg;
+  }
+
+  // Redirect registered users to live room when the (possibly simulated) live is active
+  if (registrationValid) {
     if (now >= effectiveLiveStartMs && now <= effectiveLiveEndMs) {
       redirect('/ao-vivo');
     }
@@ -43,7 +50,7 @@ export default async function EsperaPage() {
     }
   }
 
-  const registered = !!(session && session.editionId === editionId);
+  const registered = registrationValid;
 
   return (
     <EsperaContent
