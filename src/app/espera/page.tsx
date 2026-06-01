@@ -34,6 +34,7 @@ export default async function EsperaPage() {
           editionId={editionId}
           session={session}
           liveStartMs={effectiveLiveStartMs}
+          serverNow={now}
           liveOver={true}
           salesUrl={salesUrl}
           registered={true}
@@ -49,6 +50,7 @@ export default async function EsperaPage() {
       editionId={editionId}
       session={session}
       liveStartMs={effectiveLiveStartMs}
+      serverNow={now}
       liveOver={false}
       salesUrl={salesUrl}
       registered={registered}

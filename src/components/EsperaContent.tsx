@@ -11,6 +11,7 @@ type Props = {
   editionId: string;
   session: { name: string; email: string } | null;
   liveStartMs: number;
+  serverNow: number;
   liveOver: boolean;
   salesUrl: string;
   registered: boolean;
@@ -24,7 +25,7 @@ const BULLETS = [
 ];
 
 export default function EsperaContent({
-  session, liveStartMs, liveOver, salesUrl, registered,
+  session, liveStartMs, serverNow, liveOver, salesUrl, registered,
 }: Props) {
   const router = useRouter();
   const [showRegister, setShowRegister] = useState(!registered && !liveOver);
@@ -73,7 +74,7 @@ export default function EsperaContent({
 
       {/* ── Countdown ── */}
       <div className="flex flex-col items-center px-4 pb-8">
-        <Countdown targetMs={liveStartMs} onReached={handleCountdownReached} />
+        <Countdown targetMs={liveStartMs} serverNow={serverNow} onReached={handleCountdownReached} />
       </div>
 
       {/* ── Content card ── */}

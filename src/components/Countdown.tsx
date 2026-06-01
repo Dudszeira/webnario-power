@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { cyber, cyberFonts } from '@/lib/cybertheme';
 
 type Props = {
   targetMs: number;
+  serverNow?: number;
   onReached?: () => void;
 };
 
@@ -12,9 +13,14 @@ function pad(n: number) {
   return String(Math.max(0, n)).padStart(2, '0');
 }
 
-export default function Countdown({ targetMs, onReached }: Props) {
+export default function Countdown({ targetMs, serverNow, onReached }: Props) {
+  // Clock skew: difference between server time and client time at mount.
+  // Corrects for users whose system clock is ahead or behind the server.
+  const clockSkewRef = useRef<number>(serverNow != null ? serverNow - Date.now() : 0);
+
   const calc = useCallback(() => {
-    const diff = Math.max(0, Math.floor((targetMs - Date.now()) / 1000));
+    const now = Date.now() + clockSkewRef.current;
+    const diff = Math.max(0, Math.floor((targetMs - now) / 1000));
     return {
       days: Math.floor(diff / 86400),
       hours: Math.floor((diff % 86400) / 3600),
