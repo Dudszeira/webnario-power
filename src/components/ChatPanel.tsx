@@ -266,6 +266,15 @@ export default function ChatPanel({
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
 
+  // Error toast
+  const [toastError, setToastError] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function showToastError(msg: string) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastError(msg);
+    toastTimerRef.current = setTimeout(() => setToastError(null), 4000);
+  }
+
   const shownSimIds = useRef<Set<string>>(new Set());
   const typingSimIds = useRef<Set<string>>(new Set());
   const mountTimeRef = useRef(Date.now());
@@ -559,13 +568,17 @@ export default function ChatPanel({
         return;
       }
       const data = await res.json();
-      if (data.id) {
+      if (!res.ok) {
+        setComments(prev => prev.filter(c => c.id !== tempId));
+        const msg = res.status === 403 ? 'Sessão expirada. Recarregue a página.'
+          : res.status === 401 ? 'Não autorizado. Faça login novamente.'
+          : data?.error || 'Não foi possível enviar o comentário.';
+        showToastError(msg);
+      } else if (data.id) {
         setComments(prev => prev.map(c => c.id === tempId ? { ...c, id: data.id } : c));
       }
-      // On server errors (403, 500 etc.) keep the optimistic comment visible — don't silently delete it
     } catch {
-      // True network failure: keep the comment visible with a faded style rather than removing it
-      // (no-op — comment stays in state with temp id)
+      // True network failure — keep optimistic comment visible
     }
     setSending(false);
   }
@@ -762,6 +775,11 @@ export default function ChatPanel({
           </button>
         </div>
         {!chatEnabled && <p style={{ textAlign: 'center', fontSize: 11, color: T.textMuted, margin: 0 }}>Chat desabilitado</p>}
+        {toastError && (
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#e05050', background: 'rgba(224,80,80,0.1)', border: '1px solid rgba(224,80,80,0.25)', borderRadius: 6, padding: '7px 11px', textAlign: 'center', fontFamily: "'Montserrat', sans-serif" }}>
+            {toastError}
+          </div>
+        )}
       </div>
 
       {/* ── Staff Login Modal ───────────────────────────────── */}
