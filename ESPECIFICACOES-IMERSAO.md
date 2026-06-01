@@ -413,3 +413,95 @@ Na raiz do projeto existem capturas de uma **versão mais simples** do fluxo que
 ---
 
 *Última atualização: bloqueio por IP + e-mail, mesmo e-mail com IP diferente bloqueado; replay externo (7.3); pendências em modo incremental (11).*
+
+---
+
+## 14. Estado atual da implementação e histórico de melhorias
+
+### 14.1 Status geral da plataforma (2025-06)
+
+A plataforma está **funcional e em uso ativo**. As funcionalidades principais das especificações estão implementadas. O foco das sessões recentes foi estabilidade do sistema de comentários e sincronização de estado.
+
+**Cobertura por seção do spec:**
+
+| Seção | Status |
+|-------|--------|
+| 1 — Acesso, bloqueio IP + e-mail, sessão por edição | Implementado |
+| 2 — Entrada atrasada (sync com minutagem) | Implementado |
+| 3 — CTA configurável com toggle staff | Implementado |
+| 4 — Ciclo semanal, redirect terça 20h | Implementado |
+| 5 — Player upload + YouTube, controles bloqueados | Implementado |
+| 6 — Comentários (4 tipos), modos geral/isolado, import Excel, pins | Implementado |
+| 7 — Sala de espera, popup cadastro, cronômetro, redirect | Implementado |
+| 8 — Dashboard admin: métricas reais, cliques, exportação | Implementado |
+| 9 — Notificações de compra simulada (toast) | Implementado |
+| 13 — Retorno, nova semana, redirect página de vendas | Implementado |
+
+---
+
+### 14.2 Melhorias implementadas (sessão de junho 2025)
+
+#### Chat e comentários
+
+- **Comentários simulados de usuário agora sempre aparecem** — o filtro `chatMode === 'isolated'` excluía indevidamente comentários simulados de usuário no modo isolado. Comentários simulados são elementos do roteiro do show e devem aparecer para todos, independentemente do modo do chat.
+
+- **Respostas (replies) em tempo real** — o poll de chat agora retorna (`sim_replied`) comentários simulados que receberam resposta da staff. O cliente atualiza o campo de reply sem precisar recarregar a página. Simulados com `video_timestamp` futuro nunca são appendados antes da hora (o simulation engine continua sendo o único responsável pelo dispatch).
+
+- **Comentários do staff (modo padlock) agora aparecem para usuários reais** — a causa raiz eram dois bugs no `registration_id` e no edition check:
+  - `registration_id` de posts de staff mudou de `staff_${uuid}` para `null` (consistente com `/api/admin/comments`), eliminando possível violação de FK.
+  - Os edition checks em GET e POST agora bypassam `staffMember` e `isAdmin` — anteriormente, um host com sessão de usuário de edição anterior + staffToken ativo recebia bloqueio silencioso (`session.editionId ≠ currentEditionId`), impedindo tanto leitura quanto escrita.
+
+- **Admin preview vê comentários em tempo real** — o GET `/api/chat` agora aceita `admin_session` cookie como bypass de leitura, mesmo sem sessão de usuário.
+
+- **`lastPoll` não é mais envenenado por comentários simulados** — `sim_replied` retorna num campo separado da resposta, nunca misturado com `comments`. O cursor incremental (`lastPoll`) só avança com base em comentários reais.
+
+- **`getSimulatedWithReplies` tem ordenação determinística** — adicionado `.order('video_timestamp', { ascending: true })`.
+
+- **`let comments` inicializado com `[]`** — elimina potencial `TypeError` num branch futuro.
+
+- **Modo isolado preservado** — `sim_replied` não é incluído em respostas de modo isolado (usuários isolados não devem receber conteúdo extra).
+
+#### Notificações de compra
+
+- **"Verificado" removido** dos toasts de compra simulada.
+- **Toasts só aparecem com CTA ativo** — os efeitos de montagem (late joiners) e de timestamp de vídeo agora verificam `ctaEnabled` antes de disparar.
+- **Toasts agendados são cancelados ao desativar CTA** — os `setTimeout` são guardados em `scheduledTimers` ref e cancelados quando `ctaEnabled` muda para `false`. Toasts visíveis também somem imediatamente.
+
+#### Cronômetro (sala de espera)
+
+- **Sincronização pelo relógio do servidor** — o `Countdown` recebia `serverNow` do servidor e calcula `clockSkew = serverNow - Date.now()` uma vez na montagem. Todas as contagens usam `Date.now() + clockSkew`, eliminando divergências causadas por relógios de usuário adiantados ou atrasados.
+
+#### Interface e layout
+
+- **Layout do chat travado na viewport (desktop)** — a root div mudou de `min-h-screen` para `md:h-screen md:overflow-hidden`. A lista de comentários (`flex: 1, overflow-y: auto`) agora tem referência de altura e scrolla corretamente em vez de expandir o container.
+- **Toggle de revelar/ocultar senha** adicionado no login admin (ícone de olho com estado).
+- **Badge de status da live** no painel admin reflete modo Teste (roxo) quando `test_mode = 1`, além dos estados Aguardando (âmbar), Ao Vivo (verde pulsando) e Encerrada (azul).
+
+#### Admin — moderação de comentários
+
+- **Polling automático** na página de moderação (`/admin/comentarios`) — atualiza a lista a cada 10 segundos sem precisar recarregar.
+
+---
+
+### 14.3 Bugs corrigidos — review do sistema de comentários (2025-06)
+
+Review formal executado sobre `api/chat/route.ts`, `ChatPanel.tsx` e `db.ts`. 8 bugs encontrados e corrigidos:
+
+| # | Arquivo | Severidade | Descrição |
+|---|---------|-----------|-----------|
+| 1 | `route.ts:29` (GET) | Crítico | Edition check bloqueava staff com sessão de usuário de edição diferente — `!staffMember && !isAdmin` adicionado à condição |
+| 2 | `route.ts:78` (POST) | Crítico | Mesmo problema no POST — staff com sessão antiga recebia 403, comentário ficava só no estado otimista do cliente |
+| 3 | `route.ts:24` | Alto | `isAdmin` não era avaliado quando `session` existia — agora sempre avaliado para não-staff |
+| 4 | `ChatPanel:436` | Alto | Poll merge loop appendava comentários simulados com `video_timestamp` futuro antes da hora, causando duplicatas quando o simulation engine disparava depois |
+| 5 | `db.ts:270` + `ChatPanel:442` | Alto | `getSimulatedWithReplies` sem `.order()` → ordem não-determinística → `lastPoll` podia avançar para timestamp errado, pulando comentários reais |
+| 6 | `route.ts:58` | Médio | `sim_replied` era incluído para usuários em modo isolado, vazando conteúdo fora do escopo do modo |
+| 7 | `route.ts:41` | Baixo | `let comments` sem valor inicial — potential `TypeError` em branch futuro |
+| 8 | `ChatPanel:548` | Baixo | 403 no POST deixava comentário otimista fantasma visível só ao remetente sem feedback de erro |
+
+---
+
+### 14.4 Pendências técnicas conhecidas
+
+- **Build local quebrado com Node 24** — o projeto exige Node 20 (`.nvmrc`). O deploy na Vercel funciona corretamente pois usa a versão configurada no projeto. Para build local, instalar Node 20 via nvm-windows ou download oficial.
+- **Ghost comment no 403** (bug #8 acima) — ao receber 403 no POST, o comentário otimista permanece visível apenas para o remetente sem mensagem de erro. Não afeta dados, mas pode confundir o usuário. Correção pendente: exibir toast de erro e remover o comentário do estado local.
+- **Comentários reais do host como viewer** — se o host/Robison digitar um comentário no campo de viewer (não no modo staff/padlock), o comentário é salvo como `real_user` e em modo isolado só aparece para ele. Recomendação operacional: o host deve sempre usar o modo staff (padlock) para que os comentários apareçam para todos como `real_staff`.
