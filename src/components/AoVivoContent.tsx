@@ -102,7 +102,7 @@ export default function AoVivoContent({
   }, [redirectCountdown, salesUrl]);
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: '#0d0d0d' }}>
+    <div className="flex flex-col min-h-screen md:h-screen md:overflow-hidden" style={{ background: '#0d0d0d' }}>
 
       {/* Admin preview banner */}
       {isAdminPreview && (
@@ -125,10 +125,10 @@ export default function AoVivoContent({
       )}
 
       {/* ── Main layout: video (left) + chat (right, desktop) ── */}
-      <div className="flex flex-col md:flex-row flex-1 p-4 md:p-6 gap-4 md:gap-5">
+      <div className="flex flex-col md:flex-row flex-1 p-4 md:p-6 gap-4 md:gap-5 md:overflow-hidden">
 
         {/* Left column */}
-        <div className="flex flex-col flex-1 min-w-0 gap-4">
+        <div className="flex flex-col flex-1 min-w-0 gap-4 md:overflow-y-auto">
 
           {/* Video card */}
           <div
