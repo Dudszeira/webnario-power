@@ -421,15 +421,12 @@ export default function ChatPanel({
         if (data.comments?.length) {
           const incoming = data.comments as ChatComment[];
           setComments(prev => {
-            // Build index of existing comments for fast lookup
             const prevIndexMap = new Map(prev.map((c, i) => [c.id, i]));
             const result = [...prev];
             const toAppend: ChatComment[] = [];
-
             for (const ic of incoming) {
               const existingIdx = prevIndexMap.get(ic.id);
               if (existingIdx !== undefined) {
-                // Update reply data if staff replied to this comment
                 if (ic.reply && ic.reply !== result[existingIdx].reply) {
                   result[existingIdx] = { ...result[existingIdx], reply: ic.reply, reply_author: ic.reply_author };
                 }
@@ -439,10 +436,27 @@ export default function ChatPanel({
             }
             return [...result, ...toAppend];
           });
+          // Only advance lastPoll from real comments — prevents simulated items from corrupting the cursor
           const newest = incoming[incoming.length - 1].created_at;
           if (newest && !isFull) setLastPoll(newest);
-          // On full refresh update lastPoll to newest found so incremental stays current
           if (isFull && newest && newest > lastPoll) setLastPoll(newest);
+        }
+        // sim_replied: update reply fields on simulated comments already in state.
+        // Never append them early — the simulation engine handles dispatch at the right video_timestamp.
+        if (data.sim_replied?.length) {
+          const simItems = data.sim_replied as ChatComment[];
+          setComments(prev => {
+            const prevIndexMap = new Map(prev.map((c, i) => [c.id, i]));
+            const result = [...prev];
+            for (const ic of simItems) {
+              const existingIdx = prevIndexMap.get(ic.id);
+              if (existingIdx !== undefined && ic.reply && ic.reply !== result[existingIdx].reply) {
+                result[existingIdx] = { ...result[existingIdx], reply: ic.reply, reply_author: ic.reply_author };
+              }
+              // If NOT in state yet (future video_timestamp), do not append — simulation engine will dispatch it
+            }
+            return result;
+          });
         }
       } catch {}
     };

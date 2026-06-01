@@ -274,7 +274,8 @@ export async function getSimulatedWithReplies(editionId: string): Promise<Commen
     .eq('edition_id', editionId)
     .in('type', ['simulated_user', 'simulated_staff'])
     .eq('visible', 1)
-    .not('reply', 'is', null);
+    .not('reply', 'is', null)
+    .order('video_timestamp', { ascending: true });
   if (error) console.error('getSimulatedWithReplies error:', error);
   return data || [];
 }

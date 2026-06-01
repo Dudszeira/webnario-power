@@ -20,13 +20,14 @@ export async function GET(req: NextRequest) {
   const sToken = authHeader.replace('Bearer ', '').trim();
   const staffMember = sToken ? await verifyStaffToken(sToken) : null;
 
-  // Admin session bypass: admin preview mode can read comments
-  const isAdmin = !session && !staffMember ? await verifyAdminFromRequest(req) : false;
+  // Admin session bypass: admin preview mode can read comments (checked even when session is present)
+  const isAdmin = !staffMember ? await verifyAdminFromRequest(req) : false;
 
   if (!session && !staffMember && !isAdmin) return NextResponse.json({ comments: [] });
 
   const editionId = getCurrentEditionId();
-  if (session && session.editionId !== editionId) return NextResponse.json({ comments: [] });
+  // Edition isolation only applies to regular viewers — staff and admin bypass it
+  if (session && !staffMember && !isAdmin && session.editionId !== editionId) return NextResponse.json({ comments: [] });
 
   const since = req.nextUrl.searchParams.get('since') || '1970-01-01T00:00:00.000Z';
   const isFull = req.nextUrl.searchParams.get('full') === '1';
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
   const ctaUrl: string = edition?.cta_url || '';
   const ctaText: string = edition?.cta_text || '';
 
-  let comments;
+  let comments: Awaited<ReturnType<typeof getRealComments>> = [];
 
   if (staffMember || isAdmin) {
     // Staff and admin preview see all real comments
@@ -53,14 +54,16 @@ export async function GET(req: NextRequest) {
     comments = await getRealComments(editionId, genCutoff, 100);
   }
 
-  // On full refresh: also include simulated comments that received replies,
-  // so clients can display replies in real-time without a page reload.
-  if (isFull) {
-    const simReplied = await getSimulatedWithReplies(editionId);
-    if (simReplied.length) comments = [...comments, ...simReplied];
+  // On full refresh: also include simulated comments that received replies so
+  // clients update reply fields in real-time. Excluded in isolated mode (users
+  // there only see their own comments) and kept separate from the real array so
+  // it does not corrupt lastPoll on the client.
+  let simReplied: typeof comments = [];
+  if (isFull && chatMode !== 'isolated') {
+    simReplied = await getSimulatedWithReplies(editionId);
   }
 
-  return NextResponse.json({ comments, cta_enabled: ctaEnabled, cta_url: ctaUrl, cta_text: ctaText });
+  return NextResponse.json({ comments, sim_replied: simReplied, cta_enabled: ctaEnabled, cta_url: ctaUrl, cta_text: ctaText });
 }
 
 // POST: Submit a real comment
@@ -75,7 +78,8 @@ export async function POST(req: NextRequest) {
   if (!session && !staffMember) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const editionId = getCurrentEditionId();
-  if (session && session.editionId !== editionId) {
+  // Edition isolation only applies to regular viewers — staff bypass it
+  if (session && !staffMember && session.editionId !== editionId) {
     return NextResponse.json({ error: 'Edição inválida' }, { status: 403 });
   }
 
