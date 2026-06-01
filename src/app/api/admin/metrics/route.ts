@@ -30,7 +30,8 @@ export async function GET(req: NextRequest) {
   const liveStartMs = getLiveStartMs(targetEdition);
   const liveActive = isLiveActive(targetEdition, videoDuration, simulatedNow);
   const liveOver = isLiveOver(targetEdition, videoDuration, simulatedNow);
-  const liveStatus = liveActive ? 'live' : liveOver ? 'over' : 'waiting';
+  const isTestMode = currentEditionRow?.test_mode === 1;
+  const liveStatus = isTestMode ? 'test' : liveActive ? 'live' : liveOver ? 'over' : 'waiting';
 
   const editionConfig = currentEditionRow || {};
 

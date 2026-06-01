@@ -9,12 +9,13 @@ type Metrics = {
   realComments: number; ctaClicks: number; simulatedComments: number;
 };
 
-type LiveStatus = 'waiting' | 'live' | 'over';
+type LiveStatus = 'waiting' | 'live' | 'over' | 'test';
 
 const STATUS_CFG: Record<LiveStatus, { label: string; dot: string; color: string; bg: string }> = {
-  waiting: { label: 'Aguardando', dot: '#f59e0b',             color: '#f59e0b',             bg: 'rgba(245,158,11,0.08)' },
-  live:    { label: 'Ao Vivo',    dot: cyber.green,           color: cyber.green,           bg: `rgba(0,255,157,0.06)`  },
-  over:    { label: 'Encerrada',  dot: cyber.textDecorative,  color: cyber.textDecorative,  bg: `rgba(58,107,138,0.08)` },
+  waiting: { label: 'Aguardando', dot: '#f59e0b',             color: '#f59e0b',             bg: 'rgba(245,158,11,0.08)'  },
+  live:    { label: 'Ao Vivo',    dot: cyber.green,           color: cyber.green,           bg: `rgba(0,255,157,0.06)`   },
+  over:    { label: 'Encerrada',  dot: cyber.textDecorative,  color: cyber.textDecorative,  bg: `rgba(58,107,138,0.08)`  },
+  test:    { label: 'Teste',      dot: '#a78bfa',             color: '#a78bfa',             bg: 'rgba(167,139,250,0.08)' },
 };
 
 const BADGE: Record<string, { bg: string; color: string; border: string; label: string }> = {
