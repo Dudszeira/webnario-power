@@ -99,6 +99,7 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
   const prevCtaRef = useRef(ctaEnabled ?? false);
   const didMountRef = useRef(false);
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduledTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const purchases = useMemo(
     () => simulatedComments.filter((c) => c.type === 'simulated_purchase'),
@@ -138,11 +139,30 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
 
   // Fire unshown DB purchases in staggered order when CTA is activated
   useEffect(() => {
-    if (!ctaEnabled) { prevCtaRef.current = false; return; }
+    if (!ctaEnabled) {
+      // Cancel any pending scheduled toasts and clear visible ones
+      scheduledTimers.current.forEach(clearTimeout);
+      scheduledTimers.current = [];
+      setToasts([]);
+      prevCtaRef.current = false;
+      return;
+    }
     if (prevCtaRef.current) return;
     prevCtaRef.current = true;
     const unshown = purchases.filter((p) => !shownIds.current.has(p.id));
-    unshown.forEach((p, i) => scheduleToast(p, i * 30000, shownIds, setToasts));
+    unshown.forEach((p, i) => {
+      const tid = setTimeout(() => {
+        if (shownIds.current!.has(p.id)) return;
+        shownIds.current!.add(p.id);
+        const toast: Toast = { id: p.id, name: p.author_name, text: p.text, shownAt: Date.now() };
+        setToasts((prev) => [...prev.slice(-3), toast]);
+        setTimeout(() => {
+          setToasts((prev) => prev.map((t) => t.id === p.id ? { ...t, exiting: true } : t));
+          setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== p.id)), 400);
+        }, 6000);
+      }, i * 30000);
+      scheduledTimers.current.push(tid);
+    });
   }, [ctaEnabled, purchases]);
 
   // Auto-generated purchase notifications while CTA is active

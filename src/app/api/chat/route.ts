@@ -5,9 +5,10 @@ import {
   getRealComments,
   getRecentRealComments,
   getIsolatedComments,
+  getSimulatedWithReplies,
   insertComment
 } from '@/lib/db';
-import { verifyUserSessionFromRequest, verifyStaffToken } from '@/lib/auth';
+import { verifyUserSessionFromRequest, verifyStaffToken, verifyAdminFromRequest } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
 
 // GET: Poll for new real comments since a timestamp
@@ -19,7 +20,10 @@ export async function GET(req: NextRequest) {
   const sToken = authHeader.replace('Bearer ', '').trim();
   const staffMember = sToken ? await verifyStaffToken(sToken) : null;
 
-  if (!session && !staffMember) return NextResponse.json({ comments: [] });
+  // Admin session bypass: admin preview mode can read comments
+  const isAdmin = !session && !staffMember ? await verifyAdminFromRequest(req) : false;
+
+  if (!session && !staffMember && !isAdmin) return NextResponse.json({ comments: [] });
 
   const editionId = getCurrentEditionId();
   if (session && session.editionId !== editionId) return NextResponse.json({ comments: [] });
@@ -36,8 +40,8 @@ export async function GET(req: NextRequest) {
 
   let comments;
 
-  if (staffMember) {
-    // Staff sees all real comments regardless of chat_mode
+  if (staffMember || isAdmin) {
+    // Staff and admin preview see all real comments
     comments = await getRealComments(editionId, since, 100);
   } else if (chatMode === 'isolated' && session) {
     // Isolated: user sees own comments + real_staff only (respects isolation on full refresh too)
@@ -47,6 +51,13 @@ export async function GET(req: NextRequest) {
     // General: all real comments (incremental or full)
     const genCutoff = isFull ? '1970-01-01T00:00:00.000Z' : since;
     comments = await getRealComments(editionId, genCutoff, 100);
+  }
+
+  // On full refresh: also include simulated comments that received replies,
+  // so clients can display replies in real-time without a page reload.
+  if (isFull) {
+    const simReplied = await getSimulatedWithReplies(editionId);
+    if (simReplied.length) comments = [...comments, ...simReplied];
   }
 
   return NextResponse.json({ comments, cta_enabled: ctaEnabled, cta_url: ctaUrl, cta_text: ctaText });
@@ -85,7 +96,7 @@ export async function POST(req: NextRequest) {
     await insertComment({
       id: commentId,
       edition_id: editionId,
-      registration_id: session?.registrationId ?? `staff_${commentId}`,
+      registration_id: session?.registrationId ?? null,
       type: isStaffPost ? 'real_staff' : 'real_user',
       author_name: isStaffPost ? 'Equipe Kunz' : session!.name,
       text,

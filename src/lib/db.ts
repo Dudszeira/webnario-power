@@ -267,6 +267,18 @@ export async function getIsolatedComments(editionId: string, since: string, regi
   return all.slice(0, limit);
 }
 
+export async function getSimulatedWithReplies(editionId: string): Promise<Comment[]> {
+  const { data, error } = await supabase
+    .from('comments')
+    .select('*')
+    .eq('edition_id', editionId)
+    .in('type', ['simulated_user', 'simulated_staff'])
+    .eq('visible', 1)
+    .not('reply', 'is', null);
+  if (error) console.error('getSimulatedWithReplies error:', error);
+  return data || [];
+}
+
 export async function insertComment(comment: Omit<Comment, 'created_at' | 'reply' | 'reply_author'>): Promise<void> {
   const { error } = await supabase
     .from('comments')
