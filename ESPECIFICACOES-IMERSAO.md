@@ -50,7 +50,14 @@ Fluxo resumido: **`/imersao` → `/espera`** → popup nome + e-mail → submit 
 | **Uma participação por edição** | **IP + e-mail**: uma única liberação para interagir com espera/sala ao vivo na **semana do ciclo** em que se cadastrou (detalhes em **13** para quem volta em outra semana). |
 | **Janela da live** | Terça **20:00** até fim do vídeo (e regras pós-live — **7.3**). |
 
-**Implementação:** validação **server-side** em toda rota sensível; cookie/JWT ou sessão após submit; armazenar `edition_id`, e-mail (ou hash), **IP do cadastro** e, se necessário, flag de **consumo** da sala; ao validar novo request, comparar **e-mail + IP** conforme **1.1** (incl. bloqueio **mesmo e-mail, IP novo**).
+**Implementação:** validação **server-side** em toda rota sensível; cookie/JWT (8 dias) após submit; armazenar `edition_id`, e-mail (normalizado), **IP do cadastro** e flag de **consumo**. Ao validar novo request:
+
+- **Mesmo e-mail** (qualquer IP) → re-emite sessão do registro existente; sem bloqueio, sem novo registro.
+- **Mesmo IP + e-mail diferente** → re-emite sessão do registro existente daquele IP silenciosamente (impede múltiplos slots por IP na mesma edição; membros da mesma rede doméstica compartilham o slot).
+- **E-mail novo + IP novo** → cria registro normalmente.
+- **Registro deletado pelo admin** → sessão JWT ainda válida não é aceita; `/espera` valida existência do registro no banco antes de tratar sessão como ativa.
+
+> ⚠️ **Mudança de comportamento (jun/2026):** o bloqueio hard com redirect para página de vendas por colisão de IP foi removido. A proteção passou a ser um "soft-limit": mesmo IP re-usa o slot existente, nunca cria um segundo registro. A regra "mesmo e-mail + IP diferente = bloqueado" também foi relaxada — o e-mail já registrado simplesmente re-emite a sessão original, independentemente do IP.
 
 ---
 
@@ -363,7 +370,7 @@ Implementação de referência para o número simulado **não parecer robótico*
 5. Especificação do **embed** (YouTube: parâmetros `controls`, `disablekb`, etc.), **overlay** anti-clique se necessário, e limitações da API/ToS.  
 6. **Template Excel** final (nomes exatos das colunas, valores de `tipo`, limite de linhas) e persistência no banco após import.  
 7. Regras de **moderação** do chat ao vivo (fila, aprovação prévia opcional, ocultar mensagem).  
-8. **Troca em tempo real** entre modo geral e isolado (permitida ou só antes do evento?) e comportamento ao **desligar** a sessão (ocultar só ao vivo ou também simulados).  
+8. ~~**Troca em tempo real** entre modo geral e isolado~~ — **Decidido (jun/2026):** o toggle de modo chat está disponível **apenas na página admin** (não no painel da staff durante a live). Por design, o modo é uma configuração **pré-live**; mudanças durante a transmissão são administrativamente impedidas. Comportamento ao desligar a sessão: oculta envio de novos comentários reais; simulados continuam aparecendo (definido na implementação).  
 9. **Algoritmo da contagem simulada**: intervalo **15–45 s**, delta **±1** (±2 ocasional), faixa **210–220**, seed; **disclaimer** legal se necessário.  
 10. **Exportação:** colunas exatas dos relatórios semanais + série **perpétua**, permissões de download, retenção de histórico.  
 11. **Definição de conversão** (evento-alvo) e **mapa de cliques** (quais elementos são rastreados); garantir que **notificações simuladas** não disparem eventos de compra.  
@@ -412,7 +419,7 @@ Na raiz do projeto existem capturas de uma **versão mais simples** do fluxo que
 
 ---
 
-*Última atualização: bloqueio por IP + e-mail, mesmo e-mail com IP diferente bloqueado; replay externo (7.3); pendências em modo incremental (11).*
+*Última atualização: bloqueio por IP revisado (slot compartilhado, sem redirect para vendas); replay externo (7.3); pendências em modo incremental (11).*
 
 ---
 
@@ -500,8 +507,35 @@ Review formal executado sobre `api/chat/route.ts`, `ChatPanel.tsx` e `db.ts`. 8 
 
 ---
 
-### 14.4 Pendências técnicas conhecidas
+### 14.4 Melhorias implementadas (sessão de junho 2026)
 
+#### Cadastro e sessão
+
+- **Modal de cadastro volta a aparecer após admin deletar registros** — `/espera` agora valida a existência do registro no banco antes de aceitar a sessão JWT como ativa. Cookie de 8 dias não é mais suficiente sozinho se o registro foi deletado.
+- **Bloqueio por IP substituído por soft-limit** — mesmo IP + e-mail diferente não redireciona mais para página de vendas; re-emite silenciosamente a sessão do registro existente daquele IP. Elimina falsos positivos em redes domésticas (desktop e notebook com mesmo IP público). O IP ainda é salvo para análise.
+- **Mesmo e-mail, qualquer IP** — re-emite sessão sem bloqueio, permitindo que o usuário acesse de dispositivos diferentes na mesma edição.
+
+#### Player de vídeo
+
+- **YouTube não pausa mais sozinho** — `VideoPlayer.tsx` agora distingue pausa intencional do usuário (`userPausedRef`) de auto-pause do YouTube (ex.: "você ainda está assistindo?"). Pausas involuntárias do player são retomadas automaticamente via `playVideo()` sem mostrar o overlay de pausa.
+
+#### Notificações de compra simulada
+
+- **Intervalos entre toasts agora aleatórios** — três pontos fixos ajustados:
+  - Compras passadas exibidas ao entrar: de 8 s fixos para **5–12 s aleatório** (cumulativo).
+  - Burst ao ativar CTA: de 30 s fixos para **20–45 s aleatório** (cumulativo).
+  - Notificações por timestamp do vídeo: **jitter de 0–5 s** para evitar disparo simultâneo de múltiplos toasts na mesma janela de 5 s.
+
+#### Chat — modo isolado (análise e decisão)
+
+- **Bug identificado:** comentários `real_user` de outros participantes aparecem globalmente mesmo com `chat_mode = 'isolated'` configurado. A causa raiz está no `ChatPanel.tsx`: a lógica de merge no poll (`setComments`) nunca remove comentários do estado — apenas adiciona. Se o modo mudasse de geral para isolado, comentários de outros usuários já carregados persistiriam indefinidamente.
+- **Decisão de arquitetura:** modo chat é configuração **pré-live** (toggle só na página admin, não no painel da staff). Com isso, o estado inicial do componente nunca terá comentários errados — basta garantir que o SSR do `/ao-vivo` entregue os comentários já filtrados como prop inicial (igual ao que já é feito com `simulatedComments`).
+- **Solução escolhida:** SSR pre-load de comentários reais em `/ao-vivo/page.tsx`, filtrado por `getIsolatedComments` ou `getRealComments` conforme o `chat_mode` da edição. `ChatPanel` inicia com estado correto e `lastPoll` apontando para o comentário mais recente. **Implementação pendente (próximo passo).**
+
+---
+
+### 14.5 Pendências técnicas conhecidas
+
+- **Modo isolado — pre-load SSR** *(próximo item a implementar)* — conforme decisão em 14.4: pre-carregar comentários reais no SSR de `/ao-vivo` e passar como prop para `ChatPanel`, inicializando o estado já filtrado e o cursor `lastPoll` corretamente.
 - **Build local quebrado com Node 24** — o projeto exige Node 20 (`.nvmrc`). O deploy na Vercel funciona corretamente pois usa a versão configurada no projeto. Para build local, instalar Node 20 via nvm-windows ou download oficial.
-- **Ghost comment no 403** (bug #8 acima) — ao receber 403 no POST, o comentário otimista permanece visível apenas para o remetente sem mensagem de erro. Não afeta dados, mas pode confundir o usuário. Correção pendente: exibir toast de erro e remover o comentário do estado local.
 - **Comentários reais do host como viewer** — se o host/Robison digitar um comentário no campo de viewer (não no modo staff/padlock), o comentário é salvo como `real_user` e em modo isolado só aparece para ele. Recomendação operacional: o host deve sempre usar o modo staff (padlock) para que os comentários apareçam para todos como `real_staff`.
