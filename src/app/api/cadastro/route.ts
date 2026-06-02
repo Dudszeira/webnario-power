@@ -4,6 +4,7 @@ import {
   getEdition,
   upsertEdition,
   getRegistrationByEmail,
+  getRegistrationByIP,
   createRegistration,
   createEvent
 } from '@/lib/db';
@@ -50,16 +51,35 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Check: same email already used in this edition → re-issue session (allows
-  // same person to return from any device/IP without re-registering)
+  // Check: same email → re-issue session (user returning from any device)
   const emailReg = await getRegistrationByEmail(editionId, email);
-
   if (emailReg) {
     const token = await createUserSession({
       registrationId: emailReg.id,
       editionId,
-      email,
-      name,
+      email: emailReg.email,
+      name: emailReg.name,
+    });
+    const resp = NextResponse.json({ ok: true });
+    resp.cookies.set('session', token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 8,
+      path: '/',
+    });
+    return resp;
+  }
+
+  // Check: same IP + different email → re-issue the existing slot silently.
+  // Prevents the same person from creating multiple registrations with different
+  // e-mails. Family members on the same network share the slot (fine for live viewing).
+  const ipReg = await getRegistrationByIP(editionId, ip);
+  if (ipReg) {
+    const token = await createUserSession({
+      registrationId: ipReg.id,
+      editionId,
+      email: ipReg.email,
+      name: ipReg.name,
     });
     const resp = NextResponse.json({ ok: true });
     resp.cookies.set('session', token, {
