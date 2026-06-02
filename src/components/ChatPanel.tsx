@@ -32,6 +32,7 @@ type Props = {
   viewerMax: number;
   onMinimize?: () => void;
   onCtaChange?: (val: boolean) => void;
+  initialRealComments?: ChatComment[];
 };
 
 // ── Theme tokens ─────────────────────────────────────────────────────────────
@@ -236,12 +237,20 @@ export default function ChatPanel({
   simulatedComments, pinnedComments, videoOffsetRef,
   ctaEnabled, ctaUrl, ctaText, ctaStartSecs, ctaEndSecs,
   viewerMin, viewerMax, onMinimize, onCtaChange,
+  initialRealComments,
 }: Props) {
   const [isDark, setIsDark] = useState(true);
-  const [comments, setComments] = useState<ChatComment[]>([]);
+  const [comments, setComments] = useState<ChatComment[]>(() => initialRealComments ?? []);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [lastPoll, setLastPoll] = useState('1970-01-01T00:00:00.000Z');
+  const [lastPoll, setLastPoll] = useState(() => {
+    if (!initialRealComments?.length) return '1970-01-01T00:00:00.000Z';
+    // Start cursor at the newest pre-loaded comment so first poll is truly incremental
+    const newest = initialRealComments.reduce((max, c) =>
+      (c.created_at ?? '') > max ? (c.created_at ?? '') : max,
+    '1970-01-01T00:00:00.000Z');
+    return newest;
+  });
   const [typingName, setTypingName] = useState<string | null>(null);
   const [ctaVisible, setCtaVisible] = useState(true);
 

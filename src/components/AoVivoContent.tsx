@@ -17,6 +17,16 @@ type SimComment = {
   pin_end_seconds?: number;
 };
 
+type RealComment = {
+  id: string;
+  type: string;
+  author_name: string;
+  text: string;
+  created_at: string;
+  reply?: string;
+  reply_author?: string;
+};
+
 type Props = {
   editionId: string;
   session: { registrationId: string; name: string; email: string };
@@ -38,12 +48,14 @@ type Props = {
   pinnedComments: SimComment[];
   salesUrl: string;
   isAdminPreview?: boolean;
+  initialRealComments?: RealComment[];
 };
 
 export default function AoVivoContent({
   editionId, session, videoSource, videoUrl, videoDuration, initialOffset, liveStartMs,
   chatEnabled, chatMode, ctaEnabled, ctaUrl, ctaText, ctaStartSecs, ctaEndSecs,
   viewerMin, viewerMax, simulatedComments, pinnedComments, salesUrl, isAdminPreview,
+  initialRealComments,
 }: Props) {
   const videoOffsetRef = useRef<number>(initialOffset);
   const [liveEnded, setLiveEnded] = useState(false);
@@ -189,6 +201,7 @@ export default function AoVivoContent({
               viewerMin={viewerMin}
               viewerMax={viewerMax}
               onCtaChange={setLiveCta}
+              initialRealComments={initialRealComments as any}
             />
           </div>
         </div>

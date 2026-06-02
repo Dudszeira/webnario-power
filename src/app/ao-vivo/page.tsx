@@ -7,7 +7,9 @@ import {
   markRegistrationConsumed,
   createEvent,
   getSimulatedComments,
-  getPinnedComments
+  getPinnedComments,
+  getRealComments,
+  getIsolatedComments,
 } from '@/lib/db';
 import AoVivoContent from '@/components/AoVivoContent';
 
@@ -60,6 +62,13 @@ export default async function AoVivoPage() {
 
   const chatEnabled = edition?.chat_enabled ?? 1;
   const chatMode = edition?.chat_mode ?? 'general';
+
+  // Pre-load real comments server-side so ChatPanel starts with the correct
+  // filtered state — no loading gap and no wrong comments in isolated mode.
+  const realCutoff = '1970-01-01T00:00:00.000Z';
+  const initialRealComments = (isAdmin || chatMode !== 'isolated' || !session)
+    ? await getRealComments(editionId, realCutoff, 100)
+    : await getIsolatedComments(editionId, realCutoff, session.registrationId, 100);
   const ctaEnabled = edition?.cta_enabled ?? 0;
   const ctaUrl = edition?.cta_url ?? '';
   const ctaText = edition?.cta_text ?? '';
@@ -112,6 +121,15 @@ export default async function AoVivoPage() {
       }))}
       salesUrl={salesUrl}
       isAdminPreview={isAdmin}
+      initialRealComments={initialRealComments.map(c => ({
+        id: c.id,
+        type: c.type,
+        author_name: c.author_name,
+        text: c.text,
+        created_at: c.created_at,
+        reply: c.reply ?? undefined,
+        reply_author: c.reply_author ?? undefined,
+      }))}
     />
   );
 }
