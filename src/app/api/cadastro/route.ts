@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { 
-  getEdition, 
-  upsertEdition, 
-  getRegistrationByEmail, 
-  getRegistrationByIP, 
-  createRegistration, 
-  createEvent 
+import {
+  getEdition,
+  upsertEdition,
+  getRegistrationByEmail,
+  createRegistration,
+  createEvent
 } from '@/lib/db';
 import { createUserSession, getIP } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
@@ -51,45 +50,25 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Check: same email already used in this edition
+  // Check: same email already used in this edition → re-issue session (allows
+  // same person to return from any device/IP without re-registering)
   const emailReg = await getRegistrationByEmail(editionId, email);
 
   if (emailReg) {
-    if (emailReg.ip === ip) {
-      // Same email + same IP (same device) → always re-issue session so users can
-      // re-enter the live after closing the browser tab, even if already consumed.
-      const token = await createUserSession({
-        registrationId: emailReg.id,
-        editionId,
-        email,
-        name,
-      });
-      const resp = NextResponse.json({ ok: true });
-      resp.cookies.set('session', token, {
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 8,
-        path: '/',
-      });
-      return resp;
-    }
-    // Different IP for the same email → block
-    const edition = await getEdition(editionId);
-    return NextResponse.json(
-      { error: 'blocked', sales_page_url: edition?.sales_page_url || '' },
-      { status: 409 }
-    );
-  }
-
-  // Check: same IP already used in this edition → block
-  const ipReg = await getRegistrationByIP(editionId, ip);
-
-  if (ipReg) {
-    const edition = await getEdition(editionId);
-    return NextResponse.json(
-      { error: 'blocked', sales_page_url: edition?.sales_page_url || '' },
-      { status: 409 }
-    );
+    const token = await createUserSession({
+      registrationId: emailReg.id,
+      editionId,
+      email,
+      name,
+    });
+    const resp = NextResponse.json({ ok: true });
+    resp.cookies.set('session', token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 8,
+      path: '/',
+    });
+    return resp;
   }
 
   // Register new user
