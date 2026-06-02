@@ -1,7 +1,7 @@
 # Webnario Power — Resumo de Progresso
 
-**Última atualização:** 11/05/2026  
-**Stack:** Next.js 14 · TypeScript · Tailwind CSS · SQLite (better-sqlite3) · JWT (jose) · XLSX
+**Última atualização:** 01/06/2026  
+**Stack:** Next.js 14 · TypeScript · Tailwind CSS · Supabase (PostgreSQL) · JWT (jose) · XLSX
 
 ---
 
@@ -11,9 +11,12 @@
 |------|--------|
 | Build | ✅ 100% limpo — 0 erros TypeScript |
 | Servidor dev | `npm run dev` → http://localhost:3000 |
-| Rotas compiladas | 23 rotas (estáticas + dinâmicas) |
-| Frontend visual | ✅ Refatorado com base nas imagens de referência |
+| Rotas compiladas | 32 rotas (estáticas + dinâmicas) |
+| Frontend visual | ✅ Tema cyber (dark) — identidade visual finalizada |
+| Banco de dados | ✅ Migrado de SQLite → Supabase (PostgreSQL) |
 | Acesso admin à `/ao-vivo` | ✅ Admin bypassa guards de horário |
+| Sistema de comentários | ✅ Estável — 8 bugs corrigidos em review formal |
+| Modo isolado (chat) | ✅ Corrigido via SSR pre-load (jun/2026) |
 
 ---
 
@@ -311,4 +314,48 @@ Timestamp: `HH:MM:SS`, `MM:SS` ou segundos inteiros
 
 ---
 
-*Atualizado em 13/05/2026*
+### Sessão 6 — Migração SQLite → Supabase + estabilização do sistema
+
+**O que foi feito:**
+- **Migração completa do banco** de SQLite (`better-sqlite3`) para **Supabase** (PostgreSQL). `db.ts` reescrito com cliente Supabase, todas as queries convertidas para a API fluente do Supabase. Schema migrado para o dashboard do Supabase.
+- **Tema visual "Cyber"** aplicado em toda a plataforma (`cybertheme.ts`): paleta dark com accent azul-ciano, fontes Orbitron + Montserrat, bordas dim e glows.
+- **Badge de modo Teste** no admin (roxo, além de Aguardando/Ao Vivo/Encerrada).
+- **Review formal do sistema de comentários** — 8 bugs identificados e corrigidos (ver `ESPECIFICACOES-IMERSAO.md` seção 14.3).
+- **Build local fixado no Windows** com Node 22+ via `patch-readlink.cjs`.
+
+---
+
+### Sessão 7 — Correções de bugs e melhorias (junho 2026)
+
+**Cadastro e sessão:**
+- Modal de cadastro volta a aparecer após admin deletar registros — `/espera` valida existência do registro no banco antes de aceitar JWT.
+- Bloqueio por IP substituído por **soft-limit**: mesmo IP + e-mail diferente re-emite sessão do slot existente sem redirect para página de vendas. Elimina falsos positivos em redes domésticas.
+- Mesmo e-mail em qualquer IP re-emite sessão (usuário pode alternar dispositivos).
+
+**Player de vídeo:**
+- YouTube não pausa mais sozinho — `userPausedRef` distingue pausa intencional de auto-pause do player. Pausas involuntárias são retomadas automaticamente.
+
+**Notificações de compra:**
+- Intervalos entre toasts agora aleatórios: entrada tardias 5–12 s, burst CTA 20–45 s, jitter 0–5 s por timestamp.
+
+**Chat — modo isolado:**
+- **Bug identificado e corrigido via SSR pre-load**: comentários `real_user` de outros participantes apareciam em modo isolado porque o merge do poll nunca removia itens do estado. Solução: `/ao-vivo/page.tsx` agora carrega os comentários reais já filtrados no SSR (`getIsolatedComments` ou `getRealComments`) e os passa como `initialRealComments` para o `ChatPanel`. O componente monta com estado correto e `lastPoll` apontando para o comentário mais recente — primeiro poll é genuinamente incremental.
+- **Decisão de arquitetura**: modo chat é configuração pré-live (toggle só na página admin, nunca no painel staff durante a live).
+
+---
+
+## Pendências incrementais (atualizadas em jun/2026)
+
+| Item | Ref. spec | Prioridade |
+|------|-----------|------------|
+| Upload de vídeo via admin (pipeline, CDN/storage) | 11.4 | Alta |
+| Fuso horário configurável (hoje hardcoded UTC-3) | 11.1 | Média |
+| URL da página de vendas pré-configurada no deploy | 11.2 | Média |
+| Overlay YouTube completo + compliance ToS | 11.5 | Média |
+| Fila de aprovação prévia de comentários | 11.7 | Baixa |
+| Refresh durante live sem contar como segundo acesso | 11.12 | Baixa |
+| Disclaimer legal do viewer count simulado | 11.9 | Baixa |
+
+---
+
+*Atualizado em 01/06/2026*
