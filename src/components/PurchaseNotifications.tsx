@@ -119,7 +119,11 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
       .slice(0, 3)
       .reverse();
 
-    past.forEach((p, i) => scheduleToast(p, i * 8000, shownIds, setToasts));
+    let cumulativeDelay = 0;
+    past.forEach((p) => {
+      scheduleToast(p, cumulativeDelay, shownIds, setToasts);
+      cumulativeDelay += 5000 + Math.floor(Math.random() * 7000); // 5–12s entre cada uma
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -130,7 +134,8 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
       const offset = videoOffsetRef.current ?? 0;
       purchases.forEach((p) => {
         if (!shownIds.current.has(p.id) && p.video_timestamp <= offset && p.video_timestamp > offset - 5) {
-          scheduleToast(p, 0, shownIds, setToasts);
+          const jitter = Math.floor(Math.random() * 5000); // até 5s de variação
+          scheduleToast(p, jitter, shownIds, setToasts);
         }
       });
     }, 1000);
@@ -150,7 +155,9 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
     if (prevCtaRef.current) return;
     prevCtaRef.current = true;
     const unshown = purchases.filter((p) => !shownIds.current.has(p.id));
-    unshown.forEach((p, i) => {
+    let cumulativeDelay = 0;
+    unshown.forEach((p) => {
+      const delay = cumulativeDelay;
       const tid = setTimeout(() => {
         if (shownIds.current!.has(p.id)) return;
         shownIds.current!.add(p.id);
@@ -160,8 +167,9 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
           setToasts((prev) => prev.map((t) => t.id === p.id ? { ...t, exiting: true } : t));
           setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== p.id)), 400);
         }, 6000);
-      }, i * 30000);
+      }, delay);
       scheduledTimers.current.push(tid);
+      cumulativeDelay += 20000 + Math.floor(Math.random() * 25000); // 20–45s entre cada uma
     });
   }, [ctaEnabled, purchases]);
 
