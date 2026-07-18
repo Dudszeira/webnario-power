@@ -15,23 +15,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Kinetic grid background (login) ── */
-@keyframes kinetic-grid-pan {
-  from { background-position: 0 0, 0 0, 0 0; }
-  to   { background-position: 48px 48px, 48px 48px, 0 0; }
-}
-.kinetic-grid {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.14) 1px, transparent 1px),
-    radial-gradient(ellipse 70% 60% at 50% 35%, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-  background-size: 48px 48px, 48px 48px, 100% 100%;
-  animation: kinetic-grid-pan 30s linear infinite;
-}
-
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

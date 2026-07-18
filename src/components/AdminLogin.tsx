@@ -90,10 +90,14 @@ export default function AdminLogin() {
             </form>
 
             <div className="relative hidden overflow-hidden bg-muted md:block">
-              <div className="kinetic-grid" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[10px] font-black tracking-[0.3em] text-muted-foreground/60">WEBNARIO</span>
-              </div>
+              <Image
+                src="/BG-01-webnario.webp"
+                alt=""
+                fill
+                sizes="(min-width: 768px) 50vw, 0px"
+                className="object-cover"
+                priority
+              />
             </div>
           </CardContent>
         </Card>
