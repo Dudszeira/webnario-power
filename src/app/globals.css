@@ -17,20 +17,19 @@ body {
 
 /* ── Kinetic grid background (login) ── */
 @keyframes kinetic-grid-pan {
-  from { background-position: 0 0, 0 0; }
-  to   { background-position: 48px 48px, 48px 48px; }
+  from { background-position: 0 0, 0 0, 0 0; }
+  to   { background-position: 48px 48px, 48px 48px, 0 0; }
 }
 .kinetic-grid {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 48px 48px;
+    linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.14) 1px, transparent 1px),
+    radial-gradient(ellipse 70% 60% at 50% 35%, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  background-size: 48px 48px, 48px 48px, 100% 100%;
   animation: kinetic-grid-pan 30s linear infinite;
-  mask-image: radial-gradient(ellipse 65% 55% at 50% 38%, #000 0%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse 65% 55% at 50% 38%, #000 0%, transparent 75%);
 }
 
 /* ── Scrollbar ── */

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Field,
   FieldDescription,
@@ -43,50 +44,60 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
-      <div className="kinetic-grid" />
-      <div className="relative w-full max-w-sm">
-        <form onSubmit={handleSubmit}>
-          <FieldGroup>
-            <div className="flex flex-col items-center gap-2 text-center">
-              <Image src="/logo.webp" alt="Webnario Power" width={130} height={44} />
-              <h1 className="text-xl font-bold tracking-widest">ACESSO RESTRITO</h1>
-              <FieldDescription>Área exclusiva de administração.</FieldDescription>
-            </div>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-3xl">
+        <Card className="overflow-hidden p-0">
+          <CardContent className="grid p-0 md:grid-cols-2">
+            <form onSubmit={handleSubmit} className="p-6 md:p-8">
+              <FieldGroup>
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <Image src="/logo.webp" alt="Webnario Power" width={120} height={40} className="mb-1" />
+                  <h1 className="text-xl font-bold tracking-widest">ACESSO RESTRITO</h1>
+                  <FieldDescription>Área exclusiva de administração.</FieldDescription>
+                </div>
 
-            <Field>
-              <FieldLabel htmlFor="admin-password">Senha</FieldLabel>
-              <div className="relative">
-                <Input
-                  id="admin-password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  autoComplete="current-password"
-                  className="pr-9 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
+                <Field>
+                  <FieldLabel htmlFor="admin-password">Senha</FieldLabel>
+                  <div className="relative">
+                    <Input
+                      id="admin-password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      autoComplete="current-password"
+                      className="pr-9 [&::-ms-clear]:hidden [&::-ms-reveal]:hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
+                  </div>
+                  {error && <FieldDescription className="text-destructive">{error}</FieldDescription>}
+                </Field>
+
+                <Field>
+                  <Button type="submit" disabled={loading}>
+                    {loading && <Loader2 className="size-4 animate-spin" />}
+                    {loading ? 'Entrando...' : 'Entrar'}
+                  </Button>
+                </Field>
+              </FieldGroup>
+            </form>
+
+            <div className="relative hidden overflow-hidden bg-muted md:block">
+              <div className="kinetic-grid" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[10px] font-black tracking-[0.3em] text-muted-foreground/60">WEBNARIO</span>
               </div>
-              {error && <FieldDescription className="text-destructive">{error}</FieldDescription>}
-            </Field>
-
-            <Field>
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="size-4 animate-spin" />}
-                {loading ? 'Entrando...' : 'Entrar'}
-              </Button>
-            </Field>
-          </FieldGroup>
-        </form>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
