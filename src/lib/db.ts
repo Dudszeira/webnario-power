@@ -561,11 +561,15 @@ export async function getBrandingSettings(): Promise<{ type: 'letter' | 'preset'
   return { type: data.sidebar_icon_type as 'letter' | 'preset' | 'upload', value: data.sidebar_icon_value };
 }
 
-export async function updateBrandingSettings(type: string, value: string | null): Promise<void> {
+export async function updateBrandingSettings(type: string, value: string | null): Promise<boolean> {
   const { error } = await supabase
     .from('admin_settings')
     .update({ sidebar_icon_type: type, sidebar_icon_value: value, updated_at: new Date().toISOString() })
     .eq('id', 'default');
 
-  if (error) console.error('updateBrandingSettings error:', error);
+  if (error) {
+    console.error('updateBrandingSettings error:', error);
+    return false;
+  }
+  return true;
 }

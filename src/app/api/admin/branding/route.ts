@@ -26,7 +26,10 @@ export async function PUT(req: NextRequest) {
   const type = form.get('type');
 
   if (type === 'letter') {
-    await updateBrandingSettings('letter', null);
+    const success = await updateBrandingSettings('letter', null);
+    if (!success) {
+      return NextResponse.json({ error: 'Falha ao salvar configuração' }, { status: 500 });
+    }
     return NextResponse.json({ type: 'letter', value: null });
   }
 
@@ -35,7 +38,10 @@ export async function PUT(req: NextRequest) {
     if (typeof value !== 'string' || !ICON_NAMES.includes(value)) {
       return NextResponse.json({ error: 'Ícone inválido' }, { status: 400 });
     }
-    await updateBrandingSettings('preset', value);
+    const success = await updateBrandingSettings('preset', value);
+    if (!success) {
+      return NextResponse.json({ error: 'Falha ao salvar configuração' }, { status: 500 });
+    }
     return NextResponse.json({ type: 'preset', value });
   }
 
@@ -60,7 +66,10 @@ export async function PUT(req: NextRequest) {
 
     const { data: urlData } = supabase.storage.from('branding').getPublicUrl('sidebar-icon');
     const value = `${urlData.publicUrl}?t=${Date.now()}`;
-    await updateBrandingSettings('upload', value);
+    const success = await updateBrandingSettings('upload', value);
+    if (!success) {
+      return NextResponse.json({ error: 'Falha ao salvar configuração' }, { status: 500 });
+    }
     return NextResponse.json({ type: 'upload', value });
   }
 
