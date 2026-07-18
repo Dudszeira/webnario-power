@@ -1,33 +1,40 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import AdminNav from './AdminNav';
-import { cyber, cyberFonts } from '@/lib/cybertheme';
-
-const adminStyles = `
-  @keyframes adminSpin { to { transform: rotate(360deg); } }
-  .admin-spin { animation: adminSpin 0.8s linear infinite; }
-  .admin-table { width: 100%; border-collapse: collapse; }
-  .admin-table th { padding: 9px 14px; text-align: left; font-size: 9px; font-family: 'Exo 2', sans-serif; color: #6a9ab8; text-transform: uppercase; letter-spacing: .1em; background: #020810; border-bottom: 1px solid rgba(0,180,255,0.2); font-weight: 700; }
-  .admin-table td { padding: 9px 14px; font-size: 12px; border-bottom: 1px solid rgba(0,180,255,0.1); vertical-align: middle; }
-  .admin-table tr:last-child td { border-bottom: none; }
-  .label-admin { display: block; font-size: 10px; font-family: 'Exo 2', sans-serif; color: #6a9ab8; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
-  .input-admin { width: 100%; background: #020810; border: 1px solid rgba(0,180,255,0.2); border-radius: 4px; padding: 10px 12px; color: #c8e4f4; font-family: 'Exo 2', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
-  .input-admin:focus { border-color: #00B4FF; box-shadow: 0 0 0 2px rgba(0,180,255,0.05); }
-  select.input-admin option { background: #020810; color: #c8e4f4; }
-`;
+import { AdminSidebar } from './AdminSidebar';
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Download, Pin, Loader2 } from 'lucide-react';
 
 type Comment = {
   id: string; type: string; author_name: string; text: string;
   visible: number; is_pinned: number; created_at: string; video_timestamp: number | null;
 };
 
-const TYPE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
-  real_user:          { bg: 'rgba(59,130,246,0.1)',  color: '#60a5fa', label: 'Usuário real' },
-  real_staff:         { bg: 'rgba(139,92,246,0.1)',  color: '#a78bfa', label: 'Staff real' },
-  simulated_user:     { bg: 'rgba(85,85,85,0.1)',    color: '#888888', label: 'Sim. plateia' },
-  simulated_staff:    { bg: 'rgba(99,102,241,0.1)',  color: '#818cf8', label: 'Sim. staff' },
-  simulated_purchase: { bg: 'rgba(16,185,129,0.1)',  color: '#34d399', label: 'Compra sim.' },
+const TYPE_LABELS: Record<string, string> = {
+  real_user: 'Usuário real',
+  real_staff: 'Staff real',
+  simulated_user: 'Sim. plateia',
+  simulated_staff: 'Sim. staff',
+  simulated_purchase: 'Compra sim.',
 };
 
 function fmtTimestamp(secs: number | null): string {
@@ -92,137 +99,139 @@ export default function AdminComments() {
   }
 
   if (loading) return (
-    <div className="flex flex-col md:flex-row" style={{ minHeight: '100vh', background: cyber.bg }}>
-      <style>{adminStyles}</style>
-      <AdminNav />
-      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="admin-spin" style={{ width: 30, height: 30, border: `3px solid ${cyber.accentBorderDim}`, borderTopColor: cyber.accent, borderRadius: '50%' }} />
-      </main>
-    </div>
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2 className="size-7 animate-spin text-primary" />
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 
   return (
-    <div className="flex flex-col md:flex-row" style={{ minHeight: '100vh', background: cyber.bg }}>
-      <style>{adminStyles}</style>
-      <AdminNav />
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border">
+          <div className="flex w-full items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mx-2 h-4 data-vertical:self-auto" />
+            <h1 className="text-base font-medium">Moderação</h1>
+          </div>
+        </header>
 
-      <main style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ maxWidth: 940, margin: '0 auto', padding: '24px 20px 40px' }}>
-
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3" style={{ marginBottom: 24 }}>
-            <div>
-              <h1 style={{ fontSize: 20, fontWeight: 700, color: cyber.accent, fontFamily: cyberFonts.display, margin: 0, textShadow: `0 0 20px ${cyber.accentGlow}` }}>Moderação</h1>
-              <p style={{ color: cyber.textLabel, fontSize: 12.5, marginTop: 4 }}>Envie comentários, fixe pins e modere mensagens da live.</p>
-            </div>
-            <a href="/api/admin/export-comments"
-              style={{ display: 'flex', alignItems: 'center', gap: 5, background: cyber.surface, border: `1px solid ${cyber.accentBorderDim}`, color: cyber.textLabel, padding: '7px 13px', borderRadius: 8, fontSize: 12, fontWeight: 500, textDecoration: 'none', flexShrink: 0, alignSelf: 'flex-start' }}>
-              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Baixar comentários
-            </a>
+        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-3 p-4 lg:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <p className="text-[12.5px] text-muted-foreground">Envie comentários, fixe pins e modere mensagens da live.</p>
+            <Button variant="outline" size="sm" className="shrink-0" render={<a href="/api/admin/export-comments" />}>
+              <Download className="size-3.5" /> Baixar comentários
+            </Button>
           </div>
 
-          {/* Send form */}
-          <div style={{ background: cyber.surface, border: `1px solid ${cyber.accentBorderDim}`, borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
-            <div style={{ padding: '12px 18px', borderBottom: `1px solid ${cyber.accentBorderDim}`, borderLeft: '3px solid #8b5cf6' }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: cyber.textPrimary, margin: 0 }}>Enviar comentário / pin</p>
-              <p style={{ fontSize: 11, color: cyber.textLabel, margin: '2px 0 0' }}>Mensagem enviada como staff em tempo real.</p>
-            </div>
-            <form onSubmit={sendComment} style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
-              <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 12 }}>
-                <div>
-                  <label className="label-admin">Tipo</label>
-                  <select className="input-admin" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
-                    <option>Staff real</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="label-admin">Nome exibido</label>
-                  <input className="input-admin" value={newName} onChange={e => setNewName(e.target.value)} />
-                </div>
+          <Card>
+            <CardContent>
+              <div className="mb-3.5 border-l-2 border-primary pl-3">
+                <p className="text-sm font-semibold">Enviar comentário / pin</p>
+                <p className="text-[11px] text-muted-foreground">Mensagem enviada como staff em tempo real.</p>
               </div>
-
-              <div>
-                <label className="label-admin">Mensagem</label>
-                <input className="input-admin" value={newText} onChange={e => setNewText(e.target.value)} placeholder="Texto do comentário..." required />
-              </div>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' as const }} onClick={() => setIsPinned(!isPinned)}>
-                <div style={{ width: 36, height: 20, borderRadius: 10, background: isPinned ? cyber.accent : cyber.bg, border: `1px solid ${isPinned ? cyber.accentDim : cyber.accentBorderDim}`, position: 'relative', transition: 'all .18s', flexShrink: 0 }}>
-                  <div style={{ position: 'absolute', top: 3, left: isPinned ? 17 : 3, width: 12, height: 12, borderRadius: '50%', background: cyber.white, transition: 'left .18s', boxShadow: '0 1px 3px rgba(0,0,0,0.5)' }} />
-                </div>
-                <span style={{ fontSize: 13, color: isPinned ? cyber.textPrimary : cyber.textLabel }}>Fixar como pin (CTA)</span>
-              </label>
-
-              {isPinned && (
-                <div className="grid grid-cols-2" style={{ gap: 12, background: cyber.accentOverlay, border: `1px solid ${cyber.accentBorderDim}`, borderRadius: 8, padding: '12px' }}>
-                  <div>
-                    <label className="label-admin">Pin início (seg)</label>
-                    <input className="input-admin" type="number" value={pinStart} onChange={e => setPinStart(e.target.value)} placeholder="0" />
+              <form onSubmit={sendComment} className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Tipo</Label>
+                    <Input value="Staff real" disabled readOnly />
                   </div>
-                  <div>
-                    <label className="label-admin">Pin fim (seg)</label>
-                    <input className="input-admin" type="number" value={pinEnd} onChange={e => setPinEnd(e.target.value)} placeholder="3600" />
+                  <div className="flex flex-col gap-1.5">
+                    <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Nome exibido</Label>
+                    <Input value={newName} onChange={e => setNewName(e.target.value)} />
                   </div>
                 </div>
-              )}
 
-              <div>
-                <button type="submit" disabled={sending || !newText.trim()} style={{
-                  background: sending || !newText.trim() ? 'rgba(139,92,246,0.25)' : '#7c3aed',
-                  border: `1px solid ${sending || !newText.trim() ? 'rgba(139,92,246,0.15)' : '#6d28d9'}`,
-                  color: cyber.white, fontWeight: 700, fontSize: 13,
-                  padding: '8px 20px', borderRadius: 8,
-                  cursor: sending || !newText.trim() ? 'not-allowed' : 'pointer',
-                }}>
-                  {sending ? 'Enviando...' : '↑ Enviar agora'}
-                </button>
-              </div>
-            </form>
-          </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Mensagem</Label>
+                  <Input value={newText} onChange={e => setNewText(e.target.value)} placeholder="Texto do comentário..." required />
+                </div>
 
-          {/* Comments table */}
-          <div style={{ background: cyber.surface, border: `1px solid ${cyber.accentBorderDim}`, borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 18px', borderBottom: `1px solid ${cyber.accentBorderDim}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: cyber.textPrimary, margin: 0 }}>Todos os comentários</p>
-              <span style={{ fontSize: 10, fontWeight: 700, color: cyber.accent, background: cyber.accentOverlay, padding: '2px 7px', borderRadius: 20 }}>{comments.length}</span>
+                <div className="flex items-center gap-2.5">
+                  <Switch id="is_pinned" checked={isPinned} onCheckedChange={setIsPinned} />
+                  <Label htmlFor="is_pinned">Fixar como pin (CTA)</Label>
+                </div>
+
+                {isPinned && (
+                  <div className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-primary/5 p-3">
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Pin início (seg)</Label>
+                      <Input type="number" value={pinStart} onChange={e => setPinStart(e.target.value)} placeholder="0" />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Pin fim (seg)</Label>
+                      <Input type="number" value={pinEnd} onChange={e => setPinEnd(e.target.value)} placeholder="3600" />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <Button type="submit" disabled={sending || !newText.trim()}>
+                    {sending && <Loader2 className="size-4 animate-spin" />}
+                    {sending ? 'Enviando...' : 'Enviar agora'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card className="gap-0 overflow-hidden py-0">
+            <div className="flex items-center gap-2 border-b border-border px-[18px] py-3">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Todos os comentários</p>
+              <Badge variant="secondary">{comments.length}</Badge>
             </div>
-            <div style={{ overflowX: 'auto' }}>
-              <table className="admin-table">
-                <thead><tr><th>Tipo</th><th>Autor</th><th>Texto</th><th>Minutagem</th><th>Ações</th></tr></thead>
-                <tbody>
-                  {comments.map(c => {
-                    const ts = TYPE_STYLES[c.type] || { bg: 'rgba(85,85,85,0.1)', color: cyber.textDecorative, label: c.type };
-                    return (
-                      <tr key={c.id} style={{ opacity: c.visible ? 1 : 0.35 }}>
-                        <td><span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: ts.bg, color: ts.color }}>{ts.label}</span></td>
-                        <td style={{ fontWeight: 500, color: cyber.textPrimary }}>{c.author_name}</td>
-                        <td><span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260, color: cyber.textLabel, fontSize: 12 }}>{c.text}</span></td>
-                        <td style={{ color: cyber.textDecorative, fontSize: 11, fontFamily: 'monospace' }}>{fmtTimestamp(c.video_timestamp)}</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: 5 }}>
-                            <button onClick={() => toggleVisible(c.id, c.visible)} style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, cursor: 'pointer', background: c.visible ? 'rgba(239,68,68,0.07)' : 'rgba(16,185,129,0.07)', border: `1px solid ${c.visible ? 'rgba(239,68,68,0.18)' : 'rgba(16,185,129,0.18)'}`, color: c.visible ? '#f87171' : '#34d399' }}>
-                              {c.visible ? 'Ocultar' : 'Mostrar'}
-                            </button>
-                            <button onClick={() => togglePin(c.id, c.is_pinned)} style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 5, cursor: 'pointer', background: c.is_pinned ? 'rgba(37,99,235,0.1)' : 'rgba(85,85,85,0.07)', border: `1px solid ${c.is_pinned ? cyber.accentBorderDim : 'rgba(85,85,85,0.18)'}`, color: c.is_pinned ? '#60a5fa' : cyber.textDecorative }}>
-                              {c.is_pinned ? '📌 Fixado' : 'Fixar'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {comments.length === 0 && (
-                    <tr><td colSpan={5} style={{ textAlign: 'center', color: cyber.textDecorative, padding: '24px 0', fontStyle: 'italic', fontSize: 12 }}>Nenhum comentário ainda</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Autor</TableHead>
+                  <TableHead>Texto</TableHead>
+                  <TableHead>Minutagem</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {comments.map(c => (
+                  <TableRow key={c.id} className={c.visible ? undefined : 'opacity-35'}>
+                    <TableCell><Badge variant="secondary">{TYPE_LABELS[c.type] || c.type}</Badge></TableCell>
+                    <TableCell className="font-medium">{c.author_name}</TableCell>
+                    <TableCell className="max-w-[260px] truncate text-muted-foreground">{c.text}</TableCell>
+                    <TableCell className="font-mono text-[11px] text-muted-foreground/70">{fmtTimestamp(c.video_timestamp)}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={`h-6 px-2 text-[11px] ${c.visible ? 'border-destructive/20 text-destructive hover:bg-destructive/10' : 'border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10'}`}
+                          onClick={() => toggleVisible(c.id, c.visible)}
+                        >
+                          {c.visible ? 'Ocultar' : 'Mostrar'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={`h-6 gap-1 px-2 text-[11px] ${c.is_pinned ? 'border-primary/30 text-primary' : ''}`}
+                          onClick={() => togglePin(c.id, c.is_pinned)}
+                        >
+                          <Pin className="size-2.5" /> {c.is_pinned ? 'Fixado' : 'Fixar'}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {comments.length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="py-6 text-center italic text-muted-foreground/70">Nenhum comentário ainda</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
         </div>
-      </main>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
