@@ -270,6 +270,9 @@ export default function ChatPanel({
   const [liveCtaText, setLiveCtaText] = useState(ctaText);
   const [staffMetrics, setStaffMetrics] = useState({ online: 0, cta_clicks: 0 });
 
+  // Staff filter: show only real comments
+  const [filterRealOnly, setFilterRealOnly] = useState(false);
+
   // Reply state
   const [replyTarget, setReplyTarget] = useState<ChatComment | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -553,8 +556,18 @@ export default function ChatPanel({
     if (!p.pin_start_seconds && !p.pin_end_seconds) return true;
     return videoOffset >= (p.pin_start_seconds ?? 0) && videoOffset <= (p.pin_end_seconds ?? Infinity);
   });
-  // CTA shows for everyone when staff has enabled it — no time-window restriction for viewers
-  const showCta = serverCtaEnabled && liveCtaUrl && ctaVisible;
+
+  // CTA time-window: if cta_start_seconds > 0 configured, restrict display to that window for viewers.
+  // Staff always sees CTA when enabled (ignores time window for manual control).
+  const inCtaWindow = isStaff || ctaStartSecs === 0
+    ? true
+    : videoOffset >= ctaStartSecs && (ctaEndSecs === 0 || videoOffset <= ctaEndSecs);
+  const showCta = serverCtaEnabled && liveCtaUrl && ctaVisible && inCtaWindow;
+
+  // Filtered comments for display (staff-only filter)
+  const displayComments = isStaff && filterRealOnly
+    ? comments.filter(c => c.type === 'real_user' || c.type === 'real_staff')
+    : comments;
 
   async function sendComment() {
     const text = input.trim();
@@ -653,6 +666,7 @@ export default function ChatPanel({
           {/* Toggles */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <ToggleSwitch on={serverCtaEnabled} onChange={toggleCta} label="CTA ativo" T={T} />
+            <ToggleSwitch on={filterRealOnly} onChange={setFilterRealOnly} label="Apenas comentários reais" T={T} />
           </div>
           {/* Hint */}
           <span style={{ fontSize: 10, color: T.textMuted, fontStyle: 'italic', fontFamily: "'Montserrat', sans-serif" }}>Clique em um comentário para responder</span>
@@ -747,10 +761,12 @@ export default function ChatPanel({
 
       {/* ── Comment list ───────────────────────────────────── */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 14, scrollBehavior: 'smooth', scrollbarWidth: 'thin', scrollbarColor: `${T.scrollbar} transparent` }}>
-        {comments.length === 0 && (
-          <p style={{ textAlign: 'center', fontSize: 12, color: T.textMuted, marginTop: 32, fontStyle: 'italic' }}>Seja o primeiro a comentar!</p>
+        {displayComments.length === 0 && (
+          <p style={{ textAlign: 'center', fontSize: 12, color: T.textMuted, marginTop: 32, fontStyle: 'italic' }}>
+            {isStaff && filterRealOnly ? 'Nenhum comentário real ainda.' : 'Seja o primeiro a comentar!'}
+          </p>
         )}
-        {comments.map(c => (
+        {displayComments.map(c => (
           <CommentRow key={c.id} comment={c} isOwn={c.author_name === sessionName && c.type === 'real_user'} isStaff={isStaff} onReply={handleReply} T={T} />
         ))}
       </div>

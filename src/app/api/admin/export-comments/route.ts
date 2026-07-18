@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       simulated_purchase: 'Compra sim.',
     };
 
-    const header = 'id;edition_id;tipo;tipo_label;autor;texto;timestamp_video;fixado;visivel;criado_em';
+    const header = 'id;edition_id;tipo;tipo_label;autor;texto;timestamp_video;fixado;visivel;resposta;autor_resposta;criado_em';
     const rows = comments.map((c) => {
       const cols = [
         c.id,
@@ -35,6 +35,8 @@ export async function GET(req: NextRequest) {
         c.video_timestamp ?? '',
         c.is_pinned ? 'sim' : 'nao',
         c.visible ? 'sim' : 'nao',
+        c.reply ?? '',
+        c.reply_author ?? '',
         c.created_at,
       ];
       return cols.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';');

@@ -222,21 +222,22 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              background: 'rgba(15,15,20,0.96)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'linear-gradient(135deg, rgba(15,58,35,0.98), rgba(20,70,40,0.98))',
+              border: '1px solid rgba(34,197,94,0.35)',
               borderRadius: 14,
               padding: '12px 14px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(34,197,94,0.12)',
               backdropFilter: 'blur(12px)',
             }}
           >
             {/* Avatar */}
             <div style={{
               width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
-              background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+              background: 'linear-gradient(135deg, #16a34a, #15803d)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 15, fontWeight: 700, color: '#fff',
               fontFamily: "'Montserrat', sans-serif",
+              boxShadow: '0 2px 8px rgba(22,163,74,0.4)',
             }}>
               {initial}
             </div>
@@ -245,15 +246,15 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
               {/* Name + city */}
               <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: '#fff', lineHeight: 1.3, fontFamily: "'Montserrat', sans-serif" }}>
                 {displayName}{' '}
-                <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.55)' }}>de {city}</span>
+                <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.6)' }}>de {city}</span>
               </p>
               {/* Action text */}
-              <p style={{ margin: '2px 0 4px', fontSize: 12, color: 'rgba(255,255,255,0.75)', fontFamily: "'Montserrat', sans-serif" }}>
+              <p style={{ margin: '2px 0 4px', fontSize: 12, color: 'rgba(255,255,255,0.85)', fontFamily: "'Montserrat', sans-serif" }}>
                 {t.text}
               </p>
               {/* Footer */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)', fontFamily: "'Montserrat', sans-serif" }}>
+                <span style={{ fontSize: 10.5, color: 'rgba(134,239,172,0.7)', fontFamily: "'Montserrat', sans-serif" }}>
                   {timeAgo(t.shownAt)}
                 </span>
               </div>
