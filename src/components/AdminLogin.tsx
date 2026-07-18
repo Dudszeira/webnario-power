@@ -44,10 +44,10 @@ export default function AdminLogin() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-3xl">
+      <div className="w-full max-w-5xl">
         <Card className="overflow-hidden p-0">
-          <CardContent className="grid p-0 md:grid-cols-2">
-            <form onSubmit={handleSubmit} className="p-6 md:p-8">
+          <CardContent className="grid p-0 md:min-h-[560px] md:grid-cols-2">
+            <form onSubmit={handleSubmit} className="flex flex-col justify-center p-8 md:p-12">
               <FieldGroup>
                 <div className="flex flex-col items-center gap-2 text-center">
                   <Image src="/logo.webp" alt="Webnario Power" width={120} height={40} className="mb-1" />
