@@ -66,7 +66,7 @@ export default function AdminLogin() {
                       placeholder="Digite a senha administrativa"
                       required
                       autoComplete="current-password"
-                      className="pr-9 [&::-ms-clear]:hidden [&::-ms-reveal]:hidden"
+                      className="h-10 pr-9 [&::-ms-clear]:hidden [&::-ms-reveal]:hidden"
                     />
                     <button
                       type="button"
@@ -81,7 +81,7 @@ export default function AdminLogin() {
                 </Field>
 
                 <Field>
-                  <Button type="submit" disabled={loading}>
+                  <Button type="submit" disabled={loading} className="h-10">
                     {loading && <Loader2 className="size-4 animate-spin" />}
                     {loading ? 'Entrando...' : 'Entrar'}
                   </Button>
