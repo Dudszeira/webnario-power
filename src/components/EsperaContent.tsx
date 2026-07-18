@@ -8,6 +8,7 @@ import Countdown from './Countdown';
 import RegisterModal from './RegisterModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import Waves from './Waves';
 
 type Props = {
   editionId: string;
@@ -60,7 +61,8 @@ export default function EsperaContent({
   }, [isRegistered, liveStartMs, router]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
+      <Waves lineColor="rgba(255,255,255,0.1)" backgroundColor="transparent" />
       {/* ── Logo ── */}
       <div className="flex flex-col items-center px-4 pb-6 pt-8">
         <Image
@@ -79,14 +81,15 @@ export default function EsperaContent({
       </div>
 
       {/* ── Content card ── */}
-      <div className="mx-auto w-full max-w-2xl flex-1 px-4 pb-4">
-        <Card>
-          <CardContent>
+      <div className="relative mx-auto w-full max-w-2xl flex-1 px-4 pb-4">
+        <Card className="relative overflow-hidden bg-transparent p-0">
+          <Waves lineColor="rgba(255,255,255,0.14)" backgroundColor="transparent" />
+          <CardContent className="relative rounded-xl border border-white/10 bg-white/[0.04] p-8 backdrop-blur-2xl md:p-10">
             <h2 className="mb-6 text-center text-[17px] font-bold leading-snug">
               Enquanto você aguarda, veja o<br />que vai descobrir hoje:
             </h2>
 
-            <div className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-4">
               {BULLETS.map((text, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <ChevronRight className="mt-0.5 size-[18px] shrink-0 text-primary" strokeWidth={2.5} />
