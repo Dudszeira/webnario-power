@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { Lock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import Waves from '@/components/Waves';
 
 export default function BloqueadoPage({
   searchParams,
@@ -11,8 +12,9 @@ export default function BloqueadoPage({
   const salesUrl = searchParams.sales || '';
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md text-center">
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4">
+      <Waves lineColor="rgba(255,255,255,0.1)" backgroundColor="transparent" />
+      <div className="relative w-full max-w-md text-center">
         <Image src="/logo.webp" alt="Logo" width={160} height={60} className="mx-auto mb-8 object-contain" />
 
         <Card>

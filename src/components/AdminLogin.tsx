@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import Waves from './Waves';
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -43,8 +44,9 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-5xl">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
+      <Waves lineColor="rgba(255,255,255,0.1)" backgroundColor="transparent" />
+      <div className="relative w-full max-w-5xl">
         <Card className="overflow-hidden p-0">
           <CardContent className="grid p-0 md:min-h-[560px] md:grid-cols-2">
             <form onSubmit={handleSubmit} className="flex flex-col justify-center p-8 md:p-12">
