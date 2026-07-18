@@ -4,9 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 
 export default function AdminLogin() {
@@ -40,17 +44,17 @@ export default function AdminLogin() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="items-center text-center">
-          <Image src="/logo.webp" alt="Webnario Power" width={130} height={44} className="mb-2" />
-          <CardTitle className="text-base tracking-widest">ACESSO RESTRITO</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="admin-password" className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                Senha
-              </Label>
+      <div className="w-full max-w-sm">
+        <form onSubmit={handleSubmit}>
+          <FieldGroup>
+            <div className="flex flex-col items-center gap-2 text-center">
+              <Image src="/logo.webp" alt="Webnario Power" width={130} height={44} />
+              <h1 className="text-xl font-bold tracking-widest">ACESSO RESTRITO</h1>
+              <FieldDescription>Área exclusiva de administração.</FieldDescription>
+            </div>
+
+            <Field>
+              <FieldLabel htmlFor="admin-password">Senha</FieldLabel>
               <div className="relative">
                 <Input
                   id="admin-password"
@@ -59,7 +63,8 @@ export default function AdminLogin() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="pr-9"
+                  autoComplete="current-password"
+                  className="pr-9 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"
                 />
                 <button
                   type="button"
@@ -70,19 +75,18 @@ export default function AdminLogin() {
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
-            </div>
+              {error && <FieldDescription className="text-destructive">{error}</FieldDescription>}
+            </Field>
 
-            {error && (
-              <p role="alert" className="text-sm text-destructive">{error}</p>
-            )}
-
-            <Button type="submit" disabled={loading} className="mt-1">
-              {loading && <Loader2 className="size-4 animate-spin" />}
-              {loading ? 'Entrando...' : 'Entrar'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            <Field>
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="size-4 animate-spin" />}
+                {loading ? 'Entrando...' : 'Entrar'}
+              </Button>
+            </Field>
+          </FieldGroup>
+        </form>
+      </div>
     </div>
   );
 }
