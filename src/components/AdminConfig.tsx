@@ -2,24 +2,27 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AdminNav from './AdminNav';
-import { cyber, cyberFonts } from '@/lib/cybertheme';
+import { AdminSidebar } from './AdminSidebar';
 import CyberDateTimePicker from './CyberDateTimePicker';
-
-const adminStyles = `
-  @keyframes adminSpin { to { transform: rotate(360deg); } }
-  .admin-spin { animation: adminSpin 0.8s linear infinite; }
-  .admin-table { width: 100%; border-collapse: collapse; }
-  .admin-table th { padding: 9px 14px; text-align: left; font-size: 9px; font-family: 'Exo 2', sans-serif; color: #6a9ab8; text-transform: uppercase; letter-spacing: .1em; background: #020810; border-bottom: 1px solid rgba(0,180,255,0.2); font-weight: 700; }
-  .admin-table td { padding: 9px 14px; font-size: 12px; border-bottom: 1px solid rgba(0,180,255,0.1); vertical-align: middle; }
-  .admin-table tr:last-child td { border-bottom: none; }
-  .label-admin { display: block; font-size: 10px; font-family: 'Exo 2', sans-serif; color: #6a9ab8; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
-  .input-admin { width: 100%; background: #020810; border: 1px solid rgba(0,180,255,0.2); border-radius: 4px; padding: 10px 12px; color: #c8e4f4; font-family: 'Exo 2', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s; box-sizing: border-box; appearance: none; -webkit-appearance: none; }
-  .input-admin:focus { border-color: #00B4FF; box-shadow: 0 0 0 2px rgba(0,180,255,0.05); }
-  .input-admin::placeholder { color: #4a7a96; opacity: 1; }
-  select.input-admin { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236a9ab8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 34px; cursor: pointer; }
-  select.input-admin option { background: #020810; color: #c8e4f4; }
-`;
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Check, Loader2 } from 'lucide-react';
 
 const defaultConfig = {
   video_source: 'youtube', video_url: '', video_duration: 7200,
@@ -30,109 +33,27 @@ const defaultConfig = {
   test_mode: false, test_time: '',
 };
 
-function SectionCard({ title, description, accent, children }: {
-  title: string; description?: string; accent: string; children: React.ReactNode;
+function SectionCard({ title, description, children }: {
+  title: string; description?: string; children: React.ReactNode;
 }) {
   return (
-    <div style={{ background: cyber.surface, border: `1px solid ${cyber.accentBorderDim}`, borderRadius: 10 }}>
-      <div style={{ padding: '12px 18px', borderBottom: `1px solid ${cyber.accentBorderDim}`, borderLeft: `3px solid ${accent}`, borderRadius: '10px 10px 0 0' }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: cyber.textPrimary, fontFamily: cyberFonts.body, margin: 0 }}>{title}</p>
-        {description && <p style={{ fontSize: 11, color: cyber.textLabel, margin: '3px 0 0' }}>{description}</p>}
-      </div>
-      <div style={{ padding: '18px', display: 'flex', flexDirection: 'column' as const, gap: 14, background: cyber.surface, borderRadius: '0 0 10px 10px' }}>
-        {children}
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">{children}</CardContent>
+    </Card>
   );
 }
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label className="label-admin">{label}</label>
+    <div className="flex flex-col gap-1.5">
+      <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</Label>
       {children}
-      {hint && <p style={{ fontSize: 11, color: cyber.textDecorative, marginTop: 4 }}>{hint}</p>}
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
     </div>
-  );
-}
-
-function CyberSelect({ value, onChange, options }: {
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  const [open, setOpen] = useState(false);
-  const [hovered, setHovered] = useState<string | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function onDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, []);
-
-  const selected = options.find(o => o.value === value);
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <div
-        onClick={() => setOpen(o => !o)}
-        style={{
-          width: '100%', background: cyber.bg,
-          border: `1px solid ${open ? cyber.accent : cyber.accentBorderDim}`,
-          borderRadius: 4, padding: '10px 34px 10px 12px',
-          color: cyber.textPrimary, fontFamily: cyberFonts.body, fontSize: 13,
-          cursor: 'pointer', userSelect: 'none' as const, boxSizing: 'border-box' as const,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          transition: 'border-color .2s',
-        }}
-      >
-        <span>{selected?.label}</span>
-        <svg width="12" height="12" fill="none" stroke={cyber.textLabel} strokeWidth={2.5} viewBox="0 0 24 24"
-          strokeLinecap="round" strokeLinejoin="round"
-          style={{ flexShrink: 0, transition: 'transform .15s', transform: open ? 'rotate(180deg)' : 'none' }}>
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </div>
-      {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 200,
-          background: cyber.surface, border: `1px solid ${cyber.accentBorderDim}`,
-          borderRadius: 6, overflow: 'hidden', boxShadow: `0 8px 32px rgba(0,0,0,0.6)`,
-        }}>
-          {options.map((opt, i) => (
-            <div
-              key={opt.value}
-              onClick={() => { onChange(opt.value); setOpen(false); }}
-              onMouseEnter={() => setHovered(opt.value)}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                padding: '10px 14px', fontSize: 13, fontFamily: cyberFonts.body, cursor: 'pointer',
-                color: opt.value === value ? cyber.accent : cyber.textPrimary,
-                background: opt.value === value ? cyber.accentOverlay : hovered === opt.value ? 'rgba(0,180,255,0.04)' : 'transparent',
-                borderBottom: i < options.length - 1 ? `1px solid ${cyber.accentBorderDim}` : 'none',
-                transition: 'background .1s',
-              }}
-            >
-              {opt.label}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
-  return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' as const }} onClick={() => onChange(!checked)}>
-      <div style={{ width: 36, height: 20, borderRadius: 10, background: checked ? cyber.accent : cyber.bg, border: `1px solid ${checked ? cyber.accentDim : cyber.accentBorderDim}`, position: 'relative', transition: 'all .18s', flexShrink: 0 }}>
-        <div style={{ position: 'absolute', top: 3, left: checked ? 17 : 3, width: 12, height: 12, borderRadius: '50%', background: cyber.white, transition: 'left .18s', boxShadow: '0 1px 3px rgba(0,0,0,0.5)' }} />
-      </div>
-      <span style={{ fontSize: 13, color: checked ? cyber.textPrimary : cyber.textLabel }}>{label}</span>
-    </label>
   );
 }
 
@@ -271,151 +192,155 @@ export default function AdminConfig() {
   }
 
   if (loading) return (
-    <div className="flex flex-col md:flex-row" style={{ minHeight: '100vh', background: cyber.bg }}>
-      <style>{adminStyles}</style>
-      <AdminNav />
-      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="admin-spin" style={{ width: 30, height: 30, border: `3px solid ${cyber.accentBorderDim}`, borderTopColor: cyber.accent, borderRadius: '50%' }} />
-      </main>
-    </div>
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2 className="size-7 animate-spin text-primary" />
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 
   return (
-    <div className="flex flex-col md:flex-row" style={{ minHeight: '100vh', background: cyber.bg }}>
-      <style>{adminStyles}</style>
-      <AdminNav />
-
-      <main style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ maxWidth: 660, margin: '0 auto', padding: '24px 20px 40px' }}>
-
-          <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 20, fontWeight: 700, color: cyber.accent, fontFamily: cyberFonts.display, margin: 0, textShadow: `0 0 20px ${cyber.accentGlow}` }}>Configurações</h1>
-            <p style={{ color: cyber.textLabel, fontFamily: cyberFonts.body, fontSize: 12.5, marginTop: 4 }}>Alterações entram em vigor na próxima requisição.</p>
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border">
+          <div className="flex w-full items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mx-2 h-4 data-vertical:self-auto" />
+            <h1 className="text-base font-medium">Configurações</h1>
           </div>
+        </header>
 
-          <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
+        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 p-4 lg:p-6">
+          <p className="-mt-2 text-[12.5px] text-muted-foreground">Alterações entram em vigor na próxima requisição.</p>
 
-            <SectionCard title="Vídeo" description="Fonte e duração do player de vídeo da live." accent={cyber.accent}>
+          <form onSubmit={save} className="flex flex-col gap-3">
+            <SectionCard title="Vídeo" description="Fonte e duração do player de vídeo da live.">
               <Field label="Fonte">
-                <CyberSelect
-                  value={config.video_source}
-                  onChange={v => set('video_source', v)}
-                  options={[
-                    { value: 'youtube', label: 'YouTube' },
-                    { value: 'upload',  label: 'Upload local' },
-                  ]}
-                />
+                <Select value={config.video_source} onValueChange={(v) => set('video_source', v)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="youtube">YouTube</SelectItem>
+                    <SelectItem value="upload">Upload local</SelectItem>
+                  </SelectContent>
+                </Select>
               </Field>
 
               {config.video_source === 'youtube' ? (
                 <Field label="URL ou ID do YouTube">
-                  <input className="input-admin" type="text" value={config.video_url} onChange={e => set('video_url', e.target.value)}
+                  <Input type="text" value={config.video_url} onChange={e => set('video_url', e.target.value)}
                     placeholder="https://youtube.com/watch?v=..." />
                 </Field>
               ) : (
                 <Field label="Arquivo de vídeo">
                   {config.video_url ? (
                     // File already configured — show it and allow replacing
-                    <div style={{ background: cyber.bg, border: `1px solid ${cyber.green}33`, borderRadius: 6, padding: '12px 14px' }}>
-                      <p style={{ fontSize: 12, color: cyber.green, margin: '0 0 6px', fontWeight: 600 }}>
-                        Arquivo em uso: <span style={{ color: cyber.textPrimary, fontWeight: 400 }}>{config.video_url.split('/').pop()}</span>
+                    <div className="rounded-lg border border-emerald-500/20 bg-muted/50 p-3">
+                      <p className="mb-1.5 text-xs font-semibold text-emerald-400">
+                        Arquivo em uso: <span className="font-normal text-foreground">{config.video_url.split('/').pop()}</span>
                       </p>
-                      <label style={{ cursor: 'pointer' }}>
-                        <span style={{ fontSize: 11, color: cyber.textDecorative, textDecoration: 'underline' }}>
+                      <label className="cursor-pointer">
+                        <span className="text-[11px] text-muted-foreground underline">
                           {uploading ? 'Enviando...' : uploadMsg ? uploadMsg : 'Trocar arquivo (upload)'}
                         </span>
-                        <input type="file" accept="video/*" style={{ display: 'none' }} disabled={uploading} onChange={handleVideoFile} />
+                        <input type="file" accept="video/*" className="hidden" disabled={uploading} onChange={handleVideoFile} />
                       </label>
                     </div>
                   ) : detectedVideo ? (
                     // File found on disk — offer to use it without re-uploading
-                    <div style={{ background: cyber.bg, border: `1px solid ${cyber.accent}44`, borderRadius: 6, padding: '12px 14px', display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-                      <p style={{ fontSize: 12, color: cyber.accent, margin: 0, fontWeight: 600 }}>
-                        Arquivo detectado na pasta do projeto:
+                    <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-muted/50 p-3">
+                      <p className="text-xs font-semibold text-primary">Arquivo detectado na pasta do projeto:</p>
+                      <p className="text-xs text-foreground">
+                        {detectedVideo.filename} <span className="text-muted-foreground">({detectedVideo.sizeMB >= 1024 ? `${(detectedVideo.sizeMB / 1024).toFixed(1)} GB` : `${detectedVideo.sizeMB} MB`})</span>
                       </p>
-                      <p style={{ fontSize: 12, color: cyber.textPrimary, margin: 0 }}>
-                        {detectedVideo.filename} <span style={{ color: cyber.textDecorative }}>({detectedVideo.sizeMB >= 1024 ? `${(detectedVideo.sizeMB / 1024).toFixed(1)} GB` : `${detectedVideo.sizeMB} MB`})</span>
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => useExistingVideo(detectedVideo.url)}
-                        style={{ alignSelf: 'flex-start', background: cyber.accent, color: cyber.bg, border: 'none', borderRadius: 4, padding: '6px 14px', fontSize: 12, fontFamily: cyberFonts.body, fontWeight: 700, cursor: 'pointer' }}
-                      >
+                      <Button type="button" size="sm" className="self-start" onClick={() => useExistingVideo(detectedVideo.url)}>
                         Usar este arquivo
-                      </button>
-                      <label style={{ cursor: 'pointer' }}>
-                        <span style={{ fontSize: 11, color: cyber.textDecorative, textDecoration: 'underline' }}>
+                      </Button>
+                      <label className="cursor-pointer">
+                        <span className="text-[11px] text-muted-foreground underline">
                           {uploading ? 'Enviando...' : uploadMsg ? uploadMsg : 'Ou fazer upload de outro arquivo'}
                         </span>
-                        <input type="file" accept="video/*" style={{ display: 'none' }} disabled={uploading} onChange={handleVideoFile} />
+                        <input type="file" accept="video/*" className="hidden" disabled={uploading} onChange={handleVideoFile} />
                       </label>
                     </div>
                   ) : (
                     // No file found — show upload UI
-                    <label style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, cursor: 'pointer' }}>
-                      <div style={{ background: cyber.bg, border: `2px dashed ${uploading ? cyber.accent : cyber.accentBorderDim}`, borderRadius: 6, padding: '14px 16px', textAlign: 'center' as const, transition: 'border-color .15s' }}>
+                    <label className="flex cursor-pointer flex-col gap-2">
+                      <div className={`rounded-lg border-2 border-dashed p-4 text-center transition-colors ${uploading ? 'border-primary' : 'border-border'}`}>
                         {uploading
-                          ? <p style={{ fontSize: 12, color: cyber.accent, margin: 0 }}>Enviando...</p>
+                          ? <p className="text-xs text-primary">Enviando...</p>
                           : uploadMsg
-                          ? <p style={{ fontSize: 12, color: uploadMsg.startsWith('✓') ? cyber.green : cyber.error, margin: 0 }}>{uploadMsg}</p>
-                          : <p style={{ fontSize: 12, color: cyber.textLabel, margin: 0 }}>Clique para selecionar o vídeo <span style={{ color: cyber.textDecorative }}>(mp4, webm, mov)</span></p>
+                          ? <p className={`text-xs ${uploadMsg.startsWith('✓') ? 'text-emerald-400' : 'text-destructive'}`}>{uploadMsg}</p>
+                          : <p className="text-xs text-muted-foreground">Clique para selecionar o vídeo <span className="text-muted-foreground/70">(mp4, webm, mov)</span></p>
                         }
                       </div>
-                      <input type="file" accept="video/*" style={{ display: 'none' }} disabled={uploading} onChange={handleVideoFile} />
+                      <input type="file" accept="video/*" className="hidden" disabled={uploading} onChange={handleVideoFile} />
                     </label>
                   )}
                 </Field>
               )}
 
               <Field label="Duração" hint={`${Math.floor(Number(config.video_duration)/3600)}h ${Math.floor((Number(config.video_duration)%3600)/60)}min — ${config.video_source === 'upload' ? 'detectada automaticamente ao enviar' : 'preencha manualmente'}`}>
-                <input className="input-admin" type="number" value={config.video_duration} onChange={e => set('video_duration', Number(e.target.value))} min={60} readOnly={config.video_source === 'upload' && uploading} />
+                <Input type="number" value={config.video_duration} onChange={e => set('video_duration', Number(e.target.value))} min={60} readOnly={config.video_source === 'upload' && uploading} />
               </Field>
             </SectionCard>
 
-            <SectionCard title="Chat" description="Habilitar ou desabilitar o chat e definir o modo de visibilidade." accent={cyber.green}>
-              <Toggle checked={config.chat_enabled as unknown as boolean} onChange={v => set('chat_enabled', v)} label="Chat habilitado" />
+            <SectionCard title="Chat" description="Habilitar ou desabilitar o chat e definir o modo de visibilidade.">
+              <div className="flex items-center gap-2.5">
+                <Switch id="chat_enabled" checked={config.chat_enabled as unknown as boolean} onCheckedChange={(v) => set('chat_enabled', v)} />
+                <Label htmlFor="chat_enabled">Chat habilitado</Label>
+              </div>
               <Field label="Modo de visibilidade">
-                <CyberSelect
-                  value={config.chat_mode}
-                  onChange={v => set('chat_mode', v)}
-                  options={[
-                    { value: 'general',  label: 'Geral — todos veem todos os comentários' },
-                    { value: 'isolated', label: 'Isolado — cada usuário vê apenas os próprios' },
-                  ]}
-                />
+                <Select value={config.chat_mode} onValueChange={(v) => set('chat_mode', v)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">Geral — todos veem todos os comentários</SelectItem>
+                    <SelectItem value="isolated">Isolado — cada usuário vê apenas os próprios</SelectItem>
+                  </SelectContent>
+                </Select>
               </Field>
             </SectionCard>
 
-            <SectionCard title="CTA / Oferta" description="Banner de oferta no chat. Ativar/desativar é controlado pelo painel staff no chat." accent="#f59e0b">
+            <SectionCard title="CTA / Oferta" description="Banner de oferta no chat. Ativar/desativar é controlado pelo painel staff no chat.">
               <Field label="URL do CTA">
-                <input className="input-admin" type="url" value={config.cta_url} onChange={e => set('cta_url', e.target.value)} placeholder="https://..." />
+                <Input type="url" value={config.cta_url} onChange={e => set('cta_url', e.target.value)} placeholder="https://..." />
               </Field>
               <Field label="Texto do botão">
-                <input className="input-admin" type="text" value={config.cta_text} onChange={e => set('cta_text', e.target.value)} placeholder="Garantir acesso →" />
+                <Input type="text" value={config.cta_text} onChange={e => set('cta_text', e.target.value)} placeholder="Garantir acesso →" />
               </Field>
-              <div className="grid grid-cols-2" style={{ gap: 12 }}>
+              <div className="grid grid-cols-2 gap-3">
                 <Field label="Início (segundos)">
-                  <input className="input-admin" type="number" value={config.cta_start_seconds} onChange={e => set('cta_start_seconds', Number(e.target.value))} />
+                  <Input type="number" value={config.cta_start_seconds} onChange={e => set('cta_start_seconds', Number(e.target.value))} />
                 </Field>
                 <Field label="Fim (segundos)">
-                  <input className="input-admin" type="number" value={config.cta_end_seconds} onChange={e => set('cta_end_seconds', Number(e.target.value))} />
+                  <Input type="number" value={config.cta_end_seconds} onChange={e => set('cta_end_seconds', Number(e.target.value))} />
                 </Field>
               </div>
             </SectionCard>
 
-            <SectionCard title="Contador simulado" description="Faixa de oscilação do contador exibido ao público." accent="#8b5cf6">
-              <div className="grid grid-cols-2" style={{ gap: 12 }}>
+            <SectionCard title="Contador simulado" description="Faixa de oscilação do contador exibido ao público.">
+              <div className="grid grid-cols-2 gap-3">
                 <Field label="Mínimo">
-                  <input className="input-admin" type="number" value={config.viewer_min} onChange={e => set('viewer_min', Number(e.target.value))} />
+                  <Input type="number" value={config.viewer_min} onChange={e => set('viewer_min', Number(e.target.value))} />
                 </Field>
                 <Field label="Máximo">
-                  <input className="input-admin" type="number" value={config.viewer_max} onChange={e => set('viewer_max', Number(e.target.value))} />
+                  <Input type="number" value={config.viewer_max} onChange={e => set('viewer_max', Number(e.target.value))} />
                 </Field>
               </div>
             </SectionCard>
 
-            <SectionCard title="Modo Teste / Live Simulada" description="Força um horário fictício na plataforma para testar o comportamento da live simulada." accent={cyber.pink}>
-              <Toggle checked={config.test_mode} onChange={v => set('test_mode', v)} label="Habilitar Modo Teste" />
+            <SectionCard title="Modo Teste / Live Simulada" description="Força um horário fictício na plataforma para testar o comportamento da live simulada.">
+              <div className="flex items-center gap-2.5">
+                <Switch id="test_mode" checked={config.test_mode} onCheckedChange={(v) => set('test_mode', v)} />
+                <Label htmlFor="test_mode">Habilitar Modo Teste</Label>
+              </div>
               {config.test_mode && (
                 <Field label="Data e hora fictícia do teste" hint="Defina o dia e horário que a plataforma deve assumir (ex: terça às 20:05 para testar 5 minutos de live).">
                   <CyberDateTimePicker value={config.test_time} onChange={v => set('test_time', v)} />
@@ -423,36 +348,24 @@ export default function AdminConfig() {
               )}
             </SectionCard>
 
-            <SectionCard title="Página de vendas" description="Redirect para usuários bloqueados após a live." accent="#ef4444">
+            <SectionCard title="Página de vendas" description="Redirect para usuários bloqueados após a live.">
               <Field label="URL da página de vendas">
-                <input className="input-admin" type="url" value={config.sales_page_url} onChange={e => set('sales_page_url', e.target.value)} placeholder="https://..." />
+                <Input type="url" value={config.sales_page_url} onChange={e => set('sales_page_url', e.target.value)} placeholder="https://..." />
               </Field>
             </SectionCard>
 
             {saveError && (
-              <p style={{ fontSize: 12, color: cyber.error, background: cyber.accentOverlay, border: `1px solid ${cyber.accentBorderDim}`, borderRadius: 8, padding: '8px 12px', margin: 0 }}>
+              <p className="rounded-lg border border-border bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 {saveError}
               </p>
             )}
 
-            <button type="submit" disabled={saving} style={{
-              width: '100%',
-              background: saved ? cyber.green : saving ? `rgba(0,180,255,0.4)` : `linear-gradient(135deg, ${cyber.accent}, ${cyber.accentDim})`,
-              border: 'none',
-              color: cyber.black, fontWeight: 700, fontSize: 14,
-              fontFamily: cyberFonts.display,
-              padding: '12px 0', borderRadius: 10,
-              cursor: saving ? 'not-allowed' : 'pointer',
-              transition: 'all .2s',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-            }}>
-              {saved
-                ? <><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Salvo!</>
-                : saving ? 'Salvando...' : 'Salvar configurações'}
-            </button>
+            <Button type="submit" disabled={saving} className="w-full">
+              {saved ? <><Check className="size-4" /> Salvo!</> : saving ? <><Loader2 className="size-4 animate-spin" /> Salvando...</> : 'Salvar configurações'}
+            </Button>
           </form>
         </div>
-      </main>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
