@@ -9,7 +9,6 @@ import {
   Field,
   FieldDescription,
   FieldGroup,
-  FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -57,14 +56,14 @@ export default function AdminLogin() {
                 </div>
 
                 <Field>
-                  <FieldLabel htmlFor="admin-password">Senha</FieldLabel>
                   <div className="relative">
                     <Input
                       id="admin-password"
+                      aria-label="Senha"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="Digite a senha administrativa"
                       required
                       autoComplete="current-password"
                       className="pr-9 [&::-ms-clear]:hidden [&::-ms-reveal]:hidden"
