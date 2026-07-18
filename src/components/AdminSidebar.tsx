@@ -72,7 +72,7 @@ export function AdminSidebar() {
               <TooltipTrigger render={<SidebarMenuButton size="lg" onClick={() => setPickerOpen(true)} />}>
                 <div
                   className={cn(
-                    'flex aspect-square size-6 shrink-0 items-center justify-center overflow-hidden rounded-md text-[10px] font-black',
+                    'flex aspect-square size-7 shrink-0 items-center justify-center overflow-hidden rounded-md text-xs font-black',
                     branding.type === 'upload' && branding.value
                       ? 'bg-transparent'
                       : 'bg-primary text-primary-foreground'
@@ -81,7 +81,7 @@ export function AdminSidebar() {
                   {branding.type === 'upload' && branding.value ? (
                     <img src={branding.value} alt="" className="size-full object-cover" />
                   ) : PresetIcon ? (
-                    <PresetIcon className="size-3.5" />
+                    <PresetIcon className="size-4" />
                   ) : (
                     'W'
                   )}
