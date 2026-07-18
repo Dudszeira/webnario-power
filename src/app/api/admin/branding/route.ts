@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, getBrandingSettings, updateBrandingSettings } from '@/lib/db';
 import { verifyAdminFromRequest } from '@/lib/auth';
+import { ICON_NAMES, MAX_ICON_UPLOAD_SIZE } from '@/lib/branding-icons';
 
-const ICON_NAMES = [
-  'Rocket', 'Zap', 'Tv', 'Video', 'Star', 'Radio', 'Sparkles', 'Flame',
-  'Globe', 'Shield', 'Award', 'Target', 'Gem', 'Crown', 'Compass', 'Bolt',
-];
-const MAX_SIZE = 2 * 1024 * 1024;
 const ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 
 export async function GET(req: NextRequest) {
@@ -53,7 +49,7 @@ export async function PUT(req: NextRequest) {
     if (!ALLOWED_MIME.includes(file.type)) {
       return NextResponse.json({ error: 'Formato de imagem não suportado' }, { status: 400 });
     }
-    if (file.size > MAX_SIZE) {
+    if (file.size > MAX_ICON_UPLOAD_SIZE) {
       return NextResponse.json({ error: 'Imagem maior que 2MB' }, { status: 400 });
     }
 

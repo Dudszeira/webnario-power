@@ -15,25 +15,15 @@ import {
   Globe, Shield, Award, Target, Gem, Crown, Compass, Bolt,
   Upload, Loader2,
 } from 'lucide-react';
+import { ICON_NAMES, MAX_ICON_UPLOAD_SIZE } from '@/lib/branding-icons';
 
-export const ICON_OPTIONS: { name: string; Icon: React.ComponentType<{ className?: string }> }[] = [
-  { name: 'Rocket', Icon: Rocket },
-  { name: 'Zap', Icon: Zap },
-  { name: 'Tv', Icon: Tv },
-  { name: 'Video', Icon: Video },
-  { name: 'Star', Icon: Star },
-  { name: 'Radio', Icon: Radio },
-  { name: 'Sparkles', Icon: Sparkles },
-  { name: 'Flame', Icon: Flame },
-  { name: 'Globe', Icon: Globe },
-  { name: 'Shield', Icon: Shield },
-  { name: 'Award', Icon: Award },
-  { name: 'Target', Icon: Target },
-  { name: 'Gem', Icon: Gem },
-  { name: 'Crown', Icon: Crown },
-  { name: 'Compass', Icon: Compass },
-  { name: 'Bolt', Icon: Bolt },
-];
+const ICON_COMPONENTS: Record<string, React.ComponentType<{ className?: string }>> = {
+  Rocket, Zap, Tv, Video, Star, Radio, Sparkles, Flame,
+  Globe, Shield, Award, Target, Gem, Crown, Compass, Bolt,
+};
+
+export const ICON_OPTIONS: { name: string; Icon: React.ComponentType<{ className?: string }> }[] =
+  ICON_NAMES.map((name) => ({ name, Icon: ICON_COMPONENTS[name] }));
 
 export type BrandingIcon = { type: 'letter' | 'preset' | 'upload'; value: string | null };
 
@@ -80,7 +70,7 @@ export function AdminIconPicker({
   }
 
   function handleFile(file: File) {
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > MAX_ICON_UPLOAD_SIZE) {
       setError('Imagem maior que 2MB');
       return;
     }
