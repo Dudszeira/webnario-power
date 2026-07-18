@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 
 type Props = {
@@ -46,8 +45,8 @@ export default function RegisterModal({ onSuccess, onBlocked }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
-      <Card className="w-full max-w-md">
-        <CardContent>
+      <Card className="w-full max-w-md py-4">
+        <CardContent className="px-8 py-4">
           <div className="mb-6 flex justify-center">
             <Image src="/logo.webp" alt="Negócio de Fotografia 10K" width={150} height={56} className="object-contain" />
           </div>
@@ -59,30 +58,28 @@ export default function RegisterModal({ onSuccess, onBlocked }: Props) {
             imersão, adicione seus dados abaixo:
           </p>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Primeiro Nome</Label>
-              <Input
-                type="text"
-                placeholder="Seu primeiro nome"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={loading}
-                required
-              />
-            </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <Input
+              type="text"
+              aria-label="Primeiro nome"
+              placeholder="Seu primeiro nome"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={loading}
+              required
+              className="h-11"
+            />
 
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Seu E-mail</Label>
-              <Input
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-                required
-              />
-            </div>
+            <Input
+              type="email"
+              aria-label="Seu e-mail"
+              placeholder="seu@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+              required
+              className="h-11"
+            />
 
             {error && <p className="text-center text-sm text-destructive">{error}</p>}
 
