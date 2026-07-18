@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { ChevronRight, Check, Tv } from 'lucide-react';
 import Countdown from './Countdown';
 import RegisterModal from './RegisterModal';
-import { cyber, cyberFonts } from '@/lib/cybertheme';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 type Props = {
   editionId: string;
@@ -58,10 +60,9 @@ export default function EsperaContent({
   }, [isRegistered, liveStartMs, router]);
 
   return (
-    <div style={{ background: cyber.bg, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-
+    <div className="flex min-h-screen flex-col bg-background">
       {/* ── Logo ── */}
-      <div className="flex flex-col items-center pt-8 pb-6 px-4">
+      <div className="flex flex-col items-center px-4 pb-6 pt-8">
         <Image
           src="/logo.webp"
           alt="Negócio de Fotografia 10K"
@@ -78,60 +79,30 @@ export default function EsperaContent({
       </div>
 
       {/* ── Content card ── */}
-      <div style={{ maxWidth: 672, margin: '0 auto', padding: '0 16px 16px', flex: 1, width: '100%' }}>
-        <div
-          style={{
-            background: cyber.surface,
-            border: `1px solid ${cyber.accentBorderDim}`,
-            borderRadius: 12,
-            padding: '32px',
-            width: '100%',
-          }}
-        >
-          <h2
-            style={{
-              fontFamily: cyberFonts.body,
-              fontSize: 17,
-              fontWeight: 700,
-              color: cyber.textPrimary,
-              textAlign: 'center',
-              marginBottom: 24,
-              lineHeight: 1.4,
-            }}
-          >
-            Enquanto você aguarda, veja o<br />que vai descobrir hoje:
-          </h2>
+      <div className="mx-auto w-full max-w-2xl flex-1 px-4 pb-4">
+        <Card>
+          <CardContent>
+            <h2 className="mb-6 text-center text-[17px] font-bold leading-snug">
+              Enquanto você aguarda, veja o<br />que vai descobrir hoje:
+            </h2>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {BULLETS.map((text, i) => (
-              <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <div style={{ flexShrink: 0, marginTop: 2 }}>
-                  <svg
-                    style={{ color: cyber.accent }}
-                    width={18}
-                    height={18}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
+            <div className="flex flex-col gap-3.5">
+              {BULLETS.map((text, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <ChevronRight className="mt-0.5 size-[18px] shrink-0 text-primary" strokeWidth={2.5} />
+                  <p className="text-[13.5px] leading-relaxed text-muted-foreground">{text}</p>
                 </div>
-                <p style={{ fontSize: 13.5, color: cyber.textLabel, lineHeight: 1.65, margin: 0 }}>
-                  {text}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* ── Redirect notice ── */}
-      <div style={{ textAlign: 'center', padding: '24px 16px', maxWidth: 560, margin: '0 auto' }}>
-        <p style={{ fontSize: 13, color: cyber.textLabel, lineHeight: 1.6, margin: 0 }}>
+      <div className="mx-auto max-w-lg px-4 py-6 text-center">
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
           Quando chegar às 20h,{' '}
-          <span style={{ color: cyber.textPrimary, fontWeight: 600 }}>
+          <span className="font-semibold text-foreground">
             você será redirecionado automaticamente para a Imersão ao vivo.
           </span>{' '}
           Não precisa fazer nada, é só aguardar!
@@ -139,8 +110,8 @@ export default function EsperaContent({
       </div>
 
       {/* ── Footer ── */}
-      <div style={{ textAlign: 'center', padding: '16px' }}>
-        <p style={{ fontSize: 11, color: cyber.textDecorative, margin: 0 }}>
+      <div className="p-4 text-center">
+        <p className="text-[11px] text-muted-foreground/70">
           Robison Kunz © {new Date().getFullYear()} · Todos os direitos reservados
         </p>
       </div>
@@ -152,148 +123,40 @@ export default function EsperaContent({
 
       {/* ── Success overlay ── */}
       {showSuccess && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 50,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(0,0,0,0.9)',
-          }}
-        >
-          <div
-            style={{
-              background: cyber.surface,
-              border: `1px solid ${cyber.accentBorderDim}`,
-              borderRadius: 12,
-              padding: 40,
-              textAlign: 'center',
-              maxWidth: 360,
-              width: '100%',
-              margin: '0 16px',
-            }}
-          >
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: '50%',
-                border: `2px solid ${cyber.green}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 20px',
-              }}
-            >
-              <svg
-                style={{ color: cyber.green }}
-                width={32}
-                height={32}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: cyber.textPrimary,
-                fontFamily: cyberFonts.body,
-                marginBottom: 8,
-              }}
-            >
-              Cadastro realizado!
-            </h2>
-            <p style={{ fontSize: 13, color: cyber.textLabel, margin: 0 }}>
-              Redirecionando para o webinário em instantes...
-            </p>
-          </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
+          <Card className="mx-4 w-full max-w-sm">
+            <CardContent className="flex flex-col items-center text-center">
+              <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full border-2 border-emerald-500">
+                <Check className="size-8 text-emerald-500" strokeWidth={2.5} />
+              </div>
+              <h2 className="mb-2 text-xl font-bold">Cadastro realizado!</h2>
+              <p className="text-sm text-muted-foreground">Redirecionando para o webinário em instantes...</p>
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {/* ── Live Over Modal ── */}
       {showLiveOver && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 50,
-            padding: 16,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(0,0,0,0.92)',
-          }}
-        >
-          <div
-            style={{
-              background: cyber.surface,
-              border: `1px solid ${cyber.accentBorderDim}`,
-              borderRadius: 12,
-              padding: 32,
-              textAlign: 'center',
-              maxWidth: 440,
-              width: '100%',
-            }}
-          >
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📺</div>
-            <h2
-              style={{
-                fontSize: 20,
-                fontWeight: 700,
-                color: cyber.textPrimary,
-                fontFamily: cyberFonts.body,
-                marginBottom: 12,
-              }}
-            >
-              A transmissão ao vivo encerrou
-            </h2>
-            <p style={{ fontSize: 13, color: cyber.textLabel, lineHeight: 1.6, marginBottom: 24 }}>
-              Você perdeu a transmissão ao vivo desta edição. Fique atento aos nossos
-              canais — e-mail e grupo — onde avisaremos sobre o replay e as próximas edições.
-            </p>
-            {salesUrl && (
-              <a
-                href={salesUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  background: `linear-gradient(135deg, ${cyber.accent}, ${cyber.accentDim})`,
-                  border: 'none',
-                  color: cyber.black,
-                  fontWeight: 700,
-                  fontSize: 13,
-                  padding: '12px 0',
-                  borderRadius: 8,
-                  textDecoration: 'none',
-                  fontFamily: cyberFonts.body,
-                }}
-              >
-                Acessar canais oficiais
-              </a>
-            )}
-            <button
-              onClick={() => setShowLiveOver(false)}
-              style={{
-                marginTop: 12,
-                fontSize: 12,
-                color: cyber.textDecorative,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              Fechar
-            </button>
-          </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="flex flex-col items-center text-center">
+              <Tv className="mx-auto mb-4 size-10 text-muted-foreground" />
+              <h2 className="mb-3 text-lg font-bold">A transmissão ao vivo encerrou</h2>
+              <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
+                Você perdeu a transmissão ao vivo desta edição. Fique atento aos nossos
+                canais — e-mail e grupo — onde avisaremos sobre o replay e as próximas edições.
+              </p>
+              {salesUrl && (
+                <Button className="w-full" render={<a href={salesUrl} target="_blank" rel="noopener noreferrer" />}>
+                  Acessar canais oficiais
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" className="mt-3 text-muted-foreground" onClick={() => setShowLiveOver(false)}>
+                Fechar
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

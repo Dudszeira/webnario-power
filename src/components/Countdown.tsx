@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { cyber, cyberFonts } from '@/lib/cybertheme';
 
 type Props = {
   targetMs: number;
@@ -52,57 +51,17 @@ export default function Countdown({ targetMs, serverNow, onReached }: Props) {
     <div className="flex items-center gap-2">
       {units.map((u, i) => (
         <div key={u.label} className="flex items-center gap-2">
-          {/* Flip card */}
-          <div
-            className="flex flex-col items-center justify-center"
-            style={{
-              background: cyber.surface,
-              border: `1px solid ${cyber.accentBorderDim}`,
-              borderRadius: 10,
-              boxShadow: `0 0 12px ${cyber.accentGlow}`,
-              minWidth: 72,
-              minHeight: 72,
-              padding: '10px 14px',
-            }}
-          >
-            <span
-              className="leading-none"
-              style={{
-                fontSize: 38,
-                color: cyber.accent,
-                fontFamily: cyberFonts.display,
-                fontVariantNumeric: 'tabular-nums',
-                fontWeight: 700,
-              }}
-            >
+          <div className="flex min-h-[72px] min-w-[72px] flex-col items-center justify-center rounded-lg border border-border bg-card px-3.5 py-2.5 shadow-sm">
+            <span className="text-[38px] font-bold leading-none tabular-nums text-primary">
               {u.value}
             </span>
-            <span
-              className="mt-1"
-              style={{
-                fontSize: 9,
-                color: cyber.textDecorative,
-                fontFamily: cyberFonts.body,
-                letterSpacing: '0.2em',
-                fontWeight: 600,
-              }}
-            >
+            <span className="mt-1 text-[9px] font-semibold tracking-[0.2em] text-muted-foreground">
               {u.label}
             </span>
           </div>
 
-          {/* Separator (not after last) */}
           {i < units.length - 1 && (
-            <span
-              className="-mt-4 select-none"
-              style={{
-                fontSize: 28,
-                color: cyber.accentDim,
-                fontWeight: 700,
-              }}
-            >
-              :
-            </span>
+            <span className="-mt-4 select-none text-[28px] font-bold text-muted-foreground/50">:</span>
           )}
         </div>
       ))}

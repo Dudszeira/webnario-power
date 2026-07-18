@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { cyber, cyberFonts } from '@/lib/cybertheme';
+import { Loader2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 type Props = {
   onSuccess: () => void;
@@ -41,183 +45,54 @@ export default function RegisterModal({ onSuccess, onBlocked }: Props) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(6px)' }}
-    >
-      <div
-        style={{
-          position: 'relative',
-          background: cyber.surface,
-          border: `1px solid ${cyber.accentBorder}`,
-          borderRadius: 12,
-          boxShadow: `0 0 60px ${cyber.accentGlow}`,
-          padding: 32,
-          maxWidth: 420,
-          width: '100%',
-        }}
-      >
-        {/* Corner accent triangle */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            borderWidth: '0 16px 16px 0',
-            borderStyle: 'solid',
-            borderColor: `transparent ${cyber.accentBorder} transparent transparent`,
-            borderRadius: '0 12px 0 0',
-          }}
-        />
-
-        {/* Logo */}
-        <div className="flex justify-center mb-6">
-          <Image
-            src="/logo.webp"
-            alt="Negócio de Fotografia 10K"
-            width={150}
-            height={56}
-            className="object-contain"
-          />
-        </div>
-
-        {/* Heading */}
-        <h2
-          style={{
-            fontFamily: cyberFonts.body,
-            fontSize: 22,
-            fontWeight: 700,
-            color: cyber.textPrimary,
-            textAlign: 'center',
-            marginBottom: 8,
-          }}
-        >
-          Você está a um passo!
-        </h2>
-        <p
-          style={{
-            fontSize: 13,
-            color: cyber.textLabel,
-            textAlign: 'center',
-            lineHeight: 1.6,
-            marginBottom: 24,
-          }}
-        >
-          Você está a um passo de descobrir os 3 pilares para faturar mais de{' '}
-          <span style={{ color: cyber.accent, fontWeight: 600 }}>10 mil reais por mês!</span> Para
-          acessar a imersão, adicione seus dados abaixo:
-        </p>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Nome */}
-          <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: 10,
-                fontFamily: cyberFonts.body,
-                color: cyber.textLabel,
-                letterSpacing: '3px',
-                textTransform: 'uppercase',
-                marginBottom: 6,
-                fontWeight: 600,
-              }}
-            >
-              Primeiro Nome
-            </label>
-            <input
-              type="text"
-              placeholder="Seu primeiro nome"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={loading}
-              required
-              style={{
-                width: '100%',
-                background: cyber.bg,
-                border: `1px solid ${cyber.accentBorderDim}`,
-                borderRadius: 6,
-                padding: '10px 14px',
-                color: cyber.textPrimary,
-                fontFamily: cyberFonts.body,
-                fontSize: 13,
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = cyber.accent)}
-              onBlur={(e) => (e.currentTarget.style.borderColor = cyber.accentBorderDim)}
-            />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
+      <Card className="w-full max-w-md">
+        <CardContent>
+          <div className="mb-6 flex justify-center">
+            <Image src="/logo.webp" alt="Negócio de Fotografia 10K" width={150} height={56} className="object-contain" />
           </div>
 
-          {/* Email */}
-          <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: 10,
-                fontFamily: cyberFonts.body,
-                color: cyber.textLabel,
-                letterSpacing: '3px',
-                textTransform: 'uppercase',
-                marginBottom: 6,
-                fontWeight: 600,
-              }}
-            >
-              Seu E-mail
-            </label>
-            <input
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-              required
-              style={{
-                width: '100%',
-                background: cyber.bg,
-                border: `1px solid ${cyber.accentBorderDim}`,
-                borderRadius: 6,
-                padding: '10px 14px',
-                color: cyber.textPrimary,
-                fontFamily: cyberFonts.body,
-                fontSize: 13,
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = cyber.accent)}
-              onBlur={(e) => (e.currentTarget.style.borderColor = cyber.accentBorderDim)}
-            />
-          </div>
+          <h2 className="mb-2 text-center text-xl font-bold">Você está a um passo!</h2>
+          <p className="mb-6 text-center text-sm leading-relaxed text-muted-foreground">
+            Você está a um passo de descobrir os 3 pilares para faturar mais de{' '}
+            <span className="font-semibold text-primary">10 mil reais por mês!</span> Para acessar a
+            imersão, adicione seus dados abaixo:
+          </p>
 
-          {error && (
-            <p style={{ color: cyber.error, fontSize: 13, textAlign: 'center' }}>{error}</p>
-          )}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Primeiro Nome</Label>
+              <Input
+                type="text"
+                placeholder="Seu primeiro nome"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              background: loading
-                ? 'rgba(0,180,255,0.3)'
-                : `linear-gradient(135deg, ${cyber.accent}, ${cyber.accentDim})`,
-              border: 'none',
-              color: cyber.black,
-              fontFamily: cyberFonts.display,
-              fontWeight: 700,
-              fontSize: 13,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              padding: '13px 0',
-              borderRadius: 8,
-              marginTop: 8,
-              cursor: loading ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {loading ? 'Aguarde...' : 'Quero Entrar na Imersão'}
-          </button>
-        </form>
-      </div>
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Seu E-mail</Label>
+              <Input
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+
+            {error && <p className="text-center text-sm text-destructive">{error}</p>}
+
+            <Button type="submit" disabled={loading} className="mt-1 h-11 uppercase tracking-wide">
+              {loading && <Loader2 className="size-4 animate-spin" />}
+              {loading ? 'Aguarde...' : 'Quero Entrar na Imersão'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
