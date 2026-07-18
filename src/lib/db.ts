@@ -546,3 +546,26 @@ export async function getEditionMetrics(editionId: string) {
     simulatedComments: simulatedComments || 0,
   };
 }
+
+export async function getBrandingSettings(): Promise<{ type: 'letter' | 'preset' | 'upload'; value: string | null }> {
+  const { data, error } = await supabase
+    .from('admin_settings')
+    .select('sidebar_icon_type, sidebar_icon_value')
+    .eq('id', 'default')
+    .maybeSingle();
+
+  if (error || !data) {
+    if (error) console.error('getBrandingSettings error:', error);
+    return { type: 'letter', value: null };
+  }
+  return { type: data.sidebar_icon_type as 'letter' | 'preset' | 'upload', value: data.sidebar_icon_value };
+}
+
+export async function updateBrandingSettings(type: string, value: string | null): Promise<void> {
+  const { error } = await supabase
+    .from('admin_settings')
+    .update({ sidebar_icon_type: type, sidebar_icon_value: value, updated_at: new Date().toISOString() })
+    .eq('id', 'default');
+
+  if (error) console.error('updateBrandingSettings error:', error);
+}
