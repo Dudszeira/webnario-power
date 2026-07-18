@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   Radio,
@@ -69,7 +70,14 @@ export function AdminSidebar() {
           <SidebarMenuItem>
             <Tooltip>
               <TooltipTrigger render={<SidebarMenuButton size="lg" onClick={() => setPickerOpen(true)} />}>
-                <div className="flex aspect-square size-6 shrink-0 items-center justify-center overflow-hidden rounded-md bg-primary text-[10px] font-black text-primary-foreground">
+                <div
+                  className={cn(
+                    'flex aspect-square size-6 shrink-0 items-center justify-center overflow-hidden rounded-md text-[10px] font-black',
+                    branding.type === 'upload' && branding.value
+                      ? 'bg-transparent'
+                      : 'bg-primary text-primary-foreground'
+                  )}
+                >
                   {branding.type === 'upload' && branding.value ? (
                     <img src={branding.value} alt="" className="size-full object-cover" />
                   ) : PresetIcon ? (
