@@ -33,7 +33,6 @@ import {
   MessageSquare,
   FileText,
   Download,
-  ExternalLink,
   Trash2,
   Loader2,
 } from 'lucide-react';
@@ -52,23 +51,6 @@ const STATUS_CFG: Record<LiveStatus, { label: string; dot: string; color: string
   test:    { label: 'Teste',      dot: '#a78bfa', color: '#a78bfa' },
 };
 
-const BADGE: Record<string, { label: string }> = {
-  ok:         { label: 'Público'  },
-  restricted: { label: 'Restrito' },
-  admin:      { label: 'Admin'    },
-};
-
-const ROUTES = [
-  { path:'/espera',              label:'Sala de Espera',   status:'ok'         as const, description:'Cadastro, countdown e redirect automático.', note:'Acessível a qualquer hora.' },
-  { path:'/ao-vivo',             label:'Sala Ao Vivo',     status:'restricted' as const, description:'Player + chat ao vivo + contador simulado.',  note:'Acessível só na terça 20h.' },
-  { path:'/bloqueado',           label:'Acesso Bloqueado', status:'ok'         as const, description:'IP ou e-mail já usados nesta edição.',          note:'Aceita ?sales=URL.' },
-  { path:'/',                    label:'Raiz (/)',          status:'ok'         as const, description:'Redireciona para /espera.',                     note:'Também: /imersao → /espera.' },
-  { path:'/admin',               label:'Dashboard',        status:'admin'      as const, description:'Métricas, registros e exportação CSV.',         note:'Exige cookie admin_session.' },
-  { path:'/admin/configuracoes', label:'Configurações',    status:'admin'      as const, description:'Vídeo, CTA, chat e viewer count.',             note:'Mudanças imediatas.' },
-  { path:'/admin/importar',      label:'Importar Roteiro', status:'admin'      as const, description:'Upload .xlsx/.csv com comentários simulados.',  note:'Template disponível.' },
-  { path:'/admin/comentarios',   label:'Moderação',        status:'admin'      as const, description:'Comentários reais, ocultar, fixar e staff.',    note:'Só comentários reais.' },
-];
-
 function StatCard({ label, value, sub, icon: Icon }: { label: string; value: number | string; sub?: string; icon: React.ComponentType<{ className?: string }> }) {
   return (
     <Card>
@@ -82,31 +64,6 @@ function StatCard({ label, value, sub, icon: Icon }: { label: string; value: num
         </CardAction>
         {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
       </CardHeader>
-    </Card>
-  );
-}
-
-function RouteCard({ route }: { route: typeof ROUTES[0] }) {
-  const badge = BADGE[route.status];
-  return (
-    <Card>
-      <CardContent className="flex flex-col gap-2">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="text-[12.5px] font-semibold leading-tight text-foreground">{route.label}</p>
-            <code className="text-[10.5px] text-primary">{route.path}</code>
-          </div>
-          <Badge variant="outline">{badge.label}</Badge>
-        </div>
-        <p className="text-[11.5px] leading-relaxed text-muted-foreground">{route.description}</p>
-        {route.note && (
-          <p className="border-t border-border pt-2 text-[10.5px] italic text-muted-foreground/70">{route.note}</p>
-        )}
-        <a href={route.path} target="_blank" rel="noopener noreferrer"
-          className="mt-auto flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline">
-          Abrir <ExternalLink className="size-2.5" />
-        </a>
-      </CardContent>
     </Card>
   );
 }
@@ -262,14 +219,6 @@ export default function AdminDashboard() {
             <StatCard label="Simulados" value={m.simulatedComments||0} sub="importados" icon={FileText} />
           </div>
 
-          {/* Páginas da plataforma */}
-          <div>
-            <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[3px] text-muted-foreground">Páginas da plataforma</h2>
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-              {ROUTES.map(r => <RouteCard key={r.path} route={r} />)}
-            </div>
-          </div>
-
           {/* Recent registrations */}
           <Card className="gap-0 overflow-hidden py-0">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-[18px] py-3">
@@ -281,7 +230,7 @@ export default function AdminDashboard() {
                 {filteredEditionLoading && <Loader2 className="size-3.5 animate-spin text-primary" />}
               </div>
               {allEditions.length > 0 && (
-                <Select value={selectedEditionFilter} onValueChange={changeEditionFilter}>
+                <Select value={selectedEditionFilter} onValueChange={(v) => v && changeEditionFilter(v)}>
                   <SelectTrigger size="sm">
                     <SelectValue />
                   </SelectTrigger>

@@ -10,6 +10,7 @@ import {
   Settings,
   Upload,
   MessageSquare,
+  Compass,
   ExternalLink,
   LogOut,
 } from 'lucide-react';
@@ -34,6 +35,7 @@ const NAV = [
   { href: '/admin/configuracoes', label: 'Configurações', icon: Settings },
   { href: '/admin/importar', label: 'Importar', icon: Upload },
   { href: '/admin/comentarios', label: 'Comentários', icon: MessageSquare },
+  { href: '/admin/navegacao', label: 'Navegação', icon: Compass },
 ];
 
 export function AdminSidebar() {
@@ -79,7 +81,11 @@ export function AdminSidebar() {
                   )}
                 >
                   {branding.type === 'upload' && branding.value ? (
-                    <img src={branding.value} alt="" className="size-full object-cover" />
+                    <img
+                      src={branding.value}
+                      alt=""
+                      style={{ width: '1.75rem', height: '1.75rem', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
+                    />
                   ) : PresetIcon ? (
                     <PresetIcon className="size-4" />
                   ) : (
