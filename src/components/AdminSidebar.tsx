@@ -38,6 +38,12 @@ const NAV = [
   { href: '/admin/navegacao', label: 'Navegação', icon: Compass },
 ];
 
+// Module-level cache: AdminSidebar remounts on every admin page navigation
+// (each page renders its own <SidebarProvider>), so without this the "W"
+// placeholder flashes before every fetch resolves. Persists for the tab's
+// session — a full reload (or a real branding change) is what refreshes it.
+let brandingCache: BrandingIcon | null = null;
+
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -51,10 +57,16 @@ export function AdminSidebar() {
     router.push('/admin/login');
   }
 
-  const [branding, setBranding] = useState<BrandingIcon>({ type: 'letter', value: null });
+  const [branding, setBrandingState] = useState<BrandingIcon>(brandingCache ?? { type: 'letter', value: null });
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  function setBranding(next: BrandingIcon) {
+    brandingCache = next;
+    setBrandingState(next);
+  }
+
   useEffect(() => {
+    if (brandingCache) return;
     fetch('/api/admin/branding')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (d) setBranding(d); })
