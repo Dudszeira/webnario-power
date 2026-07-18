@@ -47,9 +47,9 @@ export default function AdminLogin() {
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
       <Waves lineColor="rgba(255,255,255,0.1)" backgroundColor="transparent" />
       <div className="relative w-full max-w-5xl">
-        <Card className="overflow-hidden p-0">
+        <Card className="overflow-hidden bg-transparent p-0">
           <CardContent className="grid p-0 md:min-h-[560px] md:grid-cols-2">
-            <form onSubmit={handleSubmit} className="flex flex-col justify-center p-8 md:p-12">
+            <form onSubmit={handleSubmit} className="flex flex-col justify-center border-white/10 bg-white/[0.04] p-8 backdrop-blur-2xl md:border-r md:p-12">
               <FieldGroup>
                 <div className="flex flex-col items-center gap-2 text-center">
                   <Image src="/logo.webp" alt="Webnario Power" width={120} height={40} className="mb-1" />
