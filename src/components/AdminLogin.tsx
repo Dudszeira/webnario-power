@@ -43,8 +43,9 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
+      <div className="kinetic-grid" />
+      <div className="relative w-full max-w-sm">
         <form onSubmit={handleSubmit}>
           <FieldGroup>
             <div className="flex flex-col items-center gap-2 text-center">
