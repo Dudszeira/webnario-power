@@ -17,8 +17,9 @@ export default function BloqueadoPage({
       <div className="relative w-full max-w-md text-center">
         <Image src="/logo.webp" alt="Logo" width={160} height={60} className="mx-auto mb-8 object-contain" />
 
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 text-center">
+        <Card className="relative overflow-hidden bg-transparent p-0">
+          <Waves lineColor="rgba(255,255,255,0.14)" backgroundColor="transparent" />
+          <CardContent className="relative flex flex-col items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-8 text-center backdrop-blur-2xl">
             <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Lock className="size-6" />
             </div>
