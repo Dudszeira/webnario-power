@@ -279,6 +279,9 @@ export default function ChatPanel({
   const [ctaEndSecsState, setCtaEndSecsState] = useState(ctaEndSecs);
   const [staffMetrics, setStaffMetrics] = useState({ online: 0, cta_clicks: 0 });
 
+  // Staff filter: show only real comments
+  const [filterRealOnly, setFilterRealOnly] = useState(false);
+
   // Reply state
   const [replyTarget, setReplyTarget] = useState<ChatComment | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -581,6 +584,11 @@ export default function ChatPanel({
 
   const showCta = ctaActive && liveCtaUrl && ctaVisible;
 
+  // Filtered comments for display (staff-only filter)
+  const displayComments = isStaff && filterRealOnly
+    ? comments.filter(c => c.type === 'real_user' || c.type === 'real_staff')
+    : comments;
+
   // Reset the dismissed banner + notify AoVivoContent (drives PurchaseNotifications)
   // every time the effective state changes — including from a poll, not just a local click.
   const prevCtaActiveRef = useRef(ctaActive);
@@ -692,6 +700,7 @@ export default function ChatPanel({
                 ? (ctaAutoEnabledState ? 'Modo automático (janela configurada)' : 'Automático desabilitado — controle manual')
                 : ctaOverrideState === 'on' ? 'Forçado manualmente' : 'Desativado manualmente'}
             </span>
+            <ToggleSwitch on={filterRealOnly} onChange={setFilterRealOnly} label="Apenas comentários reais" T={T} />
           </div>
           {/* Hint */}
           <span style={{ fontSize: 10, color: T.textMuted, fontStyle: 'italic', fontFamily: "'Montserrat', sans-serif" }}>Clique em um comentário para responder</span>
@@ -786,10 +795,12 @@ export default function ChatPanel({
 
       {/* ── Comment list ───────────────────────────────────── */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 14, scrollBehavior: 'smooth', scrollbarWidth: 'thin', scrollbarColor: `${T.scrollbar} transparent` }}>
-        {comments.length === 0 && (
-          <p style={{ textAlign: 'center', fontSize: 12, color: T.textMuted, marginTop: 32, fontStyle: 'italic' }}>Seja o primeiro a comentar!</p>
+        {displayComments.length === 0 && (
+          <p style={{ textAlign: 'center', fontSize: 12, color: T.textMuted, marginTop: 32, fontStyle: 'italic' }}>
+            {isStaff && filterRealOnly ? 'Nenhum comentário real ainda.' : 'Seja o primeiro a comentar!'}
+          </p>
         )}
-        {comments.map(c => (
+        {displayComments.map(c => (
           <CommentRow key={c.id} comment={c} isOwn={c.author_name === sessionName && c.type === 'real_user'} isStaff={isStaff} onReply={handleReply} T={T} />
         ))}
       </div>

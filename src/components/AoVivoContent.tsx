@@ -195,7 +195,7 @@ export default function AoVivoContent({
           {/* Mobile chat (below info card, hidden on md+) */}
           <div
             className="md:hidden overflow-hidden"
-            style={{ minHeight: 400, borderRadius: 20, border: '1px solid #1e1e1e' }}
+            style={{ height: 520, flexShrink: 0, borderRadius: 20, border: '1px solid #1e1e1e' }}
           >
             <ChatPanel
               editionId={editionId}

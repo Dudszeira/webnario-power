@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { GeistSans } from 'geist/font/sans';
 import { cyberEffects } from '@/lib/cybertheme';
 
 export const metadata: Metadata = {
@@ -7,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ minHeight: '100vh', background: '#020810', position: 'relative' }}>
+    <div className={GeistSans.className} style={{ minHeight: '100vh', background: '#020810', position: 'relative' }}>
       {/* Scan lines */}
       <div
         style={{

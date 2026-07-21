@@ -1,4 +1,8 @@
 import Image from 'next/image';
+import { Lock } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Waves from '@/components/Waves';
 
 export default function BloqueadoPage({
   searchParams,
@@ -8,30 +12,33 @@ export default function BloqueadoPage({
   const salesUrl = searchParams.sales || '';
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: '#0a0a0f' }}>
-      <div className="max-w-md w-full text-center">
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4">
+      <Waves lineColor="rgba(255,255,255,0.1)" backgroundColor="transparent" />
+      <div className="relative w-full max-w-md text-center">
         <Image src="/logo.webp" alt="Logo" width={160} height={60} className="mx-auto mb-8 object-contain" />
 
-        <div className="bg-surface rounded-2xl p-8 border border-gray-800">
-          <div className="text-5xl mb-4">🔒</div>
-          <h1 className="text-2xl font-bold text-white mb-3">Acesso não disponível</h1>
-          <p className="text-gray-400 mb-6 leading-relaxed">
-            Este acesso já foi utilizado nesta edição da imersão. Cada participação é única e exclusiva por evento.
-          </p>
-
-          {salesUrl ? (
-            <a
-              href={salesUrl}
-              className="block w-full bg-brand hover:bg-brand-hover text-white font-bold py-3 px-6 rounded-xl transition-colors text-center"
-            >
-              Quero garantir meu acesso
-            </a>
-          ) : (
-            <p className="text-gray-500 text-sm">
-              Fique atento aos canais oficiais para a próxima edição.
+        <Card className="relative overflow-hidden bg-transparent p-0">
+          <Waves lineColor="rgba(255,255,255,0.14)" backgroundColor="transparent" />
+          <CardContent className="relative flex flex-col items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-8 text-center backdrop-blur-2xl">
+            <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Lock className="size-6" />
+            </div>
+            <h1 className="text-2xl font-bold">Acesso não disponível</h1>
+            <p className="leading-relaxed text-muted-foreground">
+              Este acesso já foi utilizado nesta edição da imersão. Cada participação é única e exclusiva por evento.
             </p>
-          )}
-        </div>
+
+            {salesUrl ? (
+              <Button className="w-full" render={<a href={salesUrl} />}>
+                Quero garantir meu acesso
+              </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground/70">
+                Fique atento aos canais oficiais para a próxima edição.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

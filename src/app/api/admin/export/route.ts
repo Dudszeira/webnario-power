@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 
   const regsCsv = toCSV(regs || [], ['id', 'edition_id', 'name', 'email', 'ip', 'consumed', 'consumed_at', 'created_at']);
   const eventsCsv = toCSV(events || [], ['id', 'edition_id', 'registration_id', 'type', 'metadata', 'created_at']);
-  const commentsCsv = toCSV(realComments || [], ['id', 'edition_id', 'type', 'author_name', 'text', 'created_at']);
+  const commentsCsv = toCSV(realComments || [], ['id', 'edition_id', 'type', 'author_name', 'text', 'reply', 'reply_author', 'created_at']);
 
   const combined = `=== REGISTROS (${editionId}) ===\n${regsCsv}\n\n=== EVENTOS ===\n${eventsCsv}\n\n=== COMENTARIOS REAIS ===\n${commentsCsv}`;
 

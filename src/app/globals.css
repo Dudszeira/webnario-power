@@ -111,3 +111,51 @@ body {
 /* ── Admin loading spinner ── */
 @keyframes admin-spin { to { transform: rotate(360deg); } }
 .admin-spin { animation: admin-spin 0.75s linear infinite; }
+
+/* ── shadcn's own default dark theme (from `npx shadcn init`) — no cyber-palette remap. ── */
+/* Dark-only product, no light/dark toggle — :root holds the (only) theme directly. */
+/* Values are bare oklch channels (no oklch() wrapper) so tailwind.config.ts can compose
+   them as oklch(var(--x) / <alpha-value>) — required for /opacity modifiers (bg-primary/10 etc.)
+   to work under Tailwind v3; a pre-wrapped oklch(...) value can't be modified this way. */
+:root {
+  --background: 0.145 0 0;
+  --foreground: 0.985 0 0;
+  --card: 0.205 0 0;
+  --card-foreground: 0.985 0 0;
+  --popover: 0.205 0 0;
+  --popover-foreground: 0.985 0 0;
+  --primary: 0.922 0 0;
+  --primary-foreground: 0.205 0 0;
+  --secondary: 0.269 0 0;
+  --secondary-foreground: 0.985 0 0;
+  --muted: 0.269 0 0;
+  --muted-foreground: 0.708 0 0;
+  --accent: 0.269 0 0;
+  --accent-foreground: 0.985 0 0;
+  --destructive: 0.704 0.191 22.216;
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: 0.556 0 0;
+  --chart-1: 0.87 0 0;
+  --chart-2: 0.556 0 0;
+  --chart-3: 0.439 0 0;
+  --chart-4: 0.371 0 0;
+  --chart-5: 0.269 0 0;
+  --radius: 0.625rem;
+  --radius-md: calc(var(--radius) - 2px);
+  --spacing: 0.25rem;
+  --sidebar: 0.205 0 0;
+  --sidebar-foreground: 0.985 0 0;
+  --sidebar-primary: 0.488 0.243 264.376;
+  --sidebar-primary-foreground: 0.985 0 0;
+  --sidebar-accent: 0.269 0 0;
+  --sidebar-accent-foreground: 0.985 0 0;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: 0.556 0 0;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+}
