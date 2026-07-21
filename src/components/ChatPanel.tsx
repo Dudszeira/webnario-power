@@ -279,7 +279,6 @@ export default function ChatPanel({
     return newest;
   });
   const [typingName, setTypingName] = useState<string | null>(null);
-  const [ctaVisible, setCtaVisible] = useState(true);
 
   // Staff state
   const [isStaff, setIsStaff] = useState(false);
@@ -604,19 +603,15 @@ export default function ChatPanel({
     });
   }, [videoOffset, ctaOverrideState, ctaOverrideAtState, ctaAutoEnabledState, ctaStartSecsState, ctaEndSecsState, liveStartMs]);
 
-  const showCta = ctaActive && liveCtaUrl && ctaVisible;
+  const showCta = ctaActive && liveCtaUrl;
 
   // Filtered comments for display (staff-only filter)
   const displayComments = isStaff && filterRealOnly
     ? comments.filter(c => c.type === 'real_user' || c.type === 'real_staff')
     : comments;
 
-  // Reset the dismissed banner + notify AoVivoContent (drives PurchaseNotifications)
-  // every time the effective state changes — including from a poll, not just a local click.
-  const prevCtaActiveRef = useRef(ctaActive);
+  // Notify AoVivoContent (drives PurchaseNotifications) every time the effective state changes.
   useEffect(() => {
-    if (!prevCtaActiveRef.current && ctaActive) setCtaVisible(true);
-    prevCtaActiveRef.current = ctaActive;
     onCtaChange?.(ctaActive);
   }, [ctaActive, onCtaChange]);
 
@@ -679,12 +674,6 @@ export default function ChatPanel({
               <polyline points="12 5 19 12 12 19"/>
             </svg>
           </a>
-          <button
-            onClick={() => setCtaVisible(false)}
-            style={{ all: 'unset', background: 'rgba(0,0,0,0.2)', color: '#fff', fontSize: 18, lineHeight: 1, padding: '2px 8px', borderRadius: 4, cursor: 'pointer', flexShrink: 0 }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.35)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.2)'; }}
-          >×</button>
         </div>
       )}
 
