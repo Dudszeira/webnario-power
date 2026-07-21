@@ -42,7 +42,6 @@ body {
 .lc-typing-dot:nth-child(2) { animation-delay: .2s; }
 .lc-typing-dot:nth-child(3) { animation-delay: .4s; }
 .lc-live-blink { animation: lcBlink 1.2s ease-in-out infinite; }
-.lc-cta-pulse  { animation: lcBlink 1s ease-in-out infinite; }
 
 /* ── Purchase toast animations ── */
 @keyframes slide-in-right {

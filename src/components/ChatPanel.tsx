@@ -80,6 +80,28 @@ function isHost(name: string, type: string) {
     name.toLowerCase().includes('robison') || name.toLowerCase() === 'host';
 }
 
+// ── Linkify: turn URLs inside comment text into clickable links ───────────────
+const URL_REGEX = /((?:https?:\/\/|www\.)[^\s]+)/g;
+function linkifyText(text: string): React.ReactNode {
+  const parts = text.split(URL_REGEX);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    if (i % 2 === 0) return part;
+    const trailingMatch = part.match(/[).,!?;:'"]+$/);
+    const trailing = trailingMatch ? trailingMatch[0] : '';
+    const url = trailing ? part.slice(0, -trailing.length) : part;
+    const href = url.startsWith('http') ? url : `https://${url}`;
+    return (
+      <span key={i}>
+        <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: '#55A0EE', textDecoration: 'underline', wordBreak: 'break-all' }}>
+          {url}
+        </a>
+        {trailing}
+      </span>
+    );
+  });
+}
+
 // ── Viewer count ──────────────────────────────────────────────────────────────
 function ViewerCount({ min, max, T }: { min: number; max: number; T: ReturnType<typeof theme> }) {
   const [count, setCount] = useState(() => Math.floor((min + max) / 2));
@@ -177,7 +199,7 @@ function CommentRow({
           )}
         </div>
         <p style={{ fontSize: 13, color: T.text, lineHeight: 1.55, wordBreak: 'break-word', margin: 0, fontFamily: "'Montserrat', sans-serif" }}>
-          {comment.text}
+          {linkifyText(comment.text)}
         </p>
         {comment.reply && (
           <div style={{ marginTop: 8, padding: '8px 10px', background: T.replyBg, borderLeft: '2px solid rgba(85,160,238,0.4)', borderRadius: '0 4px 4px 0' }}>
@@ -185,7 +207,7 @@ function CommentRow({
               {comment.reply_author || 'Host'} respondeu
             </div>
             <div style={{ fontSize: 12, color: T.replyText, lineHeight: 1.5, fontFamily: "'Montserrat', sans-serif" }}>
-              {comment.reply}
+              {linkifyText(comment.reply)}
             </div>
           </div>
         )}
@@ -216,7 +238,7 @@ function PinnedBanner({ comment, ctaUrl, ctaText, dark }: { comment: ChatComment
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', padding: '2px 6px', borderRadius: 3, background: 'rgba(224,160,48,0.15)', color: '#e0a030', border: '1px solid rgba(224,160,48,0.3)' }}>HOST</span>
         </div>
       </div>
-      <p style={{ fontSize: 13, fontWeight: 500, color: dark ? '#fff' : 'rgba(0,0,0,0.78)', margin: 0, fontFamily: "'Montserrat', sans-serif", lineHeight: 1.5, paddingLeft: 36 }}>{comment.text}</p>
+      <p style={{ fontSize: 13, fontWeight: 500, color: dark ? '#fff' : 'rgba(0,0,0,0.78)', margin: 0, fontFamily: "'Montserrat', sans-serif", lineHeight: 1.5, paddingLeft: 36 }}>{linkifyText(comment.text)}</p>
       {ctaUrl && (
         <a href={ctaUrl} target="_blank" rel="noopener noreferrer"
           onClick={() => fetch('/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'cta_click', meta: { url: ctaUrl } }) })}
@@ -651,7 +673,6 @@ export default function ChatPanel({
             style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#fff', textDecoration: 'none', flex: 1, fontSize: 12, fontWeight: 700, letterSpacing: '.03em', transition: 'opacity .15s' }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '.9'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}>
-            <div className="lc-cta-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', flexShrink: 0 }} />
             <span>{liveCtaText || '🔥 Vagas abertas! Garanta sua vaga agora'}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
               <line x1="5" y1="12" x2="19" y2="12"/>
