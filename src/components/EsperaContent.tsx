@@ -23,7 +23,6 @@ type Props = {
 const BULLETS = [
   'O erro que fez meu pai quebrar o negócio de fotografia dele e o que fizemos depois para faturar R$ 1 milhão em um ano.',
   'Os 3 pilares de um negócio de fotografia que fatura mais de R$ 10 mil por mês.',
-  'Jeito certo vs. jeito errado de fazer marketing — Com exemplos reais de fotógrafos que acertaram e erraram na prática.',
   'Análise ao vivo dos 3 pilares do SEU negócio — Descubra qual dos 3 pilares está travando o seu crescimento e o que fazer para resolver ainda hoje.',
 ];
 

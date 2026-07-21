@@ -4,6 +4,37 @@ import { clearSimulatedComments, insertCommentsBatch, getSimulatedComments } fro
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
 
+// RFC4180-aware CSV tokenizer: respects quoted fields, so commas/semicolons/tabs
+// and even newlines inside a quoted value (e.g. "Boa Noite, cheguei") don't
+// split or truncate the field. A naive text.split(',') would cut those in half.
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = '';
+  let inQuotes = false;
+  let i = 0;
+  const len = text.length;
+
+  while (i < len) {
+    const char = text[i];
+    if (inQuotes) {
+      if (char === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        inQuotes = false; i++; continue;
+      }
+      field += char; i++; continue;
+    }
+    if (char === '"') { inQuotes = true; i++; continue; }
+    if (char === ',' || char === ';' || char === '\t') { row.push(field); field = ''; i++; continue; }
+    if (char === '\r') { i++; continue; }
+    if (char === '\n') { row.push(field); field = ''; rows.push(row); row = []; i++; continue; }
+    field += char; i++;
+  }
+  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+
+  return rows.filter((r) => r.some((cell) => cell.trim() !== ''));
+}
+
 function normalizeType(t: string): string {
   const map: Record<string, string> = {
     usuario_simulado: 'simulated_user',
@@ -54,13 +85,13 @@ export async function POST(req: NextRequest) {
 
   if (name.endsWith('.csv')) {
     // Parse CSV — strip UTF-8 BOM if present
-    let text = buffer.toString('utf-8').replace(/^﻿/, '');
-    const lines = text.split(/\r?\n/).filter(Boolean);
-    if (lines.length < 2) return NextResponse.json({ error: 'CSV vazio' }, { status: 400 });
+    const text = buffer.toString('utf-8').replace(/^﻿/, '');
+    const parsedRows = parseCsv(text);
+    if (parsedRows.length < 2) return NextResponse.json({ error: 'CSV vazio' }, { status: 400 });
 
-    const headers = lines[0].split(/[;,\t]/).map((h) => h.trim().toLowerCase().replace(/"/g, '').replace(/\s+/g, '_'));
-    for (let i = 1; i < lines.length; i++) {
-      const cells = lines[i].split(/[;,\t]/).map((c) => c.trim().replace(/^"|"$/g, ''));
+    const headers = parsedRows[0].map((h) => h.trim().toLowerCase().replace(/\s+/g, '_'));
+    for (let i = 1; i < parsedRows.length; i++) {
+      const cells = parsedRows[i].map((c) => c.trim());
       const row: Record<string, any> = {};
       headers.forEach((h, idx) => { row[h] = cells[idx] || ''; });
       rows.push(row);
@@ -99,7 +130,7 @@ export async function POST(req: NextRequest) {
       tipo = ['admin', 'host', 'panelist', 'moderator', 'staff'].includes(role)
         ? 'simulated_staff' : 'simulated_user';
       nome = String(row.name || row.nome || '').trim();
-      texto = String(row.message || row.messages || row.texto || '').trim();
+      texto = String(row.message || row.messages || row.texto || '').replace(/\s+/g, ' ').trim();
       const h = Number(row.hour || row.hora || 0);
       const m = Number(row.minute || row.minuto || 0);
       const s = Number(row.second || row.segundo || 0);
@@ -112,7 +143,7 @@ export async function POST(req: NextRequest) {
         return;
       }
       nome = String(row.nome_exibido || row.nome || row.author_name || row.autor || row.name || '').trim();
-      texto = String(row.texto || row.text || row.mensagem || row.message || row.comentario || '').trim();
+      texto = String(row.texto || row.text || row.mensagem || row.message || row.comentario || '').replace(/\s+/g, ' ').trim();
       tsRaw = row.timestamp || row.minutagem || row.video_timestamp || row.tempo || row.minuto || 0;
     }
 
