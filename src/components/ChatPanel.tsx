@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { computeEffectiveCta, type CtaOverride } from '@/lib/cta';
 
 type ChatComment = {
   id: string;
@@ -23,7 +24,10 @@ type Props = {
   simulatedComments: ChatComment[];
   pinnedComments: ChatComment[];
   videoOffsetRef: React.RefObject<number>;
-  ctaEnabled: boolean;
+  ctaAutoEnabled: boolean;
+  ctaOverride: CtaOverride;
+  ctaOverrideAt: string | null;
+  liveStartMs: number;
   ctaUrl: string;
   ctaText: string;
   ctaStartSecs: number;
@@ -235,7 +239,8 @@ const DEFAULT_WELCOME_PIN: ChatComment = {
 export default function ChatPanel({
   editionId, sessionName, chatEnabled, chatMode,
   simulatedComments, pinnedComments, videoOffsetRef,
-  ctaEnabled, ctaUrl, ctaText, ctaStartSecs, ctaEndSecs,
+  ctaAutoEnabled, ctaOverride, ctaOverrideAt, liveStartMs,
+  ctaUrl, ctaText, ctaStartSecs, ctaEndSecs,
   viewerMin, viewerMax, onMinimize, onCtaChange,
   initialRealComments,
 }: Props) {
@@ -265,9 +270,13 @@ export default function ChatPanel({
   const [staffError, setStaffError] = useState('');
   const [staffLogging, setStaffLogging] = useState(false);
   const [chatPublic, setChatPublic] = useState(chatMode === 'general');
-  const [serverCtaEnabled, setServerCtaEnabled] = useState(ctaEnabled);
   const [liveCtaUrl, setLiveCtaUrl] = useState(ctaUrl);
   const [liveCtaText, setLiveCtaText] = useState(ctaText);
+  const [ctaAutoEnabledState, setCtaAutoEnabledState] = useState(ctaAutoEnabled);
+  const [ctaOverrideState, setCtaOverrideState] = useState<CtaOverride>(ctaOverride);
+  const [ctaOverrideAtState, setCtaOverrideAtState] = useState<string | null>(ctaOverrideAt);
+  const [ctaStartSecsState, setCtaStartSecsState] = useState(ctaStartSecs);
+  const [ctaEndSecsState, setCtaEndSecsState] = useState(ctaEndSecs);
   const [staffMetrics, setStaffMetrics] = useState({ online: 0, cta_clicks: 0 });
 
   // Reply state
@@ -384,15 +393,19 @@ export default function ChatPanel({
     } catch {}
   }
 
-  async function toggleCta(val: boolean) {
-    setServerCtaEnabled(val);
-    onCtaChange?.(val);
-    if (val) setCtaVisible(true); // restore if staff had previously dismissed the banner
+  // The button just flips whatever is currently visible — the resulting override value
+  // (force on / force off) is derived from the CURRENT effective state (ctaActive), not
+  // from the raw stored override. computeEffectiveCta's staleness rule is what makes this
+  // correct even when the automatic window later takes over (see src/lib/cta.ts).
+  async function toggleCta() {
+    const desired: CtaOverride = ctaActive ? 'off' : 'on';
+    setCtaOverrideState(desired);
+    setCtaOverrideAtState(new Date().toISOString());
     try {
       await fetch('/api/staff/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${staffToken}` },
-        body: JSON.stringify({ cta_enabled: val ? 1 : 0 }),
+        body: JSON.stringify({ cta_override: desired }),
       });
     } catch {}
   }
@@ -407,8 +420,6 @@ export default function ChatPanel({
   // Refs so poll closures always see current values
   const staffTokenRef = useRef(staffToken);
   useEffect(() => { staffTokenRef.current = staffToken; }, [staffToken]);
-  const serverCtaEnabledRef = useRef(serverCtaEnabled);
-  useEffect(() => { serverCtaEnabledRef.current = serverCtaEnabled; }, [serverCtaEnabled]);
 
   // Poll real comments every 3s; every 2nd poll (~6s) does a full refresh to pick up reply updates
   useEffect(() => {
@@ -425,17 +436,16 @@ export default function ChatPanel({
           : `/api/chat?since=${encodeURIComponent(lastPoll)}`;
         const res = await fetch(url, { headers });
         const data = await res.json();
-        // Only sync CTA state from poll for non-staff — staff controls it directly via toggle
-        if (!staffTokenRef.current) {
-          if (data.cta_enabled !== undefined) {
-            const nowEnabled = !!data.cta_enabled;
-            // Reset ctaVisible when CTA transitions off→on (staff re-enabled it)
-            if (!serverCtaEnabledRef.current && nowEnabled) setCtaVisible(true);
-            setServerCtaEnabled(nowEnabled);
-          }
-          if (data.cta_url) setLiveCtaUrl(data.cta_url);
-          if (data.cta_text !== undefined) setLiveCtaText(data.cta_text);
-        }
+        // Sync CTA state from every poll, for staff and public alike — the optimistic
+        // local update in toggleCta() already gives staff instant feedback, and this
+        // poll simply reconciles a moment later (idempotent, no fighting).
+        if (data.cta_auto_enabled !== undefined) setCtaAutoEnabledState(!!data.cta_auto_enabled);
+        if (data.cta_override !== undefined) setCtaOverrideState(data.cta_override);
+        if (data.cta_override_at !== undefined) setCtaOverrideAtState(data.cta_override_at);
+        if (data.cta_start_seconds !== undefined) setCtaStartSecsState(data.cta_start_seconds);
+        if (data.cta_end_seconds !== undefined) setCtaEndSecsState(data.cta_end_seconds);
+        if (data.cta_url) setLiveCtaUrl(data.cta_url);
+        if (data.cta_text !== undefined) setLiveCtaText(data.cta_text);
         if (data.comments?.length) {
           const incoming = data.comments as ChatComment[];
           setComments(prev => {
@@ -530,9 +540,9 @@ export default function ChatPanel({
 
   useEffect(() => { scrollToBottom(); }, [comments]);
 
-  // Poll staff metrics every 10s (online count, cta clicks, chat mode)
-  // Note: cta_enabled is NOT synced here — staff controls it directly via the toggle
-  // and syncing from DB would overwrite the optimistic local state.
+  // Poll staff metrics every 10s (online count, cta clicks, chat mode).
+  // CTA state itself is kept in sync by the 3s /api/chat poll above (Step 8) — no need
+  // to duplicate it here.
   useEffect(() => {
     if (!isStaff || !staffToken) return;
     const fetchMetrics = async () => {
@@ -541,7 +551,6 @@ export default function ChatPanel({
         const data = await res.json();
         if (data.online !== undefined) setStaffMetrics({ online: data.online, cta_clicks: data.cta_clicks });
         if (data.chat_mode !== undefined) setChatPublic(data.chat_mode === 'general');
-        if (data.cta_enabled !== undefined) setServerCtaEnabled(!!data.cta_enabled);
       } catch {}
     };
     fetchMetrics();
@@ -553,8 +562,33 @@ export default function ChatPanel({
     if (!p.pin_start_seconds && !p.pin_end_seconds) return true;
     return videoOffset >= (p.pin_start_seconds ?? 0) && videoOffset <= (p.pin_end_seconds ?? Infinity);
   });
-  // CTA shows for everyone when staff has enabled it — no time-window restriction for viewers
-  const showCta = serverCtaEnabled && liveCtaUrl && ctaVisible;
+  // Effective CTA state: automatic window OR staff override, recomputed continuously as
+  // the video plays and whenever a poll brings fresh data from the server. See
+  // src/lib/cta.ts for how override staleness lets the automatic window reclaim control.
+  const ctaActive = useMemo(() => {
+    const overrideOffsetSecs = ctaOverrideAtState
+      ? Math.floor((new Date(ctaOverrideAtState).getTime() - liveStartMs) / 1000)
+      : null;
+    return computeEffectiveCta({
+      offsetSecs: videoOffset,
+      overrideOffsetSecs,
+      override: ctaOverrideState,
+      autoEnabled: ctaAutoEnabledState,
+      startSecs: ctaStartSecsState,
+      endSecs: ctaEndSecsState,
+    });
+  }, [videoOffset, ctaOverrideState, ctaOverrideAtState, ctaAutoEnabledState, ctaStartSecsState, ctaEndSecsState, liveStartMs]);
+
+  const showCta = ctaActive && liveCtaUrl && ctaVisible;
+
+  // Reset the dismissed banner + notify AoVivoContent (drives PurchaseNotifications)
+  // every time the effective state changes — including from a poll, not just a local click.
+  const prevCtaActiveRef = useRef(ctaActive);
+  useEffect(() => {
+    if (!prevCtaActiveRef.current && ctaActive) setCtaVisible(true);
+    prevCtaActiveRef.current = ctaActive;
+    onCtaChange?.(ctaActive);
+  }, [ctaActive, onCtaChange]);
 
   async function sendComment() {
     const text = input.trim();
@@ -652,7 +686,12 @@ export default function ChatPanel({
           </div>
           {/* Toggles */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <ToggleSwitch on={serverCtaEnabled} onChange={toggleCta} label="CTA ativo" T={T} />
+            <ToggleSwitch on={ctaActive} onChange={toggleCta} label="CTA ativo" T={T} />
+            <span style={{ fontSize: 9, color: T.textMuted, fontStyle: 'italic', marginLeft: 39, marginTop: -4 }}>
+              {ctaOverrideState === null
+                ? (ctaAutoEnabledState ? 'Modo automático (janela configurada)' : 'Automático desabilitado — controle manual')
+                : ctaOverrideState === 'on' ? 'Forçado manualmente' : 'Desativado manualmente'}
+            </span>
           </div>
           {/* Hint */}
           <span style={{ fontSize: 10, color: T.textMuted, fontStyle: 'italic', fontFamily: "'Montserrat', sans-serif" }}>Clique em um comentário para responder</span>
