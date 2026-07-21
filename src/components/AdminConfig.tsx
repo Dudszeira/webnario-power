@@ -25,7 +25,7 @@ const defaultConfig = {
   video_source: 'youtube', video_url: '', video_duration: 7200,
   sales_page_url: '', chat_enabled: true, chat_mode: 'isolated',
   cta_enabled: false, cta_url: '', cta_text: '',
-  cta_start_seconds: 0, cta_end_seconds: 3600,
+  cta_start_seconds: 0, cta_end_seconds: 3600, cta_auto_enabled: false,
   viewer_min: 210, viewer_max: 220,
   test_mode: false, test_time: '',
 };
@@ -166,6 +166,7 @@ export default function AdminConfig() {
             ...d.edition,
             chat_enabled: true, // always default to enabled; toggle off only if admin explicitly disables
             cta_enabled: !!d.edition.cta_enabled,
+            cta_auto_enabled: !!d.edition.cta_auto_enabled,
             test_mode: !!d.edition.test_mode,
             test_time: testTimeLocal,
           });
@@ -386,19 +387,20 @@ export default function AdminConfig() {
               </Field>
             </SectionCard>
 
-            <SectionCard title="CTA / Oferta" description="Banner de oferta no chat. Ativar/desativar é controlado pelo painel staff no chat." accent="#f59e0b">
+            <SectionCard title="CTA / Oferta" description="Banner de oferta no chat e notificações de compra. Pode ativar sozinho na janela abaixo, e a equipe pode forçar manualmente (ligar ou desligar) no painel do chat." accent="#f59e0b">
               <Field label="URL do CTA">
                 <input className="input-admin" type="url" value={config.cta_url} onChange={e => set('cta_url', e.target.value)} placeholder="https://..." />
               </Field>
               <Field label="Texto do botão">
                 <input className="input-admin" type="text" value={config.cta_text} onChange={e => set('cta_text', e.target.value)} placeholder="Garantir acesso →" />
               </Field>
+              <Toggle checked={config.cta_auto_enabled as unknown as boolean} onChange={v => set('cta_auto_enabled', v)} label="Ativação automática habilitada" />
               <div className="grid grid-cols-2" style={{ gap: 12 }}>
                 <Field label="Início (segundos)">
-                  <input className="input-admin" type="number" value={config.cta_start_seconds} onChange={e => set('cta_start_seconds', Number(e.target.value))} />
+                  <input className="input-admin" type="number" value={config.cta_start_seconds} onChange={e => set('cta_start_seconds', Number(e.target.value))} disabled={!config.cta_auto_enabled} />
                 </Field>
-                <Field label="Fim (segundos)">
-                  <input className="input-admin" type="number" value={config.cta_end_seconds} onChange={e => set('cta_end_seconds', Number(e.target.value))} />
+                <Field label="Fim (segundos)" hint="0 = sem limite de fim.">
+                  <input className="input-admin" type="number" value={config.cta_end_seconds} onChange={e => set('cta_end_seconds', Number(e.target.value))} disabled={!config.cta_auto_enabled} />
                 </Field>
               </div>
             </SectionCard>
