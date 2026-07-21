@@ -375,6 +375,30 @@ export async function updateCommentVisibility(id: string, visible: number): Prom
   }
 }
 
+export async function updateCommentText(id: string, text: string): Promise<void> {
+  const { error } = await supabase
+    .from('comments')
+    .update({ text })
+    .eq('id', id);
+
+  if (error) {
+    console.error('updateCommentText error:', error);
+    throw error;
+  }
+}
+
+export async function deleteComment(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('comments')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('deleteComment error:', error);
+    throw error;
+  }
+}
+
 export async function updateCommentPin(id: string, isPinned: number, startSecs?: number | null, endSecs?: number | null): Promise<void> {
   const updateData: any = { is_pinned: isPinned };
   if (startSecs !== undefined) updateData.pin_start_seconds = startSecs;

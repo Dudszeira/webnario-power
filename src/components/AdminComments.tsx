@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Download, Pin, Loader2 } from 'lucide-react';
+import { Download, Pin, Loader2, Pencil, Trash2, Check, X } from 'lucide-react';
 
 type Comment = {
   id: string; type: string; author_name: string; text: string;
@@ -55,6 +55,11 @@ export default function AdminComments() {
   const [pinStart, setPinStart] = useState('');
   const [pinEnd, setPinEnd] = useState('');
   const [sending, setSending] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function load() {
     try {
@@ -81,6 +86,37 @@ export default function AdminComments() {
     try { await fetch('/api/admin/comments', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, is_pinned: pinned ? 0 : 1 }) }); }
     catch { /* ignore */ }
     load();
+  }
+
+  function startEdit(c: Comment) {
+    setEditingId(c.id);
+    setEditText(c.text);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditText('');
+  }
+
+  async function saveEdit(id: string) {
+    if (!editText.trim()) return;
+    setSavingEdit(true);
+    try {
+      await fetch('/api/admin/comments', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, text: editText.trim() }) });
+      setEditingId(null);
+      setEditText('');
+      load();
+    } catch { /* ignore */ }
+    finally { setSavingEdit(false); }
+  }
+
+  async function deleteCommentRow(id: string) {
+    setDeletingId(id);
+    try {
+      await fetch(`/api/admin/comments?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      setComments(prev => prev.filter(c => c.id !== id));
+    } catch { /* ignore */ }
+    finally { setDeletingId(null); setConfirmDeleteId(null); }
   }
 
   async function sendComment(e: React.FormEvent) {
@@ -200,27 +236,77 @@ export default function AdminComments() {
                   <TableRow key={c.id} className={c.visible ? undefined : 'opacity-35'}>
                     <TableCell><Badge variant="secondary">{TYPE_LABELS[c.type] || c.type}</Badge></TableCell>
                     <TableCell className="font-medium">{c.author_name}</TableCell>
-                    <TableCell className="max-w-[260px] truncate text-muted-foreground">{c.text}</TableCell>
+                    <TableCell className="max-w-[260px] text-muted-foreground">
+                      {editingId === c.id ? (
+                        <Input
+                          value={editText}
+                          onChange={e => setEditText(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') saveEdit(c.id); if (e.key === 'Escape') cancelEdit(); }}
+                          autoFocus
+                          className="h-7 text-[12.5px]"
+                        />
+                      ) : (
+                        <span className="block truncate">{c.text}</span>
+                      )}
+                    </TableCell>
                     <TableCell className="font-mono text-[11px] text-muted-foreground/70">{fmtTimestamp(c.video_timestamp)}</TableCell>
                     <TableCell>
-                      <div className="flex gap-1.5">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className={`h-6 px-2 text-[11px] ${c.visible ? 'border-destructive/20 text-destructive hover:bg-destructive/10' : 'border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10'}`}
-                          onClick={() => toggleVisible(c.id, c.visible)}
-                        >
-                          {c.visible ? 'Ocultar' : 'Mostrar'}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className={`h-6 gap-1 px-2 text-[11px] ${c.is_pinned ? 'border-primary/30 text-primary' : ''}`}
-                          onClick={() => togglePin(c.id, c.is_pinned)}
-                        >
-                          <Pin className="size-2.5" /> {c.is_pinned ? 'Fixado' : 'Fixar'}
-                        </Button>
-                      </div>
+                      {editingId === c.id ? (
+                        <div className="flex gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 gap-1 px-2 text-[11px] border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10"
+                            disabled={savingEdit || !editText.trim()}
+                            onClick={() => saveEdit(c.id)}
+                          >
+                            {savingEdit ? <Loader2 className="size-2.5 animate-spin" /> : <Check className="size-2.5" />} Salvar
+                          </Button>
+                          <Button variant="outline" size="sm" className="h-6 gap-1 px-2 text-[11px]" onClick={cancelEdit}>
+                            <X className="size-2.5" /> Cancelar
+                          </Button>
+                        </div>
+                      ) : confirmDeleteId === c.id ? (
+                        <div className="flex gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 gap-1 px-2 text-[11px] border-destructive/30 text-destructive hover:bg-destructive/10"
+                            disabled={deletingId === c.id}
+                            onClick={() => deleteCommentRow(c.id)}
+                          >
+                            {deletingId === c.id ? <Loader2 className="size-2.5 animate-spin" /> : null} Confirmar exclusão
+                          </Button>
+                          <Button variant="outline" size="sm" className="h-6 gap-1 px-2 text-[11px]" onClick={() => setConfirmDeleteId(null)}>
+                            <X className="size-2.5" /> Cancelar
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={`h-6 px-2 text-[11px] ${c.visible ? 'border-destructive/20 text-destructive hover:bg-destructive/10' : 'border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10'}`}
+                            onClick={() => toggleVisible(c.id, c.visible)}
+                          >
+                            {c.visible ? 'Ocultar' : 'Mostrar'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={`h-6 gap-1 px-2 text-[11px] ${c.is_pinned ? 'border-primary/30 text-primary' : ''}`}
+                            onClick={() => togglePin(c.id, c.is_pinned)}
+                          >
+                            <Pin className="size-2.5" /> {c.is_pinned ? 'Fixado' : 'Fixar'}
+                          </Button>
+                          <Button variant="outline" size="sm" className="h-6 w-6 p-0" title="Editar" onClick={() => startEdit(c)}>
+                            <Pencil className="size-2.5" />
+                          </Button>
+                          <Button variant="outline" size="sm" className="h-6 w-6 p-0 border-destructive/20 text-destructive hover:bg-destructive/10" title="Excluir" onClick={() => setConfirmDeleteId(c.id)}>
+                            <Trash2 className="size-2.5" />
+                          </Button>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

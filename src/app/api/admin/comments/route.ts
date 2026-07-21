@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { 
-  getAdminComments, 
-  insertComment, 
-  updateCommentVisibility, 
-  updateCommentPin 
+import {
+  getAdminComments,
+  insertComment,
+  updateCommentVisibility,
+  updateCommentPin,
+  updateCommentText,
+  deleteComment,
 } from '@/lib/db';
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
@@ -44,13 +46,13 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, id });
 }
 
-// PATCH: Toggle visibility or pin
+// PATCH: Toggle visibility or pin, or edit text
 export async function PATCH(req: NextRequest) {
   if (!(await verifyAdminFromRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const body = await req.json().catch(() => ({}));
-  const { id, visible, is_pinned } = body;
+  const { id, visible, is_pinned, text } = body;
 
   if (typeof visible === 'number') {
     await updateCommentVisibility(id, visible);
@@ -58,5 +60,20 @@ export async function PATCH(req: NextRequest) {
   if (typeof is_pinned === 'number') {
     await updateCommentPin(id, is_pinned);
   }
+  if (typeof text === 'string') {
+    if (!text.trim()) return NextResponse.json({ error: 'Texto vazio' }, { status: 400 });
+    await updateCommentText(id, text.trim());
+  }
+  return NextResponse.json({ ok: true });
+}
+
+// DELETE: Remove a single comment
+export async function DELETE(req: NextRequest) {
+  if (!(await verifyAdminFromRequest(req))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const id = req.nextUrl.searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'id obrigatório' }, { status: 400 });
+  await deleteComment(id);
   return NextResponse.json({ ok: true });
 }
