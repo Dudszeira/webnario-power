@@ -69,7 +69,9 @@ export default async function AoVivoPage() {
   const initialRealComments = (isAdmin || chatMode !== 'isolated' || !session)
     ? await getRealComments(editionId, realCutoff, 100)
     : await getIsolatedComments(editionId, realCutoff, session.registrationId, 100);
-  const ctaEnabled = edition?.cta_enabled ?? 0;
+  const ctaAutoEnabled = !!(edition?.cta_auto_enabled ?? 0);
+  const ctaOverride = (edition?.cta_override as 'on' | 'off' | null) ?? null;
+  const ctaOverrideAt = edition?.cta_override_at ?? null;
   const ctaUrl = edition?.cta_url ?? '';
   const ctaText = edition?.cta_text ?? '';
   const ctaStartSecs = edition?.cta_start_seconds ?? 0;
@@ -92,7 +94,9 @@ export default async function AoVivoPage() {
       liveStartMs={liveStartMs}
       chatEnabled={!!chatEnabled}
       chatMode={chatMode as 'general' | 'isolated'}
-      ctaEnabled={!!ctaEnabled}
+      ctaAutoEnabled={ctaAutoEnabled}
+      ctaOverride={ctaOverride}
+      ctaOverrideAt={ctaOverrideAt}
       ctaUrl={ctaUrl}
       ctaText={ctaText}
       ctaStartSecs={ctaStartSecs}
