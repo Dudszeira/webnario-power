@@ -19,8 +19,12 @@ export async function PATCH(req: NextRequest) {
     updateData.chat_mode = body.chat_mode === 'isolated' ? 'isolated' : 'general';
     hasUpdates = true;
   }
-  if (body?.cta_enabled !== undefined) {
-    updateData.cta_enabled = body.cta_enabled ? 1 : 0;
+  if (body?.cta_override !== undefined) {
+    if (body.cta_override !== 'on' && body.cta_override !== 'off') {
+      return NextResponse.json({ error: 'cta_override inválido' }, { status: 400 });
+    }
+    updateData.cta_override = body.cta_override;
+    updateData.cta_override_at = new Date().toISOString();
     hasUpdates = true;
   }
 
