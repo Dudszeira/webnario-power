@@ -34,7 +34,11 @@ export async function GET(req: NextRequest) {
   // Read authoritative settings from DB
   const edition = await getEdition(editionId);
   const chatMode: string = edition?.chat_mode || 'general';
-  const ctaEnabled: number = edition?.cta_enabled ?? 1;
+  const ctaAutoEnabled: boolean = !!edition?.cta_auto_enabled;
+  const ctaOverride: 'on' | 'off' | null = (edition?.cta_override as 'on' | 'off' | null) ?? null;
+  const ctaOverrideAt: string | null = edition?.cta_override_at ?? null;
+  const ctaStartSeconds: number = edition?.cta_start_seconds ?? 0;
+  const ctaEndSeconds: number = edition?.cta_end_seconds ?? 0;
   const ctaUrl: string = edition?.cta_url || '';
   const ctaText: string = edition?.cta_text || '';
 
@@ -62,7 +66,17 @@ export async function GET(req: NextRequest) {
     simReplied = await getSimulatedWithReplies(editionId);
   }
 
-  return NextResponse.json({ comments, sim_replied: simReplied, cta_enabled: ctaEnabled, cta_url: ctaUrl, cta_text: ctaText });
+  return NextResponse.json({
+    comments,
+    sim_replied: simReplied,
+    cta_auto_enabled: ctaAutoEnabled,
+    cta_override: ctaOverride,
+    cta_override_at: ctaOverrideAt,
+    cta_start_seconds: ctaStartSeconds,
+    cta_end_seconds: ctaEndSeconds,
+    cta_url: ctaUrl,
+    cta_text: ctaText,
+  });
 }
 
 // POST: Submit a real comment
