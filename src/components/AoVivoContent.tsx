@@ -126,7 +126,7 @@ export default function AoVivoContent({
   }, [redirectCountdown, salesUrl]);
 
   return (
-    <div className="flex flex-col min-h-screen md:h-screen md:overflow-hidden" style={{ background: '#0d0d0d' }}>
+    <div className="flex flex-col h-dvh overflow-hidden" style={{ background: '#0d0d0d' }}>
 
       {/* Admin preview banner */}
       {isAdminPreview && (
@@ -149,14 +149,14 @@ export default function AoVivoContent({
       )}
 
       {/* ── Main layout: video (left) + chat (right, desktop) ── */}
-      <div className="flex flex-col md:flex-row flex-1 p-4 md:p-6 gap-4 md:gap-5 md:overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 p-4 md:p-6 gap-4 md:gap-5 overflow-hidden">
 
         {/* Left column */}
-        <div className="flex flex-col flex-1 min-w-0 gap-4 md:overflow-y-auto">
+        <div className="flex flex-col flex-1 min-w-0 gap-4 overflow-y-auto">
 
           {/* Video card */}
           <div
-            className="w-full overflow-hidden"
+            className="w-full overflow-hidden flex-shrink-0"
             style={{ borderRadius: 20, background: '#111', border: '1px solid #1e1e1e' }}
           >
             <VideoPlayer
@@ -192,10 +192,12 @@ export default function AoVivoContent({
             </p>
           </div>
 
-          {/* Mobile chat (below info card, hidden on md+) */}
+          {/* Mobile chat (below info card, hidden on md+) — fills remaining
+              vertical space after the video/info card, same as the desktop
+              column fills remaining horizontal space. */}
           <div
-            className="md:hidden overflow-hidden"
-            style={{ height: 'clamp(480px, 75vh, 720px)', flexShrink: 0, borderRadius: 20, border: '1px solid #1e1e1e' }}
+            className="md:hidden overflow-hidden flex flex-col"
+            style={{ flex: '1 1 0%', minHeight: 320, borderRadius: 20, border: '1px solid #1e1e1e' }}
           >
             <ChatPanel
               editionId={editionId}

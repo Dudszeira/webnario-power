@@ -157,7 +157,7 @@ export default function AdminComments() {
           </div>
         </header>
 
-        <div className="flex flex-1 flex-col gap-3 p-4 lg:p-6">
+        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-3 p-4 lg:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <p className="text-[12.5px] text-muted-foreground">Envie comentários, fixe pins e modere mensagens da live.</p>
             <Button variant="outline" size="sm" className="shrink-0" render={<a href="/api/admin/export-comments" />}>
