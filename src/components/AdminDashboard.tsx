@@ -199,7 +199,13 @@ export default function AdminDashboard() {
                 { label: 'Vídeo', value: cfg.video_source === 'youtube' ? 'YouTube' : 'Upload', sub: cfg.video_url || '—' },
                 { label: 'Duração', value: cfg.video_duration ? `${Math.floor(cfg.video_duration/3600)}h ${Math.floor((cfg.video_duration%3600)/60)}min` : '—', sub: '' },
                 { label: 'Chat', value: cfg.chat_enabled ? 'Habilitado' : 'Desabilitado', accent: cfg.chat_enabled ? cyber.green : cyber.textDecorative, sub: cfg.chat_mode === 'isolated' ? 'Isolado' : 'Geral' },
-                { label: 'CTA', value: cfg.cta_enabled ? 'Ativo' : 'Inativo', accent: cfg.cta_enabled ? cyber.green : cyber.textDecorative, sub: cfg.cta_url || '—' },
+                { label: 'CTA', value: cfg.cta_auto_enabled
+                      ? 'Automático'
+                      : cfg.cta_override === 'on' ? 'Forçado ligado'
+                      : cfg.cta_override === 'off' ? 'Forçado desligado'
+                      : 'Manual (staff)',
+                    muted: !cfg.cta_auto_enabled && cfg.cta_override !== 'on',
+                    sub: cfg.cta_url || '—' },
               ].map((item) => (
                 <div key={item.label}>
                   <p style={{ fontSize: 9.5, fontWeight: 700, color: cyber.textDecorative, textTransform: 'uppercase' as const, letterSpacing: '.1em', marginBottom: 3, fontFamily: cyberFonts.body }}>{item.label}</p>
