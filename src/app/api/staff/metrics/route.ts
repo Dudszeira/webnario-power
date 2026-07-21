@@ -17,6 +17,8 @@ export async function GET(req: NextRequest) {
     online: metrics.consumed,
     cta_clicks: metrics.ctaClicks,
     chat_mode: edition?.chat_mode || 'general',
-    cta_enabled: edition?.cta_enabled ?? 1,
+    cta_auto_enabled: !!edition?.cta_auto_enabled,
+    cta_override: (edition?.cta_override as 'on' | 'off' | null) ?? null,
+    cta_override_at: edition?.cta_override_at ?? null,
   });
 }
