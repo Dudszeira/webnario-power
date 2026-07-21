@@ -28,6 +28,9 @@ export type Edition = {
   cta_text: string;
   cta_start_seconds: number;
   cta_end_seconds: number;
+  cta_auto_enabled: number;
+  cta_override: 'on' | 'off' | null;
+  cta_override_at: string | null;
   viewer_min: number;
   viewer_max: number;
   created_at: string;

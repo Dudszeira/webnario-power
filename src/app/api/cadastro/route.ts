@@ -46,6 +46,9 @@ export async function POST(req: NextRequest) {
       cta_text: '',
       cta_start_seconds: 0,
       cta_end_seconds: 3600,
+      cta_auto_enabled: 0,
+      cta_override: null,
+      cta_override_at: null,
       viewer_min: 210,
       viewer_max: 220
     });
