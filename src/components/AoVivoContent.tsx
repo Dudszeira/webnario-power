@@ -5,6 +5,7 @@ import Image from 'next/image';
 import VideoPlayer from './VideoPlayer';
 import ChatPanel from './ChatPanel';
 import PurchaseNotifications from './PurchaseNotifications';
+import { computeEffectiveCta } from '@/lib/cta';
 
 type SimComment = {
   id: string;
@@ -37,7 +38,9 @@ type Props = {
   liveStartMs: number;
   chatEnabled: boolean;
   chatMode: 'general' | 'isolated';
-  ctaEnabled: boolean;
+  ctaAutoEnabled: boolean;
+  ctaOverride: 'on' | 'off' | null;
+  ctaOverrideAt: string | null;
   ctaUrl: string;
   ctaText: string;
   ctaStartSecs: number;
@@ -53,14 +56,23 @@ type Props = {
 
 export default function AoVivoContent({
   editionId, session, videoSource, videoUrl, videoDuration, initialOffset, liveStartMs,
-  chatEnabled, chatMode, ctaEnabled, ctaUrl, ctaText, ctaStartSecs, ctaEndSecs,
+  chatEnabled, chatMode, ctaAutoEnabled, ctaOverride, ctaOverrideAt, ctaUrl, ctaText, ctaStartSecs, ctaEndSecs,
   viewerMin, viewerMax, simulatedComments, pinnedComments, salesUrl, isAdminPreview,
   initialRealComments,
 }: Props) {
   const videoOffsetRef = useRef<number>(initialOffset);
   const [liveEnded, setLiveEnded] = useState(false);
-  // Lifted so PurchaseNotifications reacts to CTA activation and survives minimize/maximize
-  const [liveCta, setLiveCta] = useState(ctaEnabled);
+  // Lifted so PurchaseNotifications reacts to CTA activation and survives minimize/maximize.
+  // Computed the same way ChatPanel computes it, seeded with SSR data, so there's no
+  // incorrect flash before ChatPanel's own effect confirms it on mount.
+  const [liveCta, setLiveCta] = useState(() => computeEffectiveCta({
+    offsetSecs: initialOffset,
+    overrideOffsetSecs: ctaOverrideAt ? Math.floor((new Date(ctaOverrideAt).getTime() - liveStartMs) / 1000) : null,
+    override: ctaOverride,
+    autoEnabled: ctaAutoEnabled,
+    startSecs: ctaStartSecs,
+    endSecs: ctaEndSecs,
+  }));
   const [chatMinimized, setChatMinimized] = useState(() => {
     try { return typeof window !== 'undefined' && localStorage.getItem('lc_chat_minimized') === '1'; } catch { return false; }
   });
@@ -193,7 +205,10 @@ export default function AoVivoContent({
               simulatedComments={simulatedComments as any}
               pinnedComments={pinnedComments as any}
               videoOffsetRef={videoOffsetRef}
-              ctaEnabled={ctaEnabled}
+              ctaAutoEnabled={ctaAutoEnabled}
+              ctaOverride={ctaOverride}
+              ctaOverrideAt={ctaOverrideAt}
+              liveStartMs={liveStartMs}
               ctaUrl={ctaUrl}
               ctaText={ctaText}
               ctaStartSecs={ctaStartSecs}
@@ -253,7 +268,10 @@ export default function AoVivoContent({
               simulatedComments={simulatedComments as any}
               pinnedComments={pinnedComments as any}
               videoOffsetRef={videoOffsetRef}
-              ctaEnabled={ctaEnabled}
+              ctaAutoEnabled={ctaAutoEnabled}
+              ctaOverride={ctaOverride}
+              ctaOverrideAt={ctaOverrideAt}
+              liveStartMs={liveStartMs}
               ctaUrl={ctaUrl}
               ctaText={ctaText}
               ctaStartSecs={ctaStartSecs}
