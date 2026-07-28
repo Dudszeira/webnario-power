@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import {
   getEdition,
-  upsertEdition,
+  getOrCreateCurrentEdition,
   getRegistrationByEmail,
   getRegistrationByIP,
   createRegistration,
@@ -29,30 +29,9 @@ export async function POST(req: NextRequest) {
 
   const editionId = getCurrentEditionId();
 
-  // Ensure edition row exists
-  const existing = await getEdition(editionId);
-  if (!existing) {
-    await upsertEdition({
-      id: editionId,
-      live_date: editionId,
-      video_source: 'youtube',
-      video_url: '',
-      video_duration: 7200,
-      sales_page_url: '',
-      chat_enabled: 1,
-      chat_mode: 'general',
-      cta_enabled: 0,
-      cta_url: '',
-      cta_text: '',
-      cta_start_seconds: 0,
-      cta_end_seconds: 3600,
-      cta_auto_enabled: 0,
-      cta_override: null,
-      cta_override_at: null,
-      viewer_min: 210,
-      viewer_max: 220
-    });
-  }
+  // Ensure edition row exists, carrying over the previous edition's settings
+  // instead of leaving sales page / CTA / video blank for the new week.
+  await getOrCreateCurrentEdition();
 
   // Check: same email → re-issue session (user returning from any device)
   const emailReg = await getRegistrationByEmail(editionId, email);

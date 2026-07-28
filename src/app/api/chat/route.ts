@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  getEdition,
+  getOrCreateCurrentEdition,
   getRealComments,
   getIsolatedComments,
   getSimulatedWithReplies,
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   const isFull = req.nextUrl.searchParams.get('full') === '1';
 
   // Read authoritative settings from DB
-  const edition = await getEdition(editionId);
+  const edition = await getOrCreateCurrentEdition();
   const chatMode: string = edition?.chat_mode || 'general';
   const ctaAutoEnabled: boolean = !!edition?.cta_auto_enabled;
   const ctaOverride: 'on' | 'off' | null = (edition?.cta_override as 'on' | 'off' | null) ?? null;
@@ -96,10 +96,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Edição inválida' }, { status: 403 });
   }
 
-  const edition = await getEdition(editionId);
-  if (!edition) {
-    return NextResponse.json({ error: 'Edição não encontrada' }, { status: 404 });
-  }
+  const edition = await getOrCreateCurrentEdition();
   if (!edition.chat_enabled && !staffMember) {
     return NextResponse.json({ error: 'Chat desabilitado' }, { status: 403 });
   }

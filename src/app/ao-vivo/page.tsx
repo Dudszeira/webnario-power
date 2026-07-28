@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { verifyUserSession, verifyAdminSession } from '@/lib/auth';
 import { getCurrentEditionId, getLiveStartMs } from '@/lib/edition';
 import {
-  getEdition,
+  getOrCreateCurrentEdition,
   getRegistrationById,
   markRegistrationConsumed,
   createEvent,
@@ -20,7 +20,7 @@ export default async function AoVivoPage() {
   const session = await verifyUserSession();
   const editionId = getCurrentEditionId();
 
-  const edition = await getEdition(editionId);
+  const edition = await getOrCreateCurrentEdition();
   const videoDuration = edition?.video_duration ?? 7200;
   const salesUrl = edition?.sales_page_url ?? '';
 

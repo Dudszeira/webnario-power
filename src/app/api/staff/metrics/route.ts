@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyStaffToken } from '@/lib/auth';
-import { getEdition, getEditionMetrics } from '@/lib/db';
+import { getOrCreateCurrentEdition, getEditionMetrics } from '@/lib/db';
 import { getCurrentEditionId } from '@/lib/edition';
 
 export async function GET(req: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const editionId = getCurrentEditionId();
   const metrics = await getEditionMetrics(editionId);
-  const edition = await getEdition(editionId);
+  const edition = await getOrCreateCurrentEdition();
 
   return NextResponse.json({
     online: metrics.consumed,

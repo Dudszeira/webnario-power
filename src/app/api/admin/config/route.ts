@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEdition, getEditionsList, upsertEdition } from '@/lib/db';
+import { getEdition, getOrCreateCurrentEdition, upsertEdition } from '@/lib/db';
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { getCurrentEditionId } from '@/lib/edition';
 import { readdirSync, statSync } from 'fs';
@@ -24,15 +24,7 @@ export async function GET(req: NextRequest) {
   if (!(await verifyAdminFromRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const editionId = getCurrentEditionId();
-  let edition = await getEdition(editionId);
-
-  // If the upcoming edition has no data yet, fall back to the most recently saved edition
-  // so configs don't appear to vanish the day after a live.
-  if (!edition) {
-    const all = await getEditionsList(); // ordered by id desc
-    if (all.length > 0) edition = all[0];
-  }
+  let edition = await getOrCreateCurrentEdition();
 
   // If upload mode but video_url is empty, detect any existing file on disk and persist it
   if (edition && edition.video_source === 'upload' && !edition.video_url) {
@@ -46,7 +38,7 @@ export async function GET(req: NextRequest) {
   // Always scan disk and include in response so the frontend can show detected files
   const detectedVideo = scanVideoOnDisk();
 
-  return NextResponse.json({ edition: edition || { id: editionId }, detectedVideo });
+  return NextResponse.json({ edition, detectedVideo });
 }
 
 export async function PUT(req: NextRequest) {

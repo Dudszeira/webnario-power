@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { verifyUserSession } from '@/lib/auth';
 import { getCurrentEditionId, getLiveStartMs } from '@/lib/edition';
-import { getEdition, getRegistrationById } from '@/lib/db';
+import { getOrCreateCurrentEdition, getRegistrationById } from '@/lib/db';
 import EsperaContent from '@/components/EsperaContent';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ export default async function EsperaPage() {
   const session = await verifyUserSession();
   const editionId = getCurrentEditionId();
 
-  const edition = await getEdition(editionId);
+  const edition = await getOrCreateCurrentEdition();
   const videoDuration = edition?.video_duration ?? 7200;
   const salesUrl = edition?.sales_page_url ?? '';
 

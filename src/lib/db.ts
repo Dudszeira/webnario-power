@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { getCurrentEditionId } from '@/lib/edition';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -114,6 +115,31 @@ export async function getEditionsList(): Promise<Edition[]> {
     console.error('getEditionsList error:', error);
   }
   return data || [];
+}
+
+// Returns the current-week edition, creating it by carrying over the most recently
+// saved edition's settings if it doesn't exist yet. Without this, every field
+// (sales page, CTA link, video, etc.) reads back blank until an admin happens to
+// open /admin/config and hit Save after the week rolls over.
+export async function getOrCreateCurrentEdition(): Promise<Edition> {
+  const editionId = getCurrentEditionId();
+  const existing = await getEdition(editionId);
+  if (existing) return existing;
+
+  const [prev] = await getEditionsList(); // ordered by id desc
+  const edition: Edition = prev
+    ? { ...prev, id: editionId, live_date: editionId, cta_override: null, cta_override_at: null, test_mode: 0, test_time: null }
+    : {
+        id: editionId, live_date: editionId, video_source: 'youtube', video_url: '',
+        video_duration: 7200, sales_page_url: '', chat_enabled: 1, chat_mode: 'general',
+        cta_enabled: 0, cta_url: '', cta_text: '', cta_start_seconds: 0, cta_end_seconds: 3600,
+        cta_auto_enabled: 0, cta_override: null, cta_override_at: null,
+        viewer_min: 210, viewer_max: 220, created_at: new Date().toISOString(),
+        test_mode: 0, test_time: null,
+      };
+
+  await upsertEdition(edition);
+  return edition;
 }
 
 // Registrations Repositories
