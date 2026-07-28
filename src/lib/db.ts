@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 import { getCurrentEditionId } from '@/lib/edition';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -139,6 +140,32 @@ export async function getOrCreateCurrentEdition(): Promise<Edition> {
       };
 
   await upsertEdition(edition);
+
+  // Carry over the scripted/simulated comments too — the video is the same week to
+  // week, so hidden/edited/pinned state shouldn't need to be redone from scratch.
+  // Real user/staff comments are intentionally excluded; those belong to that live.
+  if (prev) {
+    const prevComments = await getAdminComments(prev.id);
+    const simulated = prevComments.filter((c) => c.type.startsWith('simulated_'));
+    if (simulated.length > 0) {
+      await insertCommentsBatch(simulated.map((c) => ({
+        id: `c_${uuidv4()}`,
+        edition_id: editionId,
+        registration_id: null,
+        type: c.type,
+        author_name: c.author_name,
+        text: c.text,
+        video_timestamp: c.video_timestamp,
+        is_pinned: c.is_pinned,
+        pin_start_seconds: c.pin_start_seconds,
+        pin_end_seconds: c.pin_end_seconds,
+        visible: c.visible,
+        reply: c.reply,
+        reply_author: c.reply_author,
+      })));
+    }
+  }
+
   return edition;
 }
 
