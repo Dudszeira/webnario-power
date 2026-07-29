@@ -19,6 +19,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { RefreshCw, Download, Radio, Play, ShoppingCart, Timer, Loader2 } from 'lucide-react';
 
 type UserRow = {
@@ -53,7 +60,7 @@ function fmtTime(iso: string | null): string {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-function downloadCSV(users: UserRow[]) {
+function downloadCSV(users: UserRow[], editionId: string) {
   const header = 'Nome,Email,Entrou,Tempo assistido,Clicou CTA,Comentou,Comentários,Visto por último';
   const rows = users.map(u => [
     `"${u.name.replace(/"/g, '""')}"`,
@@ -66,7 +73,7 @@ function downloadCSV(users: UserRow[]) {
     u.lastSeenAt ? new Date(u.lastSeenAt).toLocaleString('pt-BR') : '',
   ].join(','));
   const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8' });
-  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `live-${new Date().toISOString().slice(0, 10)}.csv` });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `live-${editionId || new Date().toISOString().slice(0, 10)}.csv` });
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -141,10 +148,14 @@ export default function AdminLiveMonitor() {
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('online');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [allEditions, setAllEditions] = useState<{ editionId: string }[]>([]);
+  const [currentEdition, setCurrentEdition] = useState<string>('');
+  const [selectedEdition, setSelectedEdition] = useState<string>('');
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (editionId?: string) => {
     try {
-      const res = await fetch('/api/admin/live-metrics');
+      const qs = editionId ? `?edition=${encodeURIComponent(editionId)}` : '';
+      const res = await fetch(`/api/admin/live-metrics${qs}`);
       if (res.status === 401) { window.location.replace('/admin/login'); return; }
       if (!res.ok) return;
       const d = await res.json();
@@ -157,11 +168,27 @@ export default function AdminLiveMonitor() {
     }
   }, []);
 
+  // Edition list for the "which live" filter — reuses the same endpoint the dashboard uses.
   useEffect(() => {
-    fetchData();
-    const t = setInterval(fetchData, 30000);
+    fetch('/api/admin/metrics')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return;
+        setAllEditions(d.allEditions || []);
+        setCurrentEdition(d.currentEdition || '');
+        setSelectedEdition(d.currentEdition || '');
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!selectedEdition) return;
+    fetchData(selectedEdition);
+    // Only auto-refresh while watching the current live — a past edition's data is static.
+    if (selectedEdition !== currentEdition) return;
+    const t = setInterval(() => fetchData(selectedEdition), 30000);
     return () => clearInterval(t);
-  }, [fetchData]);
+  }, [fetchData, selectedEdition, currentEdition]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -217,14 +244,27 @@ export default function AdminLiveMonitor() {
         <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">
-              {updatedAt ? `Atualizado às ${updatedAt.toLocaleTimeString('pt-BR')} · ` : ''}
-              Auto-refresh a cada 30s
+              {selectedEdition === currentEdition
+                ? (updatedAt ? `Atualizado às ${updatedAt.toLocaleTimeString('pt-BR')} · Auto-refresh a cada 30s` : 'Auto-refresh a cada 30s')
+                : 'Edição encerrada — dados estáticos'}
             </p>
-            <div className="flex shrink-0 gap-2">
-              <Button variant="outline" size="sm" onClick={fetchData}>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              {allEditions.length > 0 && (
+                <Select value={selectedEdition} onValueChange={(v) => v && setSelectedEdition(v)}>
+                  <SelectTrigger size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allEditions.map((e) => (
+                      <SelectItem key={e.editionId} value={e.editionId}>{e.editionId}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Button variant="outline" size="sm" onClick={() => fetchData(selectedEdition)}>
                 <RefreshCw className="size-3.5" /> Atualizar
               </Button>
-              <Button variant="outline" size="sm" onClick={() => downloadCSV(users)}>
+              <Button variant="outline" size="sm" onClick={() => downloadCSV(users, selectedEdition)}>
                 <Download className="size-3.5" /> Exportar CSV
               </Button>
             </div>
