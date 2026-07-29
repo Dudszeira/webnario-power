@@ -53,7 +53,9 @@ type Bucket = { minute: number; count: number };
 type SortKey = keyof UserRow;
 
 const chartConfig = {
-  count: { label: 'Espectadores', color: 'var(--chart-1)' },
+  // --chart-1 stores bare oklch() components (no wrapper) — Tailwind's `bg-chart-1`
+  // utility wraps it automatically, but a raw var() here needs the wrap ourselves.
+  count: { label: 'Espectadores', color: 'oklch(var(--chart-1))' },
 } satisfies ChartConfig;
 
 function fmtDuration(secs: number): string {
@@ -260,7 +262,7 @@ export default function AdminLiveMonitor() {
                         <stop offset="95%" stopColor="var(--color-count)" stopOpacity={0.1} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid vertical={false} />
+                    <CartesianGrid vertical={false} stroke="currentColor" strokeOpacity={0.08} />
                     <XAxis
                       dataKey="minute"
                       type="number"
@@ -280,7 +282,7 @@ export default function AdminLiveMonitor() {
                         />
                       }
                     />
-                    <Area dataKey="count" type="natural" fill="url(#fillCount)" stroke="var(--color-count)" />
+                    <Area dataKey="count" type="natural" fill="url(#fillCount)" stroke="var(--color-count)" strokeWidth={2} />
                   </AreaChart>
                 </ChartContainer>
               )}
