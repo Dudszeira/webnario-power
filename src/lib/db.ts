@@ -562,15 +562,27 @@ export async function insertCommentsBatch(comments: Omit<Comment, 'created_at'>[
 
 // Events Repositories
 export async function getLiveEventsForEdition(editionId: string) {
-  const { data, error } = await supabase
-    .from('events')
-    .select('registration_id, type, created_at')
-    .eq('edition_id', editionId)
-    .in('type', ['enter_live', 'cta_click', 'heartbeat'])
-    .order('created_at', { ascending: true });
+  // Paginated: a single unbounded select() is silently capped at 1000 rows by
+  // Supabase, and hourly heartbeats alone blow past that for any real audience —
+  // truncating cta_click/late enter_live events and the "entries over time" chart.
+  const PAGE_SIZE = 1000;
+  const all: { registration_id: string | null; type: string; created_at: string }[] = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await supabase
+      .from('events')
+      .select('registration_id, type, created_at')
+      .eq('edition_id', editionId)
+      .in('type', ['enter_live', 'cta_click', 'heartbeat'])
+      .order('created_at', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
 
-  if (error) console.error('getLiveEventsForEdition error:', error);
-  return data || [];
+    if (error) { console.error('getLiveEventsForEdition error:', error); break; }
+    all.push(...(data || []));
+    if (!data || data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+  return all;
 }
 
 export async function getLiveCommentCountsPerUser(editionId: string) {
