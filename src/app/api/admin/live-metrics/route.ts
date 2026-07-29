@@ -63,20 +63,25 @@ export async function GET(req: NextRequest) {
     });
 
   // 5-minute buckets: distinct viewers active (entered or sent a heartbeat) in each
-  // window — a retention/drop-off curve, not just when people joined.
-  const bucketMap = new Map<string, Set<string>>();
+  // window — a retention/drop-off curve, not just when people joined. Keyed by the
+  // bucket's real epoch ms (not an "HH:MM" string) so stragglers past midnight sort
+  // after 23:55 instead of wrapping around to look like activity before the live.
+  const bucketMap = new Map<number, Set<string>>();
+  const FIVE_MIN_MS = 5 * 60 * 1000;
   for (const e of events) {
     if (e.type !== 'enter_live' && e.type !== 'heartbeat') continue;
     if (!e.registration_id) continue;
-    const d = new Date(e.created_at);
-    const mins = Math.floor(d.getUTCMinutes() / 5) * 5;
-    const key = `${d.getUTCHours().toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-    if (!bucketMap.has(key)) bucketMap.set(key, new Set());
-    bucketMap.get(key)!.add(e.registration_id);
+    const bucketMs = Math.floor(new Date(e.created_at).getTime() / FIVE_MIN_MS) * FIVE_MIN_MS;
+    if (!bucketMap.has(bucketMs)) bucketMap.set(bucketMs, new Set());
+    bucketMap.get(bucketMs)!.add(e.registration_id);
   }
   const timeline = Array.from(bucketMap.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([bucket, set]) => ({ bucket, count: set.size }));
+    .sort((a, b) => a[0] - b[0])
+    .map(([ms, set]) => {
+      const d = new Date(ms);
+      const bucket = `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
+      return { bucket, count: set.size };
+    });
 
   const totalEntered = users.length;
   const avgWatchSeconds = totalEntered > 0
