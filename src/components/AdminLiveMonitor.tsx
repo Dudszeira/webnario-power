@@ -83,7 +83,7 @@ function downloadCSV(users: UserRow[], editionId: string) {
 function LineChart({ data }: { data: Bucket[] }) {
   if (data.length < 2) return (
     <div className="flex h-[100px] items-center justify-center">
-      <span className="text-xs text-muted-foreground">Aguardando entradas...</span>
+      <span className="text-xs text-muted-foreground">Aguardando audiência...</span>
     </div>
   );
   const W = 600, H = 110;
@@ -279,7 +279,7 @@ export default function AdminLiveMonitor() {
 
           <Card>
             <CardContent>
-              <p className="mb-3 text-xs font-semibold">Entradas ao longo do tempo</p>
+              <p className="mb-3 text-xs font-semibold">Audiência ativa ao longo do tempo</p>
               <LineChart data={timeline} />
             </CardContent>
           </Card>
