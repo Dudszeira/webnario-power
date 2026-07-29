@@ -26,6 +26,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 import { RefreshCw, Download, Radio, Play, ShoppingCart, Timer, Loader2 } from 'lucide-react';
 
 type UserRow = {
@@ -42,8 +49,12 @@ type UserRow = {
 };
 
 type Summary = { online: number; totalEntered: number; ctaClicks: number; avgWatchSeconds: number };
-type Bucket = { bucket: string; count: number };
+type Bucket = { minute: number; count: number };
 type SortKey = keyof UserRow;
+
+const chartConfig = {
+  count: { label: 'Espectadores', color: 'var(--chart-1)' },
+} satisfies ChartConfig;
 
 function fmtDuration(secs: number): string {
   if (secs <= 0) return '—';
@@ -76,51 +87,6 @@ function downloadCSV(users: UserRow[], editionId: string) {
   const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `live-${editionId || new Date().toISOString().slice(0, 10)}.csv` });
   a.click();
   URL.revokeObjectURL(a.href);
-}
-
-// SVG line chart — kept as a hand-rolled chart (not recharts) to preserve the
-// exact behavior of the original; only the color literals changed.
-function LineChart({ data }: { data: Bucket[] }) {
-  if (data.length < 2) return (
-    <div className="flex h-[100px] items-center justify-center">
-      <span className="text-xs text-muted-foreground">Aguardando audiência...</span>
-    </div>
-  );
-  const W = 600, H = 110;
-  const PAD = { t: 8, r: 16, b: 22, l: 28 };
-  const GRID = 'rgba(255,255,255,0.1)';
-  const TEXT = '#8a8a8a';
-  const LINE = '#e5e5e5';
-  const AREA = 'rgba(229,229,229,0.12)';
-  const maxY = Math.max(...data.map(d => d.count), 1);
-  const pts = data.map((d, i) => ({
-    x: PAD.l + (i / (data.length - 1)) * (W - PAD.l - PAD.r),
-    y: H - PAD.b - (d.count / maxY) * (H - PAD.t - PAD.b),
-  }));
-  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-  const areaPath = `${linePath} L${pts[pts.length - 1].x},${H - PAD.b} L${pts[0].x},${H - PAD.b} Z`;
-  return (
-    <div className="w-full overflow-x-auto">
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="block">
-        {[0, 0.5, 1].map((v, i) => {
-          const y = PAD.t + (1 - v) * (H - PAD.t - PAD.b);
-          return (
-            <g key={i}>
-              <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke={GRID} strokeWidth={1} />
-              <text x={PAD.l - 4} y={y + 4} fontSize={8} fill={TEXT} textAnchor="end">{Math.round(v * maxY)}</text>
-            </g>
-          );
-        })}
-        <path d={areaPath} fill={AREA} />
-        <path d={linePath} fill="none" stroke={LINE} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-        {pts.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r={3} fill={LINE} />)}
-        {data.map((d, i) => {
-          if (data.length > 10 && i % Math.ceil(data.length / 8) !== 0) return null;
-          return <text key={i} x={pts[i].x} y={H - PAD.b + 14} fontSize={8} fill={TEXT} textAnchor="middle">{d.bucket}</text>;
-        })}
-      </svg>
-    </div>
-  );
 }
 
 function StatCard({ label, value, sub, icon: Icon }: { label: string; value: number | string; sub?: string; icon: React.ComponentType<{ className?: string }> }) {
@@ -279,8 +245,45 @@ export default function AdminLiveMonitor() {
 
           <Card>
             <CardContent>
-              <p className="mb-3 text-xs font-semibold">Audiência ativa ao longo do tempo</p>
-              <LineChart data={timeline} />
+              <p className="text-xs font-semibold">Audiência ao longo da live</p>
+              <p className="mb-3 text-[11px] text-muted-foreground">Espectadores simultâneos por minuto de live</p>
+              {timeline.length < 2 ? (
+                <div className="flex h-[220px] items-center justify-center">
+                  <span className="text-xs text-muted-foreground">Aguardando audiência...</span>
+                </div>
+              ) : (
+                <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
+                  <AreaChart data={timeline}>
+                    <defs>
+                      <linearGradient id="fillCount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-count)" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="var(--color-count)" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="minute"
+                      type="number"
+                      domain={['dataMin', 'dataMax']}
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tickFormatter={(v) => `${v}min`}
+                    />
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} width={28} allowDecimals={false} />
+                    <ChartTooltip
+                      cursor={false}
+                      content={
+                        <ChartTooltipContent
+                          labelFormatter={(v) => `${v}min de live`}
+                          indicator="dot"
+                        />
+                      }
+                    />
+                    <Area dataKey="count" type="natural" fill="url(#fillCount)" stroke="var(--color-count)" />
+                  </AreaChart>
+                </ChartContainer>
+              )}
             </CardContent>
           </Card>
 

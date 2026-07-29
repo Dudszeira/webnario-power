@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminFromRequest } from '@/lib/auth';
-import { getCurrentEditionId } from '@/lib/edition';
-import { getAllRegistrations, getLiveEventsForEdition, getLiveCommentCountsPerUser } from '@/lib/db';
+import { getCurrentEditionId, getLiveStartMs } from '@/lib/edition';
+import { getAllRegistrations, getLiveEventsForEdition, getLiveCommentCountsPerUser, getEdition } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   if (!(await verifyAdminFromRequest(req))) {
@@ -11,11 +11,14 @@ export async function GET(req: NextRequest) {
   const editionId = req.nextUrl.searchParams.get('edition') || getCurrentEditionId();
   const THREE_MIN_AGO = Date.now() - 3 * 60 * 1000;
 
-  const [registrations, events, commentRows] = await Promise.all([
+  const [registrations, events, commentRows, editionRow] = await Promise.all([
     getAllRegistrations(editionId),
     getLiveEventsForEdition(editionId),
     getLiveCommentCountsPerUser(editionId),
+    getEdition(editionId),
   ]);
+  const liveStartMs = getLiveStartMs(editionId);
+  const liveEndMinute = Math.ceil((editionRow?.video_duration ?? 7200) / 60);
 
   // Build per-registration maps
   const enterMap = new Map<string, string>();
@@ -63,25 +66,26 @@ export async function GET(req: NextRequest) {
     });
 
   // 5-minute buckets: distinct viewers active (entered or sent a heartbeat) in each
-  // window — a retention/drop-off curve, not just when people joined. Keyed by the
-  // bucket's real epoch ms (not an "HH:MM" string) so stragglers past midnight sort
-  // after 23:55 instead of wrapping around to look like activity before the live.
+  // window — a retention/drop-off curve, not just when people joined. Keyed by
+  // minutes since the live actually started (not a wall-clock "HH:MM"), so the chart
+  // reads the same regardless of timezone and never wraps around at midnight.
+  // Buckets more than 15min past the video's configured end are dropped — those are
+  // stragglers who left the tab open, not real live audience, and would otherwise
+  // stretch the x-axis out to nothing.
   const bucketMap = new Map<number, Set<string>>();
   const FIVE_MIN_MS = 5 * 60 * 1000;
   for (const e of events) {
     if (e.type !== 'enter_live' && e.type !== 'heartbeat') continue;
     if (!e.registration_id) continue;
     const bucketMs = Math.floor(new Date(e.created_at).getTime() / FIVE_MIN_MS) * FIVE_MIN_MS;
-    if (!bucketMap.has(bucketMs)) bucketMap.set(bucketMs, new Set());
-    bucketMap.get(bucketMs)!.add(e.registration_id);
+    const minute = Math.round((bucketMs - liveStartMs) / 60000);
+    if (minute < -5 || minute > liveEndMinute + 15) continue;
+    if (!bucketMap.has(minute)) bucketMap.set(minute, new Set());
+    bucketMap.get(minute)!.add(e.registration_id);
   }
   const timeline = Array.from(bucketMap.entries())
     .sort((a, b) => a[0] - b[0])
-    .map(([ms, set]) => {
-      const d = new Date(ms);
-      const bucket = `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
-      return { bucket, count: set.size };
-    });
+    .map(([minute, set]) => ({ minute, count: set.size }));
 
   const totalEntered = users.length;
   const avgWatchSeconds = totalEntered > 0
