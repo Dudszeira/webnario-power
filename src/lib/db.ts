@@ -585,6 +585,23 @@ export async function getLiveEventsForEdition(editionId: string) {
   return all;
 }
 
+export async function getOnlineCount(editionId: string): Promise<number> {
+  // Lightweight presence check for frequent polling (staff bar polls every 10s):
+  // only pulls events within the freshness window instead of the full paginated
+  // history that getLiveEventsForEdition needs for the admin dashboard's timeline.
+  const THREE_MIN_AGO = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('events')
+    .select('registration_id')
+    .eq('edition_id', editionId)
+    .in('type', ['enter_live', 'heartbeat'])
+    .gte('created_at', THREE_MIN_AGO)
+    .not('registration_id', 'is', null);
+
+  if (error) { console.error('getOnlineCount error:', error); return 0; }
+  return new Set((data || []).map(e => e.registration_id)).size;
+}
+
 export async function getLiveCommentCountsPerUser(editionId: string) {
   const { data, error } = await supabase
     .from('comments')

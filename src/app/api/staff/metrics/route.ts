@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyStaffToken } from '@/lib/auth';
-import { getOrCreateCurrentEdition, getEditionMetrics } from '@/lib/db';
+import { getOrCreateCurrentEdition, getEditionMetrics, getOnlineCount } from '@/lib/db';
 import { getCurrentEditionId } from '@/lib/edition';
 
 export async function GET(req: NextRequest) {
@@ -10,11 +10,14 @@ export async function GET(req: NextRequest) {
   if (!staff) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   const editionId = getCurrentEditionId();
-  const metrics = await getEditionMetrics(editionId);
-  const edition = await getOrCreateCurrentEdition();
+  const [metrics, online, edition] = await Promise.all([
+    getEditionMetrics(editionId),
+    getOnlineCount(editionId),
+    getOrCreateCurrentEdition(),
+  ]);
 
   return NextResponse.json({
-    online: metrics.consumed,
+    online,
     cta_clicks: metrics.ctaClicks,
     chat_mode: edition?.chat_mode || 'general',
     cta_auto_enabled: !!edition?.cta_auto_enabled,
