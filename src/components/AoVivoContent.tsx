@@ -176,19 +176,19 @@ export default function AoVivoContent({
             {/* Logo thumbnail */}
             <div className="flex-shrink-0">
               <Image
-                src="/logo.webp"
+                src="/logo-faixa-preta.png"
                 alt="Logo"
-                width={88}
-                height={72}
+                width={110}
+                height={36}
                 className="object-contain rounded"
               />
             </div>
             {/* Headline */}
             <p className="text-sm leading-snug flex-1 min-w-0" style={{ color: '#d1d5db' }}>
               Os{' '}
-              <strong className="text-white">3 Pilares</strong> Para Transformar Sua Fotografia em um{' '}
+              <strong className="text-white">4 Pilares</strong> Para Transformar Sua Fotografia em um{' '}
               <strong className="text-white">Negócio Lucrativo</strong> que fatura mais de{' '}
-              <strong className="text-white">10 Mil Reais</strong> todos os meses.
+              <strong className="text-white">200 Mil Reais</strong> todo ano.
             </p>
           </div>
 
