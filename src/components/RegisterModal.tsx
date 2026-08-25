@@ -48,13 +48,13 @@ export default function RegisterModal({ onSuccess, onBlocked }: Props) {
       <Card className="w-full max-w-md py-4">
         <CardContent className="px-8 py-4">
           <div className="mb-6 flex justify-center">
-            <Image src="/logo.webp" alt="Negócio de Fotografia 10K" width={150} height={56} className="object-contain" />
+            <Image src="/logo-faixa-preta.png" alt="Negócio de Fotografia Faixa Preta" width={195} height={65} className="object-contain" />
           </div>
 
           <h2 className="mb-2 text-center text-xl font-bold">Você está a um passo!</h2>
           <p className="mb-6 text-center text-sm leading-relaxed text-muted-foreground">
-            Você está a um passo de descobrir os 3 pilares para faturar mais de{' '}
-            <span className="font-semibold text-primary">10 mil reais por mês!</span> Para acessar a
+            Você está a um passo de descobrir os 4 pilares para faturar mais de{' '}
+            <span className="font-semibold text-primary">200 mil reais por ano!</span> Para acessar a
             imersão, adicione seus dados abaixo:
           </p>
 
