@@ -21,9 +21,9 @@ type Props = {
 };
 
 const BULLETS = [
-  'O erro que fez meu pai quebrar o negócio de fotografia dele e o que fizemos depois para faturar R$ 1 milhão em um ano.',
-  'Os 3 pilares de um negócio de fotografia que fatura mais de R$ 10 mil por mês.',
-  'Análise ao vivo dos 3 pilares do SEU negócio — Descubra qual dos 3 pilares está travando o seu crescimento e o que fazer para resolver ainda hoje.',
+  'Os 4 pilares de um negócio de fotografia que fatura mais de R$ 200 mil por ano.',
+  'Jeito certo vs Jeito errado de fazer marketing (com exemplos reais de negócios de fotografia).',
+  'Análise ao vivo dos 4 pilares do SEU negócio — Descubra qual dos 4 pilares está travando o seu crescimento e o que fazer para resolver ainda hoje.',
 ];
 
 export default function EsperaContent({
@@ -65,10 +65,10 @@ export default function EsperaContent({
       {/* ── Logo ── */}
       <div className="flex flex-col items-center px-4 pb-6 pt-8">
         <Image
-          src="/logo.webp"
-          alt="Negócio de Fotografia 10K"
-          width={200}
-          height={74}
+          src="/logo-faixa-preta.png"
+          alt="Negócio de Fotografia Faixa Preta"
+          width={260}
+          height={86}
           className="object-contain"
           priority
         />
