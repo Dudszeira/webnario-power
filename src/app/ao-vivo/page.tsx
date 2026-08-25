@@ -76,6 +76,7 @@ export default async function AoVivoPage() {
   const ctaText = edition?.cta_text ?? '';
   const ctaStartSecs = edition?.cta_start_seconds ?? 0;
   const ctaEndSecs = edition?.cta_end_seconds ?? 3600;
+  const notificationsEnabled = edition?.notifications_enabled === 0 ? false : true;
   const viewerMin = edition?.viewer_min ?? 210;
   const viewerMax = edition?.viewer_max ?? 220;
   const videoSource = edition?.video_source ?? 'youtube';
@@ -101,6 +102,7 @@ export default async function AoVivoPage() {
       ctaText={ctaText}
       ctaStartSecs={ctaStartSecs}
       ctaEndSecs={ctaEndSecs}
+      notificationsEnabled={notificationsEnabled}
       viewerMin={viewerMin}
       viewerMax={viewerMax}
       simulatedComments={simulatedComments.map(c => ({

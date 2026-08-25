@@ -65,6 +65,7 @@ export async function PUT(req: NextRequest) {
     cta_start_seconds: Number(body.cta_start_seconds) || 0,
     cta_end_seconds: Number(body.cta_end_seconds) || 3600,
     cta_auto_enabled: body.cta_auto_enabled ? 1 : 0,
+    notifications_enabled: body.notifications_enabled === false ? 0 : 1, // default 1 unless explicitly disabled
     viewer_min: Number(body.viewer_min) || 210,
     viewer_max: Number(body.viewer_max) || 220,
     test_mode: body.test_mode ? 1 : 0,
@@ -90,6 +91,7 @@ export async function PATCH(req: NextRequest) {
     chat_enabled: 1, chat_mode: 'general' as const, cta_enabled: 0,
     cta_url: '', cta_text: '', cta_start_seconds: 0, cta_end_seconds: 3600,
     cta_auto_enabled: 0, cta_override: null, cta_override_at: null,
+    notifications_enabled: 1,
     viewer_min: 210, viewer_max: 220,
   };
 

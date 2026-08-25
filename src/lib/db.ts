@@ -33,6 +33,7 @@ export type Edition = {
   cta_auto_enabled: number;
   cta_override: 'on' | 'off' | null;
   cta_override_at: string | null;
+  notifications_enabled: number;
   viewer_min: number;
   viewer_max: number;
   created_at: string;
@@ -135,6 +136,7 @@ export async function getOrCreateCurrentEdition(): Promise<Edition> {
         video_duration: 7200, sales_page_url: '', chat_enabled: 1, chat_mode: 'general',
         cta_enabled: 0, cta_url: '', cta_text: '', cta_start_seconds: 0, cta_end_seconds: 3600,
         cta_auto_enabled: 0, cta_override: null, cta_override_at: null,
+        notifications_enabled: 1,
         viewer_min: 210, viewer_max: 220, created_at: new Date().toISOString(),
         test_mode: 0, test_time: null,
       };

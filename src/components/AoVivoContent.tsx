@@ -45,6 +45,7 @@ type Props = {
   ctaText: string;
   ctaStartSecs: number;
   ctaEndSecs: number;
+  notificationsEnabled?: boolean;
   viewerMin: number;
   viewerMax: number;
   simulatedComments: SimComment[];
@@ -57,7 +58,7 @@ type Props = {
 export default function AoVivoContent({
   editionId, session, videoSource, videoUrl, videoDuration, initialOffset, liveStartMs,
   chatEnabled, chatMode, ctaAutoEnabled, ctaOverride, ctaOverrideAt, ctaUrl, ctaText, ctaStartSecs, ctaEndSecs,
-  viewerMin, viewerMax, simulatedComments, pinnedComments, salesUrl, isAdminPreview,
+  notificationsEnabled, viewerMin, viewerMax, simulatedComments, pinnedComments, salesUrl, isAdminPreview,
   initialRealComments,
 }: Props) {
   const videoOffsetRef = useRef<number>(initialOffset);
@@ -290,6 +291,7 @@ export default function AoVivoContent({
         simulatedComments={simulatedComments as any}
         videoOffsetRef={videoOffsetRef}
         ctaEnabled={liveCta}
+        notificationsEnabled={notificationsEnabled}
       />
 
       {/* Live ended modal */}

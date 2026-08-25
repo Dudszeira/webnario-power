@@ -29,6 +29,7 @@ const defaultConfig = {
   sales_page_url: '', chat_enabled: true, chat_mode: 'isolated',
   cta_enabled: false, cta_url: '', cta_text: '',
   cta_start_seconds: 0, cta_end_seconds: 3600, cta_auto_enabled: false,
+  notifications_enabled: true,
   viewer_min: 210, viewer_max: 220,
   test_mode: false, test_time: '',
 };
@@ -88,6 +89,7 @@ export default function AdminConfig() {
             chat_enabled: true, // always default to enabled; toggle off only if admin explicitly disables
             cta_enabled: !!d.edition.cta_enabled,
             cta_auto_enabled: !!d.edition.cta_auto_enabled,
+            notifications_enabled: d.edition.notifications_enabled === 0 ? false : true,
             test_mode: !!d.edition.test_mode,
             test_time: testTimeLocal,
           });
@@ -316,6 +318,10 @@ export default function AdminConfig() {
               <Field label="Texto do botão">
                 <Input type="text" value={config.cta_text} onChange={e => set('cta_text', e.target.value)} placeholder="Garantir acesso →" />
               </Field>
+              <div className="flex items-center gap-2.5">
+                <Switch id="notifications_enabled" checked={config.notifications_enabled as unknown as boolean} onCheckedChange={(v) => set('notifications_enabled', v)} />
+                <Label htmlFor="notifications_enabled">Notificações de compra habilitadas</Label>
+              </div>
               <div className="flex items-center gap-2.5">
                 <Switch id="cta_auto_enabled" checked={config.cta_auto_enabled as unknown as boolean} onCheckedChange={(v) => set('cta_auto_enabled', v)} />
                 <Label htmlFor="cta_auto_enabled">Ativação automática habilitada</Label>

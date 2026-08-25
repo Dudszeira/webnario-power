@@ -22,6 +22,7 @@ type Props = {
   simulatedComments: SimComment[];
   videoOffsetRef: React.RefObject<number>;
   ctaEnabled?: boolean;
+  notificationsEnabled?: boolean;
 };
 
 const CITIES = [
@@ -92,11 +93,14 @@ function showAutoToast(setToasts: React.Dispatch<React.SetStateAction<Toast[]>>)
   }, 6000);
 }
 
-export default function PurchaseNotifications({ simulatedComments, videoOffsetRef, ctaEnabled }: Props) {
+export default function PurchaseNotifications({ simulatedComments, videoOffsetRef, ctaEnabled, notificationsEnabled }: Props) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [, setTick] = useState(0);
   const shownIds = useRef<Set<string>>(new Set());
-  const prevCtaRef = useRef(ctaEnabled ?? false);
+  // Independent admin toggle ANDed on top of the existing CTA gate — off by
+  // default only when explicitly disabled, so existing behavior is unchanged.
+  const active = !!ctaEnabled && notificationsEnabled !== false;
+  const prevCtaRef = useRef(active ?? false);
   const didMountRef = useRef(false);
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scheduledTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -108,7 +112,7 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
 
   // On mount: show the most recent past purchases for late joiners (up to 3, staggered)
   useEffect(() => {
-    if (didMountRef.current || !purchases.length || !ctaEnabled) return;
+    if (didMountRef.current || !purchases.length || !active) return;
     const joinOffset = videoOffsetRef.current ?? 0;
     if (joinOffset <= 5) return;
     didMountRef.current = true;
@@ -129,7 +133,7 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
 
   // Fire toasts based on video timestamp (5s window for reliability)
   useEffect(() => {
-    if (!purchases.length || !ctaEnabled) return;
+    if (!purchases.length || !active) return;
     const interval = setInterval(() => {
       const offset = videoOffsetRef.current ?? 0;
       purchases.forEach((p) => {
@@ -140,11 +144,11 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [purchases, videoOffsetRef, ctaEnabled]);
+  }, [purchases, videoOffsetRef, active]);
 
   // Fire unshown DB purchases in staggered order when CTA is activated
   useEffect(() => {
-    if (!ctaEnabled) {
+    if (!active) {
       // Cancel any pending scheduled toasts and clear visible ones
       scheduledTimers.current.forEach(clearTimeout);
       scheduledTimers.current = [];
@@ -171,7 +175,7 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
       scheduledTimers.current.push(tid);
       cumulativeDelay += 20000 + Math.floor(Math.random() * 25000); // 20–45s entre cada uma
     });
-  }, [ctaEnabled, purchases]);
+  }, [active, purchases]);
 
   // Auto-generated purchase notifications while CTA is active
   // First fires 30s after CTA is enabled, then every 25–40s (randomized)
@@ -180,7 +184,7 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
       clearTimeout(autoTimerRef.current);
       autoTimerRef.current = null;
     }
-    if (!ctaEnabled) return;
+    if (!active) return;
 
     const scheduleNext = (delay: number) => {
       autoTimerRef.current = setTimeout(() => {
@@ -197,7 +201,7 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
         autoTimerRef.current = null;
       }
     };
-  }, [ctaEnabled]);
+  }, [active]);
 
   // Tick to refresh "há Xs" timestamps
   useEffect(() => {
