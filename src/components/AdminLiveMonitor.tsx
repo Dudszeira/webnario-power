@@ -396,7 +396,10 @@ export default function AdminLiveMonitor() {
                       cursor={false}
                       content={
                         <ChartTooltipContent
-                          labelFormatter={(v) => fmtBucketRange(v as number)}
+                          // ChartTooltipContent's own `label` arg isn't reliable for a numeric
+                          // x-axis (it falls back to the series name, e.g. "Espectadores", giving
+                          // "NaNmin–NaNmin"). Read the real minute straight off the hovered point.
+                          labelFormatter={(_, payload) => fmtBucketRange((payload?.[0]?.payload as Bucket | undefined)?.minute ?? 0)}
                           indicator="dot"
                         />
                       }
