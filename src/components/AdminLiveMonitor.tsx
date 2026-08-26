@@ -380,8 +380,10 @@ export default function AdminLiveMonitor() {
                       tickMargin={8}
                       tickFormatter={fmtMinuteLabel}
                     />
+                    {/* Single shared axis — a separate right-side scale for clicks made the
+                        orange line's height incomparable to the real "Espectadores" numbers,
+                        reading as far more clicks than actually happened. */}
                     <YAxis yAxisId="viewers" tickLine={false} axisLine={false} tickMargin={8} width={28} allowDecimals={false} />
-                    <YAxis yAxisId="clicks" orientation="right" tickLine={false} axisLine={false} tickMargin={8} width={28} allowDecimals={false} />
                     {pitchMinute !== null && (
                       <ReferenceLine
                         x={pitchMinute}
@@ -409,7 +411,7 @@ export default function AdminLiveMonitor() {
                     <ChartLegend content={<ChartLegendContent />} />
                     {/* Area drawn first so its fill sits behind the CTA-clicks line, not on top of it */}
                     <Area yAxisId="viewers" dataKey="count" type="natural" fill="url(#fillCount)" stroke="var(--color-count)" strokeWidth={2} />
-                    <Line yAxisId="clicks" dataKey="ctaClicks" type="monotone" stroke="var(--color-ctaClicks)" strokeWidth={2.5} dot={false} />
+                    <Line yAxisId="viewers" dataKey="ctaClicks" type="monotone" stroke="var(--color-ctaClicks)" strokeWidth={2.5} dot={false} />
                   </ComposedChart>
                 </ChartContainer>
               )}
