@@ -72,20 +72,31 @@ export async function GET(req: NextRequest) {
   // Buckets more than 15min past the video's configured end are dropped — those are
   // stragglers who left the tab open, not real live audience, and would otherwise
   // stretch the x-axis out to nothing.
+  // CTA clicks are bucketed the same way so the chart can overlay "when people
+  // clicked" alongside the audience curve.
   const bucketMap = new Map<number, Set<string>>();
+  const ctaBucketMap = new Map<number, number>();
   const FIVE_MIN_MS = 5 * 60 * 1000;
   for (const e of events) {
-    if (e.type !== 'enter_live' && e.type !== 'heartbeat') continue;
-    if (!e.registration_id) continue;
     const bucketMs = Math.floor(new Date(e.created_at).getTime() / FIVE_MIN_MS) * FIVE_MIN_MS;
     const minute = Math.round((bucketMs - liveStartMs) / 60000);
     if (minute < -5 || minute > liveEndMinute + 15) continue;
-    if (!bucketMap.has(minute)) bucketMap.set(minute, new Set());
-    bucketMap.get(minute)!.add(e.registration_id);
+
+    if ((e.type === 'enter_live' || e.type === 'heartbeat') && e.registration_id) {
+      if (!bucketMap.has(minute)) bucketMap.set(minute, new Set());
+      bucketMap.get(minute)!.add(e.registration_id);
+    } else if (e.type === 'cta_click') {
+      ctaBucketMap.set(minute, (ctaBucketMap.get(minute) || 0) + 1);
+    }
   }
-  const timeline = Array.from(bucketMap.entries())
-    .sort((a, b) => a[0] - b[0])
-    .map(([minute, set]) => ({ minute, count: set.size }));
+  const bucketMinutes = new Set([...Array.from(bucketMap.keys()), ...Array.from(ctaBucketMap.keys())]);
+  const timeline = Array.from(bucketMinutes)
+    .sort((a, b) => a - b)
+    .map((minute) => ({
+      minute,
+      count: bucketMap.get(minute)?.size ?? 0,
+      ctaClicks: ctaBucketMap.get(minute) ?? 0,
+    }));
 
   const totalEntered = users.length;
   const avgWatchSeconds = totalEntered > 0
@@ -101,5 +112,9 @@ export async function GET(req: NextRequest) {
     },
     users,
     timeline,
+    // For the chart's manual "Pitch" marker: the saved override (if any) and the
+    // configured CTA start, used as the suggested default when nothing's been set yet.
+    pitchMarkerSeconds: editionRow?.pitch_marker_seconds ?? null,
+    ctaStartSeconds: editionRow?.cta_start_seconds ?? 0,
   });
 }

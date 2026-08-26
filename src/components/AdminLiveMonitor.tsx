@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { AdminSidebar } from './AdminSidebar';
 import {
   SidebarInset,
@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -26,14 +27,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Area, ComposedChart, Line, CartesianGrid, XAxis, YAxis, ReferenceLine } from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import { RefreshCw, Download, Radio, Play, ShoppingCart, Timer, Loader2 } from 'lucide-react';
+import { RefreshCw, Download, Radio, Play, ShoppingCart, Timer, Loader2, Check } from 'lucide-react';
 
 type UserRow = {
   id: string;
@@ -49,14 +52,53 @@ type UserRow = {
 };
 
 type Summary = { online: number; totalEntered: number; ctaClicks: number; avgWatchSeconds: number };
-type Bucket = { minute: number; count: number };
+type Bucket = { minute: number; count: number; ctaClicks: number };
 type SortKey = keyof UserRow;
 
 const chartConfig = {
-  // --chart-1 stores bare oklch() components (no wrapper) — Tailwind's `bg-chart-1`
+  // --chart-1/2 store bare oklch() components (no wrapper) — Tailwind's `bg-chart-1`
   // utility wraps it automatically, but a raw var() here needs the wrap ourselves.
   count: { label: 'Espectadores', color: 'oklch(var(--chart-1))' },
+  ctaClicks: { label: 'Cliques no CTA', color: 'oklch(var(--chart-2))' },
 } satisfies ChartConfig;
+
+// Formats minutes-since-live-start as a clock-like label ("1h05", "45min") instead
+// of a raw minute count, so it reads against a known moment (e.g. "o pitch foi às
+// 1:06:10") instead of needing mental math from "66min".
+function fmtMinuteLabel(totalMinutes: number): string {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  if (h > 0) return `${h}h${m > 0 ? String(m).padStart(2, '0') : ''}`;
+  return `${m}min`;
+}
+
+// The chart's underlying buckets are still 5 minutes wide — the tooltip spells out
+// the window so it's clear a hover is the closest bucket, not an exact instant.
+function fmtBucketRange(minute: number): string {
+  return `${fmtMinuteLabel(minute)}–${fmtMinuteLabel(minute + 5)} de live`;
+}
+
+// "1:06:10", "66:10" or a bare "3970" all parse to seconds. Returns null on anything
+// that isn't a valid time so the caller can reject bad input instead of saving garbage.
+function parseTimeToSeconds(input: string): number | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (/^\d+$/.test(trimmed)) return Number(trimmed);
+  const parts = trimmed.split(':');
+  if (parts.length < 2 || parts.length > 3 || parts.some((p) => !/^\d+$/.test(p))) return null;
+  const nums = parts.map(Number);
+  return nums.length === 3 ? nums[0] * 3600 + nums[1] * 60 + nums[2] : nums[0] * 60 + nums[1];
+}
+
+// Seconds → "H:MM:SS" (or "M:SS" under an hour), for prefilling the pitch input.
+function fmtHms(totalSeconds: number): string {
+  const s = Math.max(0, Math.round(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const mmss = `${h > 0 ? String(m).padStart(2, '0') : m}:${String(sec).padStart(2, '0')}`;
+  return h > 0 ? `${h}:${mmss}` : mmss;
+}
 
 function fmtDuration(secs: number): string {
   if (secs <= 0) return '—';
@@ -120,6 +162,17 @@ export default function AdminLiveMonitor() {
   const [currentEdition, setCurrentEdition] = useState<string>('');
   const [selectedEdition, setSelectedEdition] = useState<string>('');
 
+  // Manual "Pitch" marker for the chart — independent from the real CTA config.
+  const [pitchMarkerSeconds, setPitchMarkerSeconds] = useState<number | null>(null);
+  const [ctaStartSeconds, setCtaStartSeconds] = useState(0);
+  const [pitchInput, setPitchInput] = useState('');
+  const [pitchError, setPitchError] = useState(false);
+  const [savingPitch, setSavingPitch] = useState(false);
+  const [pitchSaved, setPitchSaved] = useState(false);
+  // Only prefill the input once per edition — otherwise the 30s auto-refresh would
+  // stomp on whatever the admin is mid-typing.
+  const pitchInitializedFor = useRef<string>('');
+
   const fetchData = useCallback(async (editionId?: string) => {
     try {
       const qs = editionId ? `?edition=${encodeURIComponent(editionId)}` : '';
@@ -130,11 +183,41 @@ export default function AdminLiveMonitor() {
       setSummary(d.summary);
       setUsers(d.users);
       setTimeline(d.timeline);
+      setPitchMarkerSeconds(d.pitchMarkerSeconds ?? null);
+      setCtaStartSeconds(d.ctaStartSeconds ?? 0);
+      const editionKey = editionId || 'current';
+      if (pitchInitializedFor.current !== editionKey) {
+        setPitchInput(fmtHms(d.pitchMarkerSeconds ?? d.ctaStartSeconds ?? 0));
+        setPitchError(false);
+        pitchInitializedFor.current = editionKey;
+      }
       setUpdatedAt(new Date());
     } catch {} finally {
       setLoading(false);
     }
   }, []);
+
+  async function savePitchMarker() {
+    const parsed = parseTimeToSeconds(pitchInput);
+    if (parsed === null) { setPitchError(true); return; }
+    setPitchError(false);
+    setSavingPitch(true);
+    try {
+      const qs = selectedEdition ? `?edition=${encodeURIComponent(selectedEdition)}` : '';
+      const res = await fetch(`/api/admin/config${qs}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pitch_marker_seconds: parsed }),
+      });
+      if (res.ok) {
+        setPitchMarkerSeconds(parsed);
+        setPitchSaved(true);
+        setTimeout(() => setPitchSaved(false), 2000);
+      }
+    } catch {} finally {
+      setSavingPitch(false);
+    }
+  }
 
   // Edition list for the "which live" filter — reuses the same endpoint the dashboard uses.
   useEffect(() => {
@@ -185,6 +268,13 @@ export default function AdminLiveMonitor() {
       </SidebarInset>
     </SidebarProvider>
   );
+
+  // Denser, explicit ticks instead of recharts' default ~5 auto-ticks — makes it
+  // possible to actually locate a known moment (e.g. "o pitch foi 1:06:10") on the axis.
+  const maxMinute = timeline.length ? timeline[timeline.length - 1].minute : 0;
+  const tickStep = maxMinute > 60 ? 15 : 10;
+  const xTicks = Array.from({ length: Math.floor(maxMinute / tickStep) + 1 }, (_, i) => i * tickStep);
+  const pitchMinute = pitchMarkerSeconds !== null ? pitchMarkerSeconds / 60 : null;
 
   const arrow = (key: SortKey) => sortKey === key ? (sortDir === 'desc' ? ' ↓' : ' ↑') : '';
 
@@ -247,15 +337,31 @@ export default function AdminLiveMonitor() {
 
           <Card>
             <CardContent>
-              <p className="text-xs font-semibold">Audiência ao longo da live</p>
-              <p className="mb-3 text-[11px] text-muted-foreground">Espectadores simultâneos por minuto de live</p>
+              <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold">Audiência ao longo da live</p>
+                  <p className="text-[11px] text-muted-foreground">Espectadores simultâneos e cliques no CTA, a cada 5min de live</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Marcador do pitch</span>
+                  <Input
+                    value={pitchInput}
+                    onChange={(e) => { setPitchInput(e.target.value); setPitchError(false); }}
+                    placeholder="h:mm:ss"
+                    className={`h-7 w-24 text-xs ${pitchError ? 'border-destructive' : ''}`}
+                  />
+                  <Button variant="outline" size="sm" className="h-7" disabled={savingPitch} onClick={savePitchMarker}>
+                    {savingPitch ? <Loader2 className="size-3 animate-spin" /> : pitchSaved ? <Check className="size-3" /> : 'Salvar'}
+                  </Button>
+                </div>
+              </div>
               {timeline.length < 2 ? (
                 <div className="flex h-[220px] items-center justify-center">
                   <span className="text-xs text-muted-foreground">Aguardando audiência...</span>
                 </div>
               ) : (
                 <ChartContainer config={chartConfig} className="aspect-auto h-[220px] w-full">
-                  <AreaChart data={timeline}>
+                  <ComposedChart data={timeline}>
                     <defs>
                       <linearGradient id="fillCount" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="var(--color-count)" stopOpacity={0.8} />
@@ -267,23 +373,37 @@ export default function AdminLiveMonitor() {
                       dataKey="minute"
                       type="number"
                       domain={['dataMin', 'dataMax']}
+                      ticks={xTicks}
                       tickLine={false}
                       axisLine={false}
                       tickMargin={8}
-                      tickFormatter={(v) => `${v}min`}
+                      tickFormatter={fmtMinuteLabel}
                     />
-                    <YAxis tickLine={false} axisLine={false} tickMargin={8} width={28} allowDecimals={false} />
+                    <YAxis yAxisId="viewers" tickLine={false} axisLine={false} tickMargin={8} width={28} allowDecimals={false} />
+                    <YAxis yAxisId="clicks" orientation="right" tickLine={false} axisLine={false} tickMargin={8} width={28} allowDecimals={false} />
+                    {pitchMinute !== null && (
+                      <ReferenceLine
+                        x={pitchMinute}
+                        yAxisId="viewers"
+                        stroke="var(--color-ctaClicks)"
+                        strokeDasharray="4 4"
+                        strokeWidth={1.5}
+                        label={{ value: 'Pitch', position: 'insideTopRight', fontSize: 10, fill: 'var(--color-ctaClicks)' }}
+                      />
+                    )}
                     <ChartTooltip
                       cursor={false}
                       content={
                         <ChartTooltipContent
-                          labelFormatter={(v) => `${v}min de live`}
+                          labelFormatter={(v) => fmtBucketRange(v as number)}
                           indicator="dot"
                         />
                       }
                     />
-                    <Area dataKey="count" type="natural" fill="url(#fillCount)" stroke="var(--color-count)" strokeWidth={2} />
-                  </AreaChart>
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Area yAxisId="viewers" dataKey="count" type="natural" fill="url(#fillCount)" stroke="var(--color-count)" strokeWidth={2} />
+                    <Line yAxisId="clicks" dataKey="ctaClicks" type="monotone" stroke="var(--color-ctaClicks)" strokeWidth={2} dot={false} />
+                  </ComposedChart>
                 </ChartContainer>
               )}
             </CardContent>

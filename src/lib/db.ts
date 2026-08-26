@@ -39,6 +39,11 @@ export type Edition = {
   created_at: string;
   test_mode?: number;
   test_time?: string | null;
+  // Manual override for where the "Pitch" marker line lands on the admin audience
+  // chart. Independent from cta_start_seconds (which drives the real CTA window for
+  // viewers) — this is purely an analysis aid so staff can line the chart up with
+  // the actual pitch moment without touching live CTA behavior.
+  pitch_marker_seconds?: number | null;
 };
 
 export type Registration = {
