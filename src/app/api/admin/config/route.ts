@@ -48,6 +48,9 @@ export async function PUT(req: NextRequest) {
 
   const editionId = getCurrentEditionId();
   const body = await req.json().catch(() => ({}));
+  // Read the existing row so fields this form doesn't know about (e.g. the pitch
+  // marker, edited from the live-monitor chart) aren't wiped out by this full save.
+  const existing = await getEdition(editionId);
 
   // Upsert edition in Supabase
   await upsertEdition({
@@ -70,18 +73,23 @@ export async function PUT(req: NextRequest) {
     viewer_max: Number(body.viewer_max) || 220,
     test_mode: body.test_mode ? 1 : 0,
     test_time: body.test_time || null,
+    pitch_marker_seconds: body.pitch_marker_seconds !== undefined
+      ? (body.pitch_marker_seconds === null ? null : Number(body.pitch_marker_seconds))
+      : (existing?.pitch_marker_seconds ?? null),
   });
 
   return NextResponse.json({ ok: true });
 }
 
-// PATCH: update only test_mode and test_time without touching other settings
+// PATCH: partial update — only fields present in the body are changed, everything
+// else on the row is left untouched. Accepts ?edition= like the live-metrics route
+// so a field (e.g. the pitch marker) can be edited while looking at a past edition.
 export async function PATCH(req: NextRequest) {
   if (!(await verifyAdminFromRequest(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const editionId = getCurrentEditionId();
+  const editionId = req.nextUrl.searchParams.get('edition') || getCurrentEditionId();
   const body = await req.json().catch(() => ({}));
 
   const existing = await getEdition(editionId);
@@ -93,12 +101,17 @@ export async function PATCH(req: NextRequest) {
     cta_auto_enabled: 0, cta_override: null, cta_override_at: null,
     notifications_enabled: 1,
     viewer_min: 210, viewer_max: 220,
+    test_mode: 0, test_time: null,
+    pitch_marker_seconds: null,
   };
 
   await upsertEdition({
     ...base,
-    test_mode: body.test_mode ? 1 : 0,
-    test_time: body.test_time || null,
+    test_mode: body.test_mode !== undefined ? (body.test_mode ? 1 : 0) : base.test_mode,
+    test_time: body.test_time !== undefined ? (body.test_time || null) : base.test_time,
+    pitch_marker_seconds: body.pitch_marker_seconds !== undefined
+      ? (body.pitch_marker_seconds === null ? null : Number(body.pitch_marker_seconds))
+      : (base as { pitch_marker_seconds?: number | null }).pitch_marker_seconds ?? null,
   });
 
   return NextResponse.json({ ok: true });
