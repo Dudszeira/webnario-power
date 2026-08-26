@@ -59,7 +59,8 @@ const chartConfig = {
   // --chart-1/2 store bare oklch() components (no wrapper) — Tailwind's `bg-chart-1`
   // utility wraps it automatically, but a raw var() here needs the wrap ourselves.
   count: { label: 'Espectadores', color: 'oklch(var(--chart-1))' },
-  ctaClicks: { label: 'Cliques no CTA', color: 'oklch(var(--chart-2))' },
+  // Amber matches the "Sim" badge already used for CTA clicks in the users table below.
+  ctaClicks: { label: 'Cliques no CTA', color: '#f59e0b' },
 } satisfies ChartConfig;
 
 // Formats minutes-since-live-start as a clock-like label ("1h05", "45min") instead
@@ -385,10 +386,10 @@ export default function AdminLiveMonitor() {
                       <ReferenceLine
                         x={pitchMinute}
                         yAxisId="viewers"
-                        stroke="var(--color-ctaClicks)"
+                        stroke="var(--muted-foreground)"
                         strokeDasharray="4 4"
                         strokeWidth={1.5}
-                        label={{ value: 'Pitch', position: 'insideTopRight', fontSize: 10, fill: 'var(--color-ctaClicks)' }}
+                        label={{ value: 'Pitch', position: 'insideTopRight', fontSize: 10, fill: 'var(--muted-foreground)' }}
                       />
                     )}
                     <ChartTooltip
@@ -401,8 +402,9 @@ export default function AdminLiveMonitor() {
                       }
                     />
                     <ChartLegend content={<ChartLegendContent />} />
+                    {/* Area drawn first so its fill sits behind the CTA-clicks line, not on top of it */}
                     <Area yAxisId="viewers" dataKey="count" type="natural" fill="url(#fillCount)" stroke="var(--color-count)" strokeWidth={2} />
-                    <Line yAxisId="clicks" dataKey="ctaClicks" type="monotone" stroke="var(--color-ctaClicks)" strokeWidth={2} dot={false} />
+                    <Line yAxisId="clicks" dataKey="ctaClicks" type="monotone" stroke="var(--color-ctaClicks)" strokeWidth={2.5} dot={false} />
                   </ComposedChart>
                 </ChartContainer>
               )}
