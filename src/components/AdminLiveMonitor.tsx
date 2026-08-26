@@ -386,10 +386,12 @@ export default function AdminLiveMonitor() {
                       <ReferenceLine
                         x={pitchMinute}
                         yAxisId="viewers"
-                        stroke="var(--muted-foreground)"
+                        // --muted-foreground stores bare oklch() components (no wrapper), same as
+                        // --chart-1/2 above — needs the explicit oklch() wrap to be a valid stroke.
+                        stroke="oklch(var(--muted-foreground))"
                         strokeDasharray="4 4"
                         strokeWidth={1.5}
-                        label={{ value: 'Pitch', position: 'insideTopRight', fontSize: 10, fill: 'var(--muted-foreground)' }}
+                        label={{ value: 'Pitch', position: 'insideTopRight', fontSize: 10, fill: 'oklch(var(--muted-foreground))' }}
                       />
                     )}
                     <ChartTooltip
