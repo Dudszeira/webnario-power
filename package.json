@@ -10,7 +10,7 @@
     "build": "node -r ./patch-readlink.cjs ./node_modules/next/dist/bin/next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test \"src/lib/marketing/**/*.test.ts\""
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"src/lib/marketing/**/*.test.ts\""
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
