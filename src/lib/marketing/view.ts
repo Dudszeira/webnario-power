@@ -42,28 +42,38 @@ export async function buildView(selectedIn: number[], range: DateRange | null): 
   const eds = editions.filter(e => selected.includes(e.number));
   const minStart = eds.reduce((m, e) => (e.windowStart < m ? e.windowStart : m), today);
   const maxEnd = eds.reduce((m, e) => (e.windowEnd > m ? e.windowEnd : m), minStart);
-  const ads: MetaAdDay[] = eds.length ? adsInWindows(await loadAdDays(minStart, maxEnd), eds, range) : [];
+  const rawAds: MetaAdDay[] = eds.length ? await loadAdDays(minStart, maxEnd) : [];
+  const ads = adsInWindows(rawAds, eds, range);
 
   const tickets = ticketSales(captures, selected).filter(s => inRange(s.at?.slice(0, 10) ?? null, range));
   const fallback = overview.filter(o => selected.includes(o.edition)).reduce((s, o) => s + o.investment, 0);
   const front = frontSummary(tickets, ads, eds, aliases, fallback);
   const back = backSummary(overview, schedules, sales, selected, front);
   const first = eds[0];
-  const creatives = first ? creativeTable(tickets, ads, first, aliases) : [];
-  const windows = first ? windows137(ticketSales(captures, [first.number]), ads, first, aliases, yesterday) : [];
+  // Criativos e reports são rotulados pela primeira edição: só usam dados dela.
+  const firstTickets = first ? ticketSales(captures, [first.number]) : [];
+  const firstAds = first ? adsInWindows(rawAds, [first], null) : [];
+  const creatives = first
+    ? creativeTable(firstTickets.filter(s => inRange(s.at?.slice(0, 10) ?? null, range)), adsInWindows(rawAds, [first], range), first, aliases)
+    : [];
+  const windows = first ? windows137(firstTickets, firstAds, first, aliases, yesterday) : [];
 
-  const attendance = (await Promise.all(eds.map(e => loadAttendance(e.liveDate)))).flat();
-  const htBuyers = sales.filter(s => s.approved && s.edition !== null && selected.includes(s.edition))
-    .map(s => ({ email: s.email, phone: s.phone, product: s.product, amount: s.amount }));
-  const ticketBuyers = tickets.map(t => ({ email: t.email, phone: t.phone, product: 'Ingresso', amount: first?.ticketPrice ?? 9.9 }));
-  const buyers = matchBuyers([...htBuyers, ...ticketBuyers], attendance, captures);
+  const buyers: BuyerMatch[] = [];
+  for (const e of eds) {
+    const ht = sales.filter(s => s.approved && s.edition === e.number)
+      .map(s => ({ email: s.email, phone: s.phone, product: s.product, amount: s.amount }));
+    const tk = tickets.filter(t => t.edition === e.number)
+      .map(t => ({ email: t.email, phone: t.phone, product: 'Ingresso', amount: e.ticketPrice }));
+    const att = await loadAttendance(e.liveDate);
+    matchBuyers([...ht, ...tk], att, captures).forEach(m => buyers.push(m));
+  }
 
   const byDay: Record<string, { ic: number; sales: number }> = {};
   const slot = (d: string) => byDay[d] || (byDay[d] = { ic: 0, sales: 0 });
   for (const a of ads) slot(a.date).ic += a.initiateCheckouts;
   for (const t of tickets) {
     const d = t.at?.slice(0, 10);
-    if (d) slot(d).sales += 1;
+    if (d && eds.some(e => d >= e.windowStart && d <= e.windowEnd)) slot(d).sales += 1;
   }
   const icVsSales = Object.keys(byDay).sort().map(day => ({ day, ...byDay[day] }));
 
@@ -81,10 +91,10 @@ export async function buildView(selectedIn: number[], range: DateRange | null): 
     adNames: Object.keys(adFamilies).filter(f => !saleFamilies[f] && !captureFamilies[f]).sort(),
   };
 
-  const yAds = ads.filter(a => a.date === yesterday);
-  const yTickets = tickets.filter(t => t.at?.slice(0, 10) === yesterday);
+  const yAds = firstAds.filter(a => a.date === yesterday);
+  const yTickets = firstTickets.filter(t => t.at?.slice(0, 10) === yesterday);
   const reports = first ? {
-    edition: editionReport(first, front, creatives, permalinks, dm(yesterday)),
+    edition: editionReport(first, frontSummary(firstTickets, firstAds, [first], aliases, 0), creativeTable(firstTickets, firstAds, first, aliases), permalinks, dm(yesterday)),
     daily: dailyReport(first, frontSummary(yTickets, yAds, [first], aliases, 0), creativeTable(yTickets, yAds, first, aliases), permalinks, dm(yesterday)),
     w137: report137(windows, dm(yesterday)),
   } : { edition: '', daily: '', w137: '' };

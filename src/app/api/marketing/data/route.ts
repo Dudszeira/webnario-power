@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     return NextResponse.json(await buildView(editions, range));
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+    console.error('marketing data', e);
+    return NextResponse.json({ error: 'Falha ao montar o painel' }, { status: 500 });
   }
 }
