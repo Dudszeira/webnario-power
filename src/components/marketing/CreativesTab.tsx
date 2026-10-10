@@ -12,6 +12,7 @@ const BAND: Record<string, string> = { sonho: 'bg-emerald-500/20 text-emerald-30
 
 export default function CreativesTab({ view, onSaved }: { view: MarketingView; onSaved: () => void }) {
   const [alias, setAlias] = useState({ raw: '', family: '' });
+  const [saveError, setSaveError] = useState('');
   return (
     <div className="flex flex-col gap-6">
       <div className="overflow-x-auto">
@@ -74,9 +75,13 @@ export default function CreativesTab({ view, onSaved }: { view: MarketingView; o
           <input aria-label="UTM ou nome do anúncio" placeholder="utm_content ou nome do anúncio" className="h-8 rounded-md border border-border bg-transparent px-2 text-sm" value={alias.raw} onChange={e => setAlias({ ...alias, raw: e.target.value })} />
           <input aria-label="Criativo" placeholder="criativo (ex.: img_01)" className="h-8 rounded-md border border-border bg-transparent px-2 text-sm" value={alias.family} onChange={e => setAlias({ ...alias, family: e.target.value })} />
           <Button size="sm" disabled={!alias.raw.trim() || !alias.family.trim()} onClick={async () => {
-            await fetch('/api/marketing/config', { method: 'POST', body: JSON.stringify({ alias }) });
-            setAlias({ raw: '', family: '' }); onSaved();
+            setSaveError('');
+            try {
+              const res = await fetch('/api/marketing/config', { method: 'POST', body: JSON.stringify({ alias }) });
+              if (res.ok) { setAlias({ raw: '', family: '' }); onSaved(); } else setSaveError('Não foi possível salvar');
+            } catch { setSaveError('Não foi possível salvar'); }
           }}>Associar</Button>
+          {saveError && <p role="alert" className="text-xs text-red-400">{saveError}</p>}
         </div>
       </section>
     </div>

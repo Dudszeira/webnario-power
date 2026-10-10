@@ -21,21 +21,33 @@ export default function MarketingDashboard() {
 
   const load = useCallback(async (eds: number[], r: { from: string; to: string }) => {
     setLoading(true); setError('');
-    const q = new URLSearchParams();
-    if (eds.length) q.set('editions', eds.join(','));
-    if (r.from && r.to) { q.set('from', r.from); q.set('to', r.to); }
-    const res = await fetch(`/api/marketing/data?${q}`);
-    const body = await res.json();
-    setLoading(false);
-    if (!res.ok) { setError(body.error ?? 'Erro ao carregar'); return null; }
-    setView(body); setSelected(body.selected);
-    return body as MarketingView;
+    try {
+      const q = new URLSearchParams();
+      if (eds.length) q.set('editions', eds.join(','));
+      if (r.from && r.to) { q.set('from', r.from); q.set('to', r.to); }
+      const res = await fetch(`/api/marketing/data?${q}`);
+      const body = await res.json();
+      if (!res.ok) { setError(body.error ?? 'Erro ao carregar'); return null; }
+      setView(body); setSelected(body.selected);
+      return body as MarketingView;
+    } catch {
+      setError('Não foi possível carregar os dados');
+      return null;
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const sync = useCallback(async () => {
     setSyncing(true);
-    await fetch('/api/marketing/sync', { method: 'POST', body: JSON.stringify({ metaDays: 7 }) });
-    setSyncing(false);
+    try {
+      const res = await fetch('/api/marketing/sync', { method: 'POST', body: JSON.stringify({ metaDays: 7 }) });
+      if (!res.ok) setError('Não foi possível atualizar');
+    } catch {
+      setError('Não foi possível atualizar');
+    } finally {
+      setSyncing(false);
+    }
     await load(selected, range);
   }, [load, selected, range]);
 
@@ -78,7 +90,7 @@ export default function MarketingDashboard() {
               <span className="ml-4 text-xs uppercase tracking-wide text-muted-foreground">Período</span>
               <input type="date" aria-label="Data inicial" className="h-8 rounded-md border border-border bg-transparent px-2 text-sm" value={range.from} onChange={e => setRange({ ...range, from: e.target.value })} />
               <input type="date" aria-label="Data final" className="h-8 rounded-md border border-border bg-transparent px-2 text-sm" value={range.to} onChange={e => setRange({ ...range, to: e.target.value })} />
-              <Button size="sm" variant="outline" onClick={() => load(selected, range)}>Aplicar</Button>
+              <Button size="sm" variant="outline" disabled={!range.from || !range.to || range.from > range.to} onClick={() => load(selected, range)}>Aplicar</Button>
               {(range.from || range.to) && (
                 <Button size="sm" variant="ghost" onClick={() => { const r = { from: '', to: '' }; setRange(r); load(selected, r); }}>Limpar</Button>
               )}
@@ -100,7 +112,7 @@ export default function MarketingDashboard() {
                 <TabsTrigger value="criativos">Criativos</TabsTrigger>
                 <TabsTrigger value="validacao">Validação</TabsTrigger>
               </TabsList>
-              <TabsContent value="edicao"><EditionTab view={view} onSaved={() => load(selected, range)} /></TabsContent>
+              <TabsContent value="edicao"><EditionTab key={view.selected[0]} view={view} onSaved={() => load(selected, range)} /></TabsContent>
               <TabsContent value="criativos"><CreativesTab view={view} onSaved={() => load(selected, range)} /></TabsContent>
               <TabsContent value="validacao"><ValidationTab view={view} /></TabsContent>
             </Tabs>

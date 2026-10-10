@@ -32,6 +32,7 @@ function CopyButton({ label, text }: { label: string; text: string }) {
 export default function EditionTab({ view, onSaved }: { view: MarketingView; onSaved: () => void }) {
   const { front: f, back: b } = view;
   const cfg = view.editions.find(e => e.number === view.selected[0]);
+  const [saveError, setSaveError] = useState('');
   const [goals, setGoals] = useState({ cpaDream: cfg?.cpaDream ?? 25, cpaGood: cfg?.cpaGood ?? 35, cpaLimit: cfg?.cpaLimit ?? 45 });
 
   return (
@@ -78,9 +79,13 @@ export default function EditionTab({ view, onSaved }: { view: MarketingView; onS
               </label>
             ))}
             <Button size="sm" onClick={async () => {
-              await fetch('/api/marketing/config', { method: 'POST', body: JSON.stringify({ edition: { number: cfg.number, windowStart: cfg.windowStart, windowEnd: cfg.windowEnd, ticketPrice: cfg.ticketPrice, ...goals } }) });
-              onSaved();
+              setSaveError('');
+              try {
+                const res = await fetch('/api/marketing/config', { method: 'POST', body: JSON.stringify({ edition: { number: cfg.number, windowStart: cfg.windowStart, windowEnd: cfg.windowEnd, ticketPrice: cfg.ticketPrice, ...goals } }) });
+                if (res.ok) onSaved(); else setSaveError('Não foi possível salvar');
+              } catch { setSaveError('Não foi possível salvar'); }
             }}>Salvar metas</Button>
+            {saveError && <p role="alert" className="text-xs text-red-400">{saveError}</p>}
             <p className="text-xs text-muted-foreground">Janela de captação: {cfg.windowStart} a {cfg.windowEnd}</p>
           </CardContent>
         </Card>
