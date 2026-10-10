@@ -11,6 +11,7 @@ import {
   Upload,
   MessageSquare,
   Compass,
+  BarChart3,
   ExternalLink,
   LogOut,
 } from 'lucide-react';
@@ -32,6 +33,7 @@ import { AdminIconPicker, ICON_OPTIONS, type BrandingIcon } from './AdminIconPic
 const NAV = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/live', label: 'Monitor Live', icon: Radio },
+  { href: '/admin/marketing', label: 'Marketing', icon: BarChart3 },
   { href: '/admin/configuracoes', label: 'Configurações', icon: Settings },
   { href: '/admin/importar', label: 'Importar', icon: Upload },
   { href: '/admin/comentarios', label: 'Comentários', icon: MessageSquare },
