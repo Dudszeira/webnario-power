@@ -110,3 +110,25 @@ test('backSummary: cost per call uses front spend; Pipedrive rows win over overv
   assert.equal(b.highTicketSales, 1);
   assert.equal(b.applications, 10);
 });
+
+test('costs are null (not 0) when there is no spend', () => {
+  const t = creativeTable([sale('img_10', '2026-10-07')], [], cfg, {});
+  assert.equal(t[0].cpa, null);
+  assert.equal(t[0].band, null);
+  const front = frontSummary([], [], [cfg], {}, 0);
+  const b = backSummary([], [], [], [22], front);
+  assert.equal(b.costPerScheduled, null);
+  assert.equal(b.costPerDone, null);
+});
+
+test('windows137 ignores ads outside the edition window', () => {
+  const c = { ...cfg, windowStart: '2026-10-05' };
+  const w = windows137([sale('img_10', '2026-10-07')], [ad('img_10', '2026-10-02', 500), ad('img_10', '2026-10-07', 20)], c, {}, '2026-10-08');
+  assert.equal(w[0].d7.spend, 20);
+});
+
+test('revenue uses each sale edition ticket price', () => {
+  const c21 = { ...cfg, number: 21, ticketPrice: 19.9 };
+  const s21 = { ...sale('img_10', '2026-10-07'), edition: 21 };
+  assert.equal(frontSummary([sale('img_10', '2026-10-07'), s21], [], [cfg, c21], {}, 0).revenue, 29.8);
+});

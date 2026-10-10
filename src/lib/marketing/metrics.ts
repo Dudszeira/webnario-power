@@ -47,7 +47,10 @@ function salesByFamily(sales: CaptureRow[], aliases: Record<string, string>) {
   return m;
 }
 
-const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// Custo sem gasto é "—" (null), nunca 0.
+const cost = (spend: number, n: number) => (spend > 0 ? div(spend, n) : null);
 
 export function frontSummary(
   sales: CaptureRow[], ads: MetaAdDay[], eds: EditionConfig[],
@@ -57,8 +60,11 @@ export function frontSummary(
   const metaSpend = round2(winAds.reduce((s, a) => s + a.spend, 0));
   const spendSource = winAds.length ? 'meta' : fallbackSpend > 0 ? 'planilha' : 'nenhum';
   const spend = spendSource === 'meta' ? metaSpend : spendSource === 'planilha' ? fallbackSpend : 0;
-  const price = eds[0]?.ticketPrice ?? 9.9;
-  const revenue = round2(sales.length * price);
+  const priceOf = (n: number | null) => {
+    for (let i = 0; i < eds.length; i++) if (eds[i].number === n) return eds[i].ticketPrice;
+    return 9.9;
+  };
+  const revenue = round2(sales.reduce((t, x) => t + priceOf(x.edition), 0));
   const famSpend = spendByFamily(winAds, aliases);
   const famSales = salesByFamily(sales, aliases);
   let sellingSpend = 0;
@@ -77,9 +83,9 @@ export function frontSummary(
   return {
     sales: sales.length, revenue, spend, spendSource,
     // Sem investimento conhecido, CPA é "—" e não R$ 0,00.
-    roas: div(revenue, spend), cpa: spendSource === 'nenhum' ? null : div(spend, sales.length),
-    cpaSellingAds: div(sellingSpend, salesFromSelling),
-    spendNoSales: round2(spendNoSales), topNoSale, ic, costPerIc: div(spend, ic),
+    roas: div(revenue, spend), cpa: cost(spend, sales.length),
+    cpaSellingAds: cost(sellingSpend, salesFromSelling),
+    spendNoSales: round2(spendNoSales), topNoSale, ic, costPerIc: cost(spend, ic),
   };
 }
 
@@ -103,11 +109,11 @@ function statsFor(family: string, sales: number, ads: MetaAdDay[], cfg: EditionC
   const impressions = sum('impressions');
   const video3s = sum('video3s');
   const ic = sum('initiateCheckouts');
-  // round2: 227.22/4 = 56.805 em float vira 56.80 no toFixed; relatório mostra 56.81.
-  const raw = div(spend, sales);
+  // CPA arredondado em centavos: 227.22/4 = 56.805 em float vira 56.80 no toFixed; o relatório mostra 56.81.
+  const raw = cost(spend, sales);
   const cpa = raw === null ? null : round2(raw);
   return {
-    family, sales, spend, cpa, ic, costPerIc: div(spend, ic), impressions,
+    family, sales, spend, cpa, ic, costPerIc: cost(spend, ic), impressions,
     ctr: div(sum('linkClicks'), impressions), hookRate: div(video3s, impressions),
     bodyRate: div(sum('thruplays'), video3s), band: band(cpa, cfg),
   };
@@ -118,7 +124,8 @@ function table(sales: CaptureRow[], ads: MetaAdDay[], cfg: EditionConfig, aliase
   const adsByFam = new Map<string, MetaAdDay[]>();
   for (const a of ads) {
     const f = creativeFamily(a.adName, aliases);
-    adsByFam.set(f, [...(adsByFam.get(f) ?? []), a]);
+    const list = adsByFam.get(f);
+    if (list) list.push(a); else adsByFam.set(f, [a]);
   }
   const families: string[] = [];
   famSales.forEach((_, f) => families.push(f));
@@ -150,9 +157,11 @@ export function windows137(
   sales: CaptureRow[], ads: MetaAdDay[], cfg: EditionConfig,
   aliases: Record<string, string>, yesterday: string,
 ): Window137[] {
+  const edAds = adsInWindows(ads, [cfg], null);
+  const edSales = sales.filter(x => x.edition === cfg.number);
   const win = (n: number) => {
     const r = { from: addDays(yesterday, -(n - 1)), to: yesterday };
-    return table(sales.filter(s => inRange(day(s.at), r)), ads.filter(a => inRange(a.date, r)), cfg, aliases);
+    return table(edSales.filter(s => inRange(day(s.at), r)), edAds.filter(a => inRange(a.date, r)), cfg, aliases);
   };
   const [w1, w3, w7] = [win(1), win(3), win(7)];
   const empty = (family: string) => statsFor(family, 0, [], cfg);
@@ -184,7 +193,7 @@ export function backSummary(
     applications: ov.reduce((s, o) => s + o.applications, 0),
     scheduled, done,
     highTicketSales: ht.length, highTicketRevenue: htRevenue,
-    costPerScheduled: div(front.spend, scheduled), costPerDone: div(front.spend, done),
+    costPerScheduled: cost(front.spend, scheduled), costPerDone: cost(front.spend, done),
     roasTotal: div(front.revenue + htRevenue, front.spend),
   };
 }
