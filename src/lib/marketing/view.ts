@@ -46,9 +46,13 @@ export async function buildView(selectedIn: number[], range: DateRange | null): 
   const ads = adsInWindows(rawAds, eds, range);
 
   const tickets = ticketSales(captures, selected).filter(s => inRange(s.at?.slice(0, 10) ?? null, range));
-  const fallback = overview.filter(o => selected.includes(o.edition)).reduce((s, o) => s + o.investment, 0);
-  const front = frontSummary(tickets, ads, eds, aliases, fallback);
-  const back = backSummary(overview, schedules, sales, selected, front);
+  const sheetSpend = (nums: number[]) => overview.filter(o => nums.includes(o.edition)).reduce((s, o) => s + o.investment, 0);
+  const fullFallback = sheetSpend(selected);
+  // "Investimento Total" da planilha é da edição inteira: não serve para um recorte de datas.
+  const front = frontSummary(tickets, ads, eds, aliases, range ? 0 : fullFallback);
+  // Calls, aplicações e vendas high ticket são sempre da edição inteira: custo contra a frente inteira.
+  const frontFull = frontSummary(ticketSales(captures, selected), adsInWindows(rawAds, eds, null), eds, aliases, fullFallback);
+  const back = backSummary(overview, schedules, sales, selected, frontFull);
   const first = eds[0];
   // Criativos e reports são rotulados pela primeira edição: só usam dados dela.
   const firstTickets = first ? ticketSales(captures, [first.number]) : [];
@@ -94,7 +98,7 @@ export async function buildView(selectedIn: number[], range: DateRange | null): 
   const yAds = firstAds.filter(a => a.date === yesterday);
   const yTickets = firstTickets.filter(t => t.at?.slice(0, 10) === yesterday);
   const reports = first ? {
-    edition: editionReport(first, frontSummary(firstTickets, firstAds, [first], aliases, 0), creativeTable(firstTickets, firstAds, first, aliases), permalinks, dm(yesterday)),
+    edition: editionReport(first, frontSummary(firstTickets, firstAds, [first], aliases, sheetSpend([first.number])), creativeTable(firstTickets, firstAds, first, aliases), permalinks, dm(yesterday)),
     daily: dailyReport(first, frontSummary(yTickets, yAds, [first], aliases, 0), creativeTable(yTickets, yAds, first, aliases), permalinks, dm(yesterday)),
     w137: report137(windows, dm(yesterday)),
   } : { edition: '', daily: '', w137: '' };

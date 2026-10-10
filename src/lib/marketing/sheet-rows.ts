@@ -14,7 +14,7 @@ export class SheetFormatError extends Error {
   tab: string;
   missing: string[];
   constructor(tab: string, missing: string[]) {
-    super(`Aba "${tab}": colunas não encontradas: ${missing.join(', ') || '(aba vazia)'}`);
+    super(`colunas não encontradas: ${missing.join(', ') || '(aba vazia)'}`);
     this.tab = tab;
     this.missing = missing;
   }

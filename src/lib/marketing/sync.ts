@@ -2,7 +2,7 @@ import { fetchTab } from './sources/sheet.ts';
 import { fetchMetaAdDays, fetchPermalinks, metaConfigured } from './sources/meta.ts';
 import { toOverviewRows, type TabKey } from './sheet-rows.ts';
 import { addDays, inferLiveDate } from './parse.ts';
-import { logRun, saveSnapshot, seedEditions, upsertAdDays, upsertPermalinks } from './store.ts';
+import { hasAdDays, logRun, saveSnapshot, seedEditions, upsertAdDays, upsertPermalinks } from './store.ts';
 
 const today = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10); // Brasília
 
@@ -35,15 +35,27 @@ export async function runSync(opts: { metaDays: number }) {
   if (!metaConfigured()) {
     results.push({ source: 'meta', ok: false, message: 'Token do Meta não configurado' });
   } else {
+    let ids: string[] = [];
     try {
       const until = today();
-      const days = await fetchMetaAdDays(addDays(until, -(opts.metaDays - 1)), until);
+      // 1º sync (tabela vazia): 90 dias, para janelas de edições anteriores não ficarem parciais.
+      const metaDays = (await hasAdDays()) ? opts.metaDays : 90;
+      const days = await fetchMetaAdDays(addDays(until, -(metaDays - 1)), until);
       await upsertAdDays(days);
-      const ids = days.map(d => d.adId);
-      await upsertPermalinks(await fetchPermalinks(ids.filter((x, i) => ids.indexOf(x) === i)));
-      results.push({ source: 'meta', ok: true, message: `${days.length} linhas anúncio×dia` });
+      ids = days.map(d => d.adId).filter((x, i, all) => all.indexOf(x) === i);
+      results.push({ source: 'meta', ok: true, message: `${days.length} linhas anúncio×dia (${metaDays} dias)` });
     } catch (e) {
       results.push({ source: 'meta', ok: false, message: (e as Error).message });
+    }
+    if (ids.length) {
+      // Permalinks são acessórios: falha aqui não marca "meta" como falho.
+      try {
+        const links = await fetchPermalinks(ids);
+        await upsertPermalinks(links);
+        results.push({ source: 'meta:permalinks', ok: true, message: `${Object.keys(links).length} permalinks` });
+      } catch (e) {
+        results.push({ source: 'meta:permalinks', ok: false, message: (e as Error).message });
+      }
     }
   }
 

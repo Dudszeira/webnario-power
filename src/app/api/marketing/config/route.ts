@@ -13,10 +13,14 @@ export async function POST(req: NextRequest) {
   let saved = false;
   if (body?.edition && Number.isInteger(body.edition.number) && body.edition.number > 0) {
     const e = body.edition;
-    await saveEditionOverride({
-      number: e.number, windowStart: day(e.windowStart), windowEnd: day(e.windowEnd),
-      ticketPrice: money(e.ticketPrice), cpaDream: money(e.cpaDream), cpaGood: money(e.cpaGood), cpaLimit: money(e.cpaLimit),
-    });
+    try {
+      await saveEditionOverride({
+        number: e.number, liveDate: day(e.liveDate), windowStart: day(e.windowStart), windowEnd: day(e.windowEnd),
+        ticketPrice: money(e.ticketPrice), cpaDream: money(e.cpaDream), cpaGood: money(e.cpaGood), cpaLimit: money(e.cpaLimit),
+      });
+    } catch (err) {
+      return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+    }
     saved = true;
   }
   const raw = body?.alias?.raw;

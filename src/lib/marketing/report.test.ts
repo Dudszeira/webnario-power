@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { brl, editionReport, report137 } from './report.ts';
+import { brl, dailyReport, editionReport, report137 } from './report.ts';
 import type { EditionConfig } from './types.ts';
 import type { CreativeStats, FrontSummary } from './metrics.ts';
 
@@ -27,4 +27,25 @@ test('report137 prints the three windows per creative', () => {
   const txt = report137(w, '08/10');
   assert.match(txt, /img_10: estável/);
   assert.match(txt, /1d: 3 vendas \| CPA R\$ 33,37/);
+});
+
+test('dailyReport prints "a <custo>" only when there was IC', () => {
+  const none = dailyReport(cfg, { ...front, ic: 0, costPerIc: null }, [c('img_10', 2, 40)], {}, '08/10');
+  assert.match(none, /^0 IC$/m);
+  assert.doesNotMatch(none, /IC a/);
+  assert.match(none, /^ 2 vendas \| R\$ 40,00 \| CPA R\$ 20,00 \| 0 IC$/m);
+  const some = dailyReport(cfg, { ...front, ic: 10, costPerIc: 62.47 }, [{ ...c('img_10', 2, 40), ic: 4, costPerIc: 10 }], {}, '08/10');
+  assert.match(some, /^10 IC a R\$ 62,47 cada$/m);
+  assert.match(some, /^ 2 vendas \| R\$ 40,00 \| CPA R\$ 20,00 \| 4 IC a R\$ 10,00$/m);
+});
+
+test('reports show "—" for investment when there is no spend source', () => {
+  const nenhum: FrontSummary = { ...front, spend: 0, spendSource: 'nenhum', roas: null, cpa: null, cpaSellingAds: null, spendNoSales: 0, topNoSale: null };
+  const ed = editionReport(cfg, nenhum, [], {}, '08/10');
+  assert.match(ed, /16 vendas no total \(R\$ 158,40\) e — investidos = ROAS —\./);
+  assert.match(ed, /\(sem dados de investimento\)/);
+  assert.doesNotMatch(ed, /R\$ 0,00|fonte nenhum/);
+  const daily = dailyReport(cfg, nenhum, [], {}, '08/10');
+  assert.match(daily, /com — investidos = ROAS —/);
+  assert.doesNotMatch(daily, /R\$ 0,00/);
 });

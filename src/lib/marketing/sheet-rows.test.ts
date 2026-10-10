@@ -13,12 +13,14 @@ test('creativeFamily groups ad name variants and UTM prefixes', () => {
   assert.equal(creativeFamily('APIWEB01'), 'apiweb01');
   assert.equal(creativeFamily('  '), '(sem utm)');
   assert.equal(creativeFamily('APIWEB01', { apiweb01: 'API' }), 'API');
+  assert.equal(creativeFamily('webp_vendas_vid_3', { vid_3: 'Criativo 3' }), 'Criativo 3');
+  assert.equal(creativeFamily('webp_vendas_vid_3', { webp_vendas_vid_3: 'Cru', vid_3: 'Criativo 3' }), 'Cru');
 });
 
 test('checkHeaders names the tab and the missing columns', () => {
   assert.throws(
     () => checkHeaders('sales', [{ STATUS: 'x' }]),
-    (e: unknown) => e instanceof SheetFormatError && e.tab === 'sales' && e.missing.includes('Produto'),
+    (e: unknown) => e instanceof SheetFormatError && e.tab === 'sales' && e.missing.includes('Produto') && e.message === 'colunas não encontradas: ' + e.missing.join(', '),
   );
   assert.throws(() => checkHeaders('capture', []), SheetFormatError);
 });

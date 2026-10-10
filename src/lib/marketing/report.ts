@@ -10,6 +10,10 @@ export function brl(n: number | null): string {
 const num2 = (n: number | null) => (n === null ? '—' : dec.format(n));
 const ed = (n: number) => `#${String(n).padStart(3, '0')}`;
 const vendas = (n: number) => `${n} ${n === 1 ? 'venda' : 'vendas'}`;
+// Sem fonte de investimento o valor é desconhecido: "—", nunca R$ 0,00.
+const spendOf = (f: FrontSummary) => (f.spendSource === 'nenhum' ? '—' : brl(f.spend));
+// Igual ao report137: "a <custo>" só quando houve IC.
+const icText = (ic: number, cost: number | null, suffix = '') => `${ic} IC${ic > 0 ? ` a ${brl(cost)}${suffix}` : ''}`;
 
 function creativeLine(c: CreativeStats): string {
   return `${c.family}: ${vendas(c.sales)} | ${brl(c.spend)} | CPA ${brl(c.cpa)}`;
@@ -27,7 +31,7 @@ export function editionReport(
   const top3 = selling.slice(0, 3);
   const lines = [
     `REPORT WEBNÁRIO PAGO ${ed(cfg.number)} | ${dayLabel}`,
-    `${vendas(f.sales)} no total (${brl(f.revenue)}) e ${brl(f.spend)} investidos = ROAS ${num2(f.roas)}.`,
+    `${vendas(f.sales)} no total (${brl(f.revenue)}) e ${spendOf(f)} investidos = ROAS ${num2(f.roas)}.`,
     '', goals(cfg), '',
     'CPA por anúncio', '',
     ...selling.map(creativeLine), '',
@@ -44,7 +48,8 @@ export function editionReport(
     if (permalinks[c.family]) lines.push(` ${permalinks[c.family]}`);
     lines.push('');
   }
-  if (f.spendSource !== 'meta') lines.push(`(investimento: fonte ${f.spendSource})`);
+  if (f.spendSource === 'planilha') lines.push('(investimento: fonte planilha)');
+  if (f.spendSource === 'nenhum') lines.push('(sem dados de investimento)');
   return lines.join('\n').trim();
 }
 
@@ -54,14 +59,15 @@ export function dailyReport(
 ): string {
   const lines = [
     `REPORT WEBNÁRIO PAGO | Fechamento ${dayLabel}`, '',
-    `${vendas(y.sales)} (${brl(y.revenue)}) com ${brl(y.spend)} investidos = ROAS ${num2(y.roas)}`,
+    `${vendas(y.sales)} (${brl(y.revenue)}) com ${spendOf(y)} investidos = ROAS ${num2(y.roas)}`,
     `CPA do dia: ${brl(y.cpa)}`,
-    `${y.ic} IC a ${brl(y.costPerIc)} cada`, '',
+    icText(y.ic, y.costPerIc, ' cada'), '',
     goals(cfg), '',
     'Melhores criativos de ontem', '',
   ];
+  if (y.spendSource === 'nenhum') lines.splice(3, 0, '(sem dados de investimento)');
   for (const c of best.filter(b => b.sales > 0).slice(0, 3)) {
-    lines.push(`Criativo ${c.family}`, ` ${vendas(c.sales)} | ${brl(c.spend)} | CPA ${brl(c.cpa)} | ${c.ic} IC a ${brl(c.costPerIc)}`);
+    lines.push(`Criativo ${c.family}`, ` ${vendas(c.sales)} | ${brl(c.spend)} | CPA ${brl(c.cpa)} | ${icText(c.ic, c.costPerIc)}`);
     if (permalinks[c.family]) lines.push(` ${permalinks[c.family]}`);
     lines.push('');
   }

@@ -41,16 +41,16 @@ export default function EditionTab({ view, onSaved }: { view: MarketingView; onS
         <h2 className="mb-2 text-sm font-medium">Frente — ingresso</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Kpi label="Vendas" value={String(f.sales)} hint={brl(f.revenue)} />
-          <Kpi label="Investimento" value={brl(f.spend)} hint={f.spendSource === 'meta' ? 'fonte: Meta' : f.spendSource === 'planilha' ? 'fonte: planilha (sem Meta)' : 'sem dados de investimento'} />
+          <Kpi label="Investimento" value={f.spendSource === 'nenhum' ? '—' : brl(f.spend)} hint={f.spendSource === 'meta' ? 'fonte: Meta' : f.spendSource === 'planilha' ? 'fonte: planilha (sem Meta)' : 'sem dados de investimento'} />
           <Kpi label="ROAS" value={dec(f.roas)} />
           <Kpi label="CPA da campanha" value={brl(f.cpa)} hint={`só anúncios que venderam: ${brl(f.cpaSellingAds)}`} />
           <Kpi label="IC (pixel)" value={String(f.ic)} hint={`${brl(f.costPerIc)} cada — sinal, não é venda`} />
-          <Kpi label="Gasto sem venda" value={brl(f.spendNoSales)} hint={f.topNoSale ? `maior: ${f.topNoSale.family} (${brl(f.topNoSale.spend)})` : undefined} />
+          <Kpi label="Gasto sem venda" value={f.spendSource === 'meta' ? brl(f.spendNoSales) : '—'} hint={f.topNoSale ? `maior: ${f.topNoSale.family} (${brl(f.topNoSale.spend)})` : undefined} />
         </div>
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-medium">Fundo — high ticket</h2>
+        <h2 className="mb-2 text-sm font-medium">Fundo — high ticket <span className="font-normal text-muted-foreground">(edição inteira)</span></h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Kpi label="Aplicações" value={String(b.applications)} />
           <Kpi label="Calls agendadas" value={String(b.scheduled)} hint={`custo: ${brl(b.costPerScheduled)}`} />
@@ -81,7 +81,7 @@ export default function EditionTab({ view, onSaved }: { view: MarketingView; onS
             <Button size="sm" onClick={async () => {
               setSaveError('');
               try {
-                const res = await fetch('/api/marketing/config', { method: 'POST', body: JSON.stringify({ edition: { number: cfg.number, windowStart: cfg.windowStart, windowEnd: cfg.windowEnd, ticketPrice: cfg.ticketPrice, ...goals } }) });
+                const res = await fetch('/api/marketing/config', { method: 'POST', body: JSON.stringify({ edition: { number: cfg.number, liveDate: cfg.liveDate, ...goals } }) });
                 if (res.ok) onSaved(); else setSaveError('Não foi possível salvar');
               } catch { setSaveError('Não foi possível salvar'); }
             }}>Salvar metas</Button>

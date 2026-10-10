@@ -16,7 +16,7 @@ export async function fetchTab(tab: TabKey): Promise<Record<string, string>[]> {
   const res = await fetch(url, { cache: 'no-store', redirect: 'follow' });
   const type = res.headers.get('content-type') ?? '';
   if (!res.ok || !type.includes('text/csv')) {
-    throw new Error(`Aba "${tab}": planilha inacessível (HTTP ${res.status}). Ela precisa estar como "qualquer pessoa com o link: leitor".`);
+    throw new Error(`planilha inacessível (HTTP ${res.status}). Ela precisa estar como "qualquer pessoa com o link: leitor".`);
   }
   const records = toRecords(parseCsv(await res.text()));
   checkHeaders(tab, records);

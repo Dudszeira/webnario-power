@@ -46,6 +46,12 @@ export async function loadAdDays(from: string, to: string): Promise<MetaAdDay[]>
   return out;
 }
 
+export async function hasAdDays(): Promise<boolean> {
+  const { data, error } = await supabase.from('mkt_meta_ad_daily').select('date').limit(1);
+  check(error, 'has ad days');
+  return !!data?.length;
+}
+
 export async function upsertPermalinks(map: Record<string, string>) {
   const rows = Object.entries(map).map(([ad_id, permalink]) => ({ ad_id, permalink, updated_at: new Date().toISOString() }));
   if (!rows.length) return;
@@ -76,12 +82,16 @@ export async function loadEditionOverrides(): Promise<EditionOverride[]> {
   }));
 }
 
+// Grava só os campos enviados: campo omitido não vira null (não congela a janela de captação).
+// UPSERT por number: a edição pode ainda não ter sido semeada pelo sync (aí live_date, NOT NULL, é obrigatório).
 export async function saveEditionOverride(o: EditionOverride) {
-  const { error } = await supabase.from('mkt_editions').update({
-    window_start: o.windowStart ?? null, window_end: o.windowEnd ?? null,
-    ticket_price: o.ticketPrice, cpa_dream: o.cpaDream, cpa_good: o.cpaGood, cpa_limit: o.cpaLimit,
-    updated_at: new Date().toISOString(),
-  }).eq('number', o.number);
+  const cols: Record<string, string | number> = { number: o.number, updated_at: new Date().toISOString() };
+  const map: [keyof EditionOverride, string][] = [
+    ['liveDate', 'live_date'], ['windowStart', 'window_start'], ['windowEnd', 'window_end'],
+    ['ticketPrice', 'ticket_price'], ['cpaDream', 'cpa_dream'], ['cpaGood', 'cpa_good'], ['cpaLimit', 'cpa_limit'],
+  ];
+  map.forEach(([k, col]) => { if (o[k] !== undefined) cols[col] = o[k] as string | number; });
+  const { error } = await supabase.from('mkt_editions').upsert(cols, { onConflict: 'number' });
   check(error, 'save edition');
 }
 
