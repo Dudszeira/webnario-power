@@ -24,6 +24,8 @@ import LiveTab from './LiveTab';
 import DealsTab from './DealsTab';
 import SalesTab from './SalesTab';
 import BuyersTab from './BuyersTab';
+import ApiTab from './ApiTab';
+import DisparosTab from './DisparosTab';
 
 type Range = { from: string; to: string };
 const NO_RANGE: Range = { from: '', to: '' };
@@ -37,6 +39,7 @@ const GROUPS: { key: string; label: string; tabs: { key: string; label: string }
   { key: 'resultado', label: 'Resultado', tabs: [{ key: 'edicao', label: 'Edição' }, { key: 'criativos', label: 'Criativos' }, { key: 'validacao', label: 'Validação' }] },
   { key: 'leads', label: 'Leads', tabs: [{ key: 'pesquisa', label: 'Pesquisa' }, { key: 'aplicacoes', label: 'Aplicações' }, { key: 'aovivo', label: 'Ao vivo' }] },
   { key: 'comercial', label: 'Comercial', tabs: [{ key: 'agendamentos', label: 'Agendamentos' }, { key: 'vendas', label: 'Vendas' }, { key: 'compradores', label: 'Compradores' }] },
+  { key: 'canais', label: 'Canais', tabs: [{ key: 'api', label: 'API' }, { key: 'disparos', label: 'Disparos' }] },
 ];
 
 // label: telas largas · short: notebook · mini: celular
@@ -260,6 +263,8 @@ export default function MarketingDashboard() {
                 <TabsContent value="agendamentos"><DealsTab query={query} /></TabsContent>
                 <TabsContent value="vendas"><SalesTab query={query} /></TabsContent>
                 <TabsContent value="compradores"><BuyersTab query={query} /></TabsContent>
+                <TabsContent value="api"><ApiTab query={query} /></TabsContent>
+                <TabsContent value="disparos"><DisparosTab query={query} /></TabsContent>
               </Tabs>
             </div>
           )}

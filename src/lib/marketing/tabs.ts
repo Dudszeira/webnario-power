@@ -9,14 +9,16 @@ import { applicationsTab, buildApplications, type Application, type Applications
 import { liveStats, liveTotals, presenceFromEvents, type LiveStats, type LiveTab } from './live.ts';
 import { buildDeals, dealsTab, type Deal, type DealsTab } from './deals.ts';
 import { buyersTab, salesTab, type BuyersTab, type SalesTab } from './sales.ts';
+import { apiTab, type ApiTab } from './api-leads.ts';
+import { disparosTab, type DisparosTab } from './disparos.ts';
 import { filterAds } from './full-funnel.ts';
 import { getMarketingSettings } from './settings.ts';
 import { TAB_TITLES } from './sync.ts';
-import { loadAdDays, loadEditionOverrides, loadSnapshotTimes, loadSnapshots } from './store.ts';
+import { loadAdDays, loadDisparos, loadEditionOverrides, loadSnapshotTimes, loadSnapshots } from './store.ts';
 import { loadLive } from './sources/platform.ts';
 
 export const PANEL_TABS = [
-  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores',
+  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores', 'api', 'disparos',
 ] as const;
 export type PanelTab = typeof PANEL_TABS[number];
 export const isPanelTab = (t: string): t is PanelTab => (PANEL_TABS as readonly string[]).indexOf(t) >= 0;
@@ -29,6 +31,8 @@ export type TabData = {
   agendamentos: DealsTab;
   vendas: SalesTab;
   compradores: BuyersTab;
+  api: ApiTab;
+  disparos: DisparosTab;
 };
 // Aba da planilha sem dados: a tela diz qual fonte falta, em vez de mostrar zeros.
 export type MissingSources = { missing: string[] };
@@ -41,6 +45,8 @@ const NEEDS: Record<PanelTab, TabKey[]> = {
   agendamentos: ['capture', 'schedule', 'sales', 'survey'],
   vendas: ['capture', 'sales'],
   compradores: ['capture', 'sales', 'survey'],
+  api: ['capture', 'survey', 'sales'],
+  disparos: [],
 };
 
 // Linhas da planilha em memória da instância, por aba, enquanto o `fetched_at` do snapshot não muda.
@@ -179,6 +185,8 @@ const BUILDERS: { [K in PanelTab]: Builder<K> } = {
   agendamentos: async (c, o) => dealsTab(deals(c), c.eds, spendByEdition(c, (await adsOf(c)).ads), c.range, o.lists),
   vendas: (c, o) => salesTab(c.leads, salesOf(c), o.lists),
   compradores: (c, o) => buyersTab(salesOf(c), c.surveys, o.produto, o.lists),
+  api: c => apiTab(c.leads, c.surveys, salesOf(c)),
+  disparos: async c => disparosTab(await loadDisparos(), c.range),
 };
 export async function buildTab(tab: PanelTab, selected: number[], range: DateRange | null, o: TabOptions): Promise<TabData[PanelTab] | MissingSources> {
   const c = await context(tab, selected, range);
