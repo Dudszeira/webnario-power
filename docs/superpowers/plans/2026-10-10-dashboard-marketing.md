@@ -2561,7 +2561,7 @@ git commit -m "feat(marketing): /admin/marketing page with edition, creatives an
 
 - [ ] **Step 1: Variáveis na Vercel (Preview e Production)**
 
-`MKT_SHEET_ID=12vzfHlZwcSln-KMiXY35b7YIyb4RqKDsPjyyKtXGAjg`, `CRON_SECRET` (gerar com `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`), e quando chegarem: `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`.
+`MKT_SHEET_ID=<ID da planilha — ver variável MKT_SHEET_ID na Vercel>`, `CRON_SECRET` (gerar com `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`), e quando chegarem: `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`.
 
 - [ ] **Step 2: Push da branch e Preview**
 
