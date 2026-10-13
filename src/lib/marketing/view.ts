@@ -10,6 +10,8 @@ import {
 import { matchBuyers, type BuyerMatch } from './matching.ts';
 import { dailyReport, editionReport, report137 } from './report.ts';
 import { lastRuns, loadAdDays, loadAliases, loadEditionOverrides, loadPermalinks, loadSnapshots } from './store.ts';
+import { filterAds } from './full-funnel.ts';
+import { getMarketingSettings } from './settings.ts';
 import { loadAttendance } from './sources/platform.ts';
 
 export type MarketingView = {
@@ -31,8 +33,8 @@ const dm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 export async function buildView(selectedIn: number[], range: DateRange | null): Promise<MarketingView> {
   const today = todayBRT();
   const yesterday = addDays(today, -1);
-  const [snap, overrides, aliases, adPermalinks, sources] = await Promise.all([
-    loadSnapshots(['capture', 'overview', 'sales', 'schedule']), loadEditionOverrides(), loadAliases(), loadPermalinks(), lastRuns(),
+  const [snap, overrides, aliases, adPermalinks, sources, settings] = await Promise.all([
+    loadSnapshots(['capture', 'overview', 'sales', 'schedule']), loadEditionOverrides(), loadAliases(), loadPermalinks(), lastRuns(), getMarketingSettings(),
   ]);
   const captures = toCaptureRows(snap.capture ?? []);
   const overview = toOverviewRows(snap.overview ?? []);
@@ -44,7 +46,8 @@ export async function buildView(selectedIn: number[], range: DateRange | null): 
   const eds = editions.filter(e => selected.includes(e.number));
   const minStart = eds.reduce((m, e) => (e.windowStart < m ? e.windowStart : m), today);
   const maxEnd = eds.reduce((m, e) => (e.windowEnd > m ? e.windowEnd : m), minStart);
-  const rawAds: MetaAdDay[] = eds.length ? await loadAdDays(minStart, maxEnd) : [];
+  // Só campanhas que passam no filtro (padrão "WB PG"); o cache não é apagado.
+  const rawAds: MetaAdDay[] = eds.length ? filterAds(await loadAdDays(minStart, maxEnd), settings.metaCampaignFilter) : [];
   const ads = adsInWindows(rawAds, eds, range);
 
   const tickets = ticketSales(captures, selected).filter(s => inRange(s.at?.slice(0, 10) ?? null, range));

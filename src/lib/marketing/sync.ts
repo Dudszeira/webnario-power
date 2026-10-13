@@ -1,9 +1,12 @@
 import { fetchTab } from './sources/sheet.ts';
-import { fetchMetaAdDays, fetchPermalinks } from './sources/meta.ts';
+import { fetchMetaAdDays, fetchMetaWindow, fetchPermalinks } from './sources/meta.ts';
 import { getMarketingSettings, metaConfigured } from './settings.ts';
 import { TAB_KEYS, toOverviewRows, type TabKey } from './sheet-rows.ts';
 import { addDays, inferLiveDate } from './parse.ts';
-import { hasAdDays, logRun, saveSnapshot, seedEditions, upsertAdDays, upsertPermalinks } from './store.ts';
+import { hasAdDays, loadEditionOverrides, loadSnapshots, logRun, saveSnapshot, seedEditions, upsertAdDays, upsertMetaWindows, upsertPermalinks } from './store.ts';
+import { buildEditions } from './editions.ts';
+import { metaWindowRanges } from './full-funnel.ts';
+import type { MetaWindow } from './types.ts';
 
 const today = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10); // Brasília
 
@@ -20,11 +23,13 @@ export async function runSync(opts: { metaDays: number }) {
   const results: { source: string; ok: boolean; message: string }[] = [];
   const settings = await getMarketingSettings();
 
+  let overviewRecs: Record<string, string>[] | null = null;
   for (const tab of TAB_KEYS) {
     try {
       const rows = await fetchTab(tab, settings);
       await saveSnapshot(tab, rows);
       if (tab === 'overview') {
+        overviewRecs = rows;
         const t = today();
         await seedEditions(toOverviewRows(rows)
           .map(o => ({ number: o.edition, liveDate: inferLiveDate(o.dayMonth, t) }))
@@ -60,6 +65,18 @@ export async function runSync(opts: { metaDays: number }) {
       } catch (e) {
         results.push({ source: 'meta:permalinks', ok: false, message: (e as Error).message });
       }
+    }
+    // ponytail: refaz o alcance de todas as edições pagas a cada sync (1 chamada por edição); pular as encerradas se ficar lento.
+    try {
+      const t = today();
+      const recs = overviewRecs ?? (await loadSnapshots(['overview'])).overview ?? [];
+      const ranges = metaWindowRanges(buildEditions(toOverviewRows(recs), await loadEditionOverrides(), t), t);
+      const rows: MetaWindow[] = [];
+      for (const r of ranges) rows.push({ ...r, ...(await fetchMetaWindow(r.since, r.until, settings.metaCampaignFilter, settings)) });
+      await upsertMetaWindows(rows);
+      results.push({ source: 'meta:alcance', ok: true, message: `${rows.length} edições` });
+    } catch (e) {
+      results.push({ source: 'meta:alcance', ok: false, message: (e as Error).message });
     }
   }
 

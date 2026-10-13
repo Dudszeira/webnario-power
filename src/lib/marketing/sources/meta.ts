@@ -57,3 +57,17 @@ export async function fetchPermalinks(adIds: string[], settings?: MarketingSetti
   }
   return out;
 }
+
+// Alcance e frequência não somam entre dias/anúncios: uma chamada por janela, nível conta, filtrando a campanha.
+export async function fetchMetaWindow(since: string, until: string, filter: string, s: MarketingSettings): Promise<{ reach: number | null; frequency: number | null }> {
+  const params = new URLSearchParams({
+    level: 'account',
+    fields: 'reach,frequency',
+    time_range: JSON.stringify({ since, until }),
+    access_token: s.metaToken,
+  });
+  if (filter.trim()) params.set('filtering', JSON.stringify([{ field: 'campaign.name', operator: 'CONTAIN', value: filter.trim() }]));
+  const rows = await getAll<{ reach?: string; frequency?: string }>(`${base(s)}/act_${accountId(s)}/insights?${params}`);
+  const r = rows[0];
+  return { reach: r?.reach ? Number(r.reach) : null, frequency: r?.frequency ? Number(r.frequency) : null };
+}
