@@ -61,3 +61,11 @@ alter table mkt_sheet_snapshot enable row level security;
 alter table mkt_sync_runs enable row level security;
 alter table mkt_editions enable row level security;
 alter table mkt_creative_alias enable row level security;
+
+-- Credenciais do painel de marketing editáveis na plataforma (prioridade sobre env da Vercel).
+create table if not exists mkt_settings (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz not null default now()
+);
+alter table mkt_settings enable row level security;

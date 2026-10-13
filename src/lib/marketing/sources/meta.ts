@@ -1,11 +1,17 @@
 import { mapInsightRow, type MetaInsightRow } from '../meta-map.ts';
 import type { MetaAdDay } from '../types.ts';
+import { getMarketingSettings, type MarketingSettings } from '../settings.ts';
 
-const VERSION = process.env.META_API_VERSION || 'v23.0';
-const BASE = `https://graph.facebook.com/${VERSION}`;
+const base = (s: MarketingSettings) => `https://graph.facebook.com/${s.metaApiVersion}`;
+const accountId = (s: MarketingSettings) => s.metaAdAccount.replace(/^act_/, '');
 
-export function metaConfigured(): boolean {
-  return !!(process.env.META_ACCESS_TOKEN && process.env.META_AD_ACCOUNT_ID);
+// Teste de conexão (só leitura): nome da conta de anúncios.
+export async function fetchAdAccountName(s: MarketingSettings): Promise<string> {
+  const params = new URLSearchParams({ fields: 'name', access_token: s.metaToken });
+  const res = await fetch(`${base(s)}/act_${accountId(s)}?${params}`, { cache: 'no-store' });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.error) throw new Error(`Meta: ${body.error?.message ?? `HTTP ${res.status}`}`);
+  return body.name ?? '';
 }
 
 async function getAll<T>(url: string): Promise<T[]> {
@@ -21,26 +27,27 @@ async function getAll<T>(url: string): Promise<T[]> {
   return out;
 }
 
-export async function fetchMetaAdDays(since: string, until: string): Promise<MetaAdDay[]> {
-  const account = process.env.META_AD_ACCOUNT_ID!.replace(/^act_/, '');
+export async function fetchMetaAdDays(since: string, until: string, settings?: MarketingSettings): Promise<MetaAdDay[]> {
+  const s = settings ?? await getMarketingSettings();
   const params = new URLSearchParams({
     level: 'ad',
     time_increment: '1',
     time_range: JSON.stringify({ since, until }),
     fields: 'ad_id,ad_name,adset_name,campaign_name,spend,impressions,inline_link_clicks,actions,video_thruplay_watched_actions',
     limit: '500',
-    access_token: process.env.META_ACCESS_TOKEN!,
+    access_token: s.metaToken,
   });
-  const rows = await getAll<MetaInsightRow>(`${BASE}/act_${account}/insights?${params}`);
+  const rows = await getAll<MetaInsightRow>(`${base(s)}/act_${accountId(s)}/insights?${params}`);
   return rows.map(mapInsightRow);
 }
 
-export async function fetchPermalinks(adIds: string[]): Promise<Record<string, string>> {
+export async function fetchPermalinks(adIds: string[], settings?: MarketingSettings): Promise<Record<string, string>> {
+  const s = settings ?? await getMarketingSettings();
   const out: Record<string, string> = {};
   for (let i = 0; i < adIds.length; i += 50) {
     const ids = adIds.slice(i, i + 50).join(',');
-    const params = new URLSearchParams({ ids, fields: 'creative{instagram_permalink_url}', access_token: process.env.META_ACCESS_TOKEN! });
-    const res = await fetch(`${BASE}/?${params}`, { cache: 'no-store' });
+    const params = new URLSearchParams({ ids, fields: 'creative{instagram_permalink_url}', access_token: s.metaToken });
+    const res = await fetch(`${base(s)}/?${params}`, { cache: 'no-store' });
     const body = await res.json();
     if (!res.ok || body.error) throw new Error(`Meta: ${body.error?.message ?? `HTTP ${res.status}`}`);
     for (const [id, ad] of Object.entries(body as Record<string, { creative?: { instagram_permalink_url?: string } }>)) {

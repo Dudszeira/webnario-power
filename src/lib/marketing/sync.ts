@@ -1,12 +1,13 @@
 import { fetchTab } from './sources/sheet.ts';
-import { fetchMetaAdDays, fetchPermalinks, metaConfigured } from './sources/meta.ts';
+import { fetchMetaAdDays, fetchPermalinks } from './sources/meta.ts';
+import { getMarketingSettings, metaConfigured } from './settings.ts';
 import { toOverviewRows, type TabKey } from './sheet-rows.ts';
 import { addDays, inferLiveDate } from './parse.ts';
 import { hasAdDays, logRun, saveSnapshot, seedEditions, upsertAdDays, upsertPermalinks } from './store.ts';
 
 const today = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10); // Brasília
 
-const TAB_TITLES: Record<TabKey, string> = {
+export const TAB_TITLES: Record<TabKey, string> = {
   capture: 'Captação',
   overview: 'Visão Geral',
   sales: 'Detalhamento Vendas',
@@ -15,10 +16,11 @@ const TAB_TITLES: Record<TabKey, string> = {
 
 export async function runSync(opts: { metaDays: number }) {
   const results: { source: string; ok: boolean; message: string }[] = [];
+  const settings = await getMarketingSettings();
 
   for (const tab of ['capture', 'overview', 'sales', 'schedule'] as TabKey[]) {
     try {
-      const rows = await fetchTab(tab);
+      const rows = await fetchTab(tab, settings);
       await saveSnapshot(tab, rows);
       if (tab === 'overview') {
         const t = today();
@@ -32,7 +34,7 @@ export async function runSync(opts: { metaDays: number }) {
     }
   }
 
-  if (!metaConfigured()) {
+  if (!metaConfigured(settings)) {
     results.push({ source: 'meta', ok: false, message: 'Token do Meta não configurado' });
   } else {
     let ids: string[] = [];
@@ -40,7 +42,7 @@ export async function runSync(opts: { metaDays: number }) {
       const until = today();
       // 1º sync (tabela vazia): 90 dias, para janelas de edições anteriores não ficarem parciais.
       const metaDays = (await hasAdDays()) ? opts.metaDays : 90;
-      const days = await fetchMetaAdDays(addDays(until, -(metaDays - 1)), until);
+      const days = await fetchMetaAdDays(addDays(until, -(metaDays - 1)), until, settings);
       await upsertAdDays(days);
       ids = days.map(d => d.adId).filter((x, i, all) => all.indexOf(x) === i);
       results.push({ source: 'meta', ok: true, message: `${days.length} linhas anúncio×dia (${metaDays} dias)` });
@@ -50,7 +52,7 @@ export async function runSync(opts: { metaDays: number }) {
     if (ids.length) {
       // Permalinks são acessórios: falha aqui não marca "meta" como falho.
       try {
-        const links = await fetchPermalinks(ids);
+        const links = await fetchPermalinks(ids, settings);
         await upsertPermalinks(links);
         results.push({ source: 'meta:permalinks', ok: true, message: `${Object.keys(links).length} permalinks` });
       } catch (e) {

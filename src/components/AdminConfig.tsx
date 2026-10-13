@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminSidebar } from './AdminSidebar';
 import CyberDateTimePicker from './CyberDateTimePicker';
+import IntegrationsCard from './marketing/IntegrationsCard';
 import {
   SidebarInset,
   SidebarProvider,
@@ -375,6 +376,8 @@ export default function AdminConfig() {
               {saved ? <><Check className="size-4" /> Salvo!</> : saving ? <><Loader2 className="size-4 animate-spin" /> Salvando...</> : 'Salvar configurações'}
             </Button>
           </form>
+
+          <IntegrationsCard />
         </div>
       </SidebarInset>
     </SidebarProvider>
