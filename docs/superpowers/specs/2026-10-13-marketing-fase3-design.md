@@ -164,14 +164,14 @@ Seguem o padrão atual: imports relativos `.ts`, sem `@/`, sem I/O.
   estado `ok` (igual), `diverge`, `so_planilha`, `so_plataforma`.
 
 Todos os cálculos ficam em funções puras testadas com casos anonimizados das regras acima.
-Conferência manual: números de #018–#020 batem com o HTML antigo.
+Conferência manual (verificação do usuário): números de #018–#020, considerando só registros com data até 06/10/2026, batem com o HTML antigo, salvo as diferenças esperadas e documentadas no plano: atribuição de edição pelo ciclo inteiro (o HTML só olhava #015–#020, e o #020 absorvia registros posteriores sem par), presença vinda da plataforma (não dos CSVs), funil pelas linhas e não pelos totais digitados na Visão Geral, registros sem edição mostrados como "sem edição", stopwords dos desafios sem acento e Compradores sem reembolsos.
 
 ## API
 
 - `GET /api/marketing/data?tab=<edicao|criativos|validacao|pesquisa|aplicacoes|aovivo|agendamentos|vendas|compradores|api|disparos>`
   + filtros atuais (edições, período). Calcula só aquela aba. Admin only. Listas de pessoas
   só com `&lists=1` (pedido ao abrir a seção recolhível).
-- `GET/POST/PATCH/DELETE /api/marketing/disparos` — admin only, entrada validada; DELETE
+- `POST/PATCH/DELETE /api/marketing/disparos` — admin only, entrada validada; DELETE
   remove uma linha por id (só disparos; nada mais é apagado).
 - `/api/marketing/settings` aceita `meta_campaign_filter`.
 

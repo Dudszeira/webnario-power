@@ -40,7 +40,7 @@
 ## Decisões tomadas onde a spec não fecha
 
 1. **Compatibilidade:** sem `tab` a rota não muda. As abas Edição/Criativos/Validação continuam lendo o `MarketingView` e buscam o complemento com `?tab=edicao|criativos|validacao`.
-2. **Aplicações e negócios sem edição identificada** (sem e-mail na captação e sem data) não entram em nenhuma edição; aparecem como contagem "sem edição" (o HTML antigo os somava em qualquer seleção).
+2. **Atribuição de edição em todo o ciclo:** aplicação/negócio vai para a captação mais recente do ciclo (#015 em diante) ou para a última live até a data. O HTML antigo só olhava #015–#020, então o #020 absorvia registros posteriores sem par; aqui eles caem na edição certa (#021+). Registros sem edição identificada (sem e-mail na captação e sem data) não entram em nenhuma edição e aparecem como contagem "sem edição" (o HTML os somava em qualquer seleção).
 3. **Venda aprovada = STATUS não casa `/reembol|estorno|cancel/i`** em todo o painel (antes era `=== 'aprovada'`). Compradores também excluem reembolsos (spec: "excluído de toda contagem de venda").
 4. **Stopwords dos desafios comparadas sem acento** (o HTML comparava a lista acentuada contra tokens sem acento, deixando passar "também", "porém"…).
 5. **Comparecimento oficial = pico ÷ leads da edição × 100** (mesma conta de reserva do HTML) na conferência.
@@ -50,18 +50,24 @@
 9. **Vendas do funil completo** = linhas da Captação com funil `PAGO` (mesma regra de `ticketSales`), da edição, com `utm_campaign` contendo o filtro.
 10. **Edições abaixo de #015** saem do seletor (o HTML também as ignorava); dados continuam no banco.
 11. **Disparos** não pertencem a edição: o filtro de edição não se aplica; o período filtra pela data do disparo.
-12. **Gasto oficial por edição** (custo por call): Meta filtrado na janela; sem Meta, "Investimento Total" da Visão Geral; sem nada, "n/d" e fora do total.
+12. **Gasto oficial por edição** (custo por call): edições NF10K (#015–#020) usam sempre o "Investimento Total" da Visão Geral (como o HTML). Edições pagas: Meta filtrado na janela; sem Meta, "Investimento Total"; sem nada, "n/d" e fora do total.
 13. **"Até o pitch" do Ao vivo** segue o HTML (entrou antes do pitch e saiu depois). O funil da Edição continua com a regra atual (`stayedToPitch`).
 14. **Complementos da Edição ignoram o período** (edição inteira, como o bloco "Fundo"). Ao vivo também (é por live).
 15. **Template importado** = rótulo (`V1`/`V2`) + texto da versão que rodou + mensagens 02 e 03, quando o disparo tem `key` nos templates do HTML.
+16. **Venda ↔ negócio por ciclo:** negócio de edição NF10K só casa com venda de #015–#020; negócio do pago, com venda do pago (o HTML só via o ciclo NF10K).
+17. **Criativos:** leads, % 5k+, agendamentos e vendas high ticket somam **todas** as edições selecionadas (como o HTML), com os desempates do HTML; as colunas do Meta (gasto, CPA, CTR…) continuam da 1ª edição selecionada, como hoje — a tela diz isso.
+18. **Fonte vazia não vira zero:** se uma aba da planilha que a aba do painel usa não tem dados, a rota devolve `{ missing: [...] }` e a tela mostra "Fonte sem dados: … Clique em Atualizar".
+19. **Desempenho:** `maxDuration = 60` na rota de dados; linhas da planilha guardadas em memória da instância enquanto o `fetched_at` do snapshot não muda; presença de lives que já passaram guardada em memória; respostas por URL guardadas no navegador (voltar a uma aba não refaz a busca).
+20. **Escrita dos disparos** só por `POST/PATCH/DELETE /api/marketing/disparos`; a leitura vem da aba (`?tab=disparos`), então não há GET próprio. Erros do banco ficam no log do servidor; o navegador recebe "Falha ao salvar".
+21. **Funil da Edição** espera o complemento carregar (mostra "Carregando funil…") para não trocar de etapas na frente da pessoa; com ele: Aplicações → qualificada → agendadas → realizadas (linhas do Pipedrive) → vendas high ticket (com a lista de compradores), mais a divisão Power | Start. Se o complemento falhar, volta aos totais da Visão Geral.
 
 ## Estrutura de arquivos
 
 ```
 src/lib/marketing/
   types.ts            + campos novos de Captação/Vendas/Agendamentos, OverviewCheck, SurveyRow, ApplicationRow, MetaWindow
-  parse.ts            + normHeader, findCol, findColAll, firstCol, parseBR, parseBROrNull, shiftHours, normName
-  sheet-rows.ts       + abas survey/applications, agulhas obrigatórias, colunas opcionais
+  parse.ts            + normHeader, findCol, findColAll, firstCol, parseBR, parseBROrNull, shiftHours, normName; parseDateTime só 2021–2099
+  sheet-rows.ts       + abas survey/applications, agulhas obrigatórias, colunas opcionais, números com ponto de milhar
   editions.ts         + PAGO_MIN, CYCLE_MIN, editionKind, lastLiveOnOrBefore, cycleStartAt, índice de captação
   metrics.ts          + countBy
   survey.ts           NOVO  pesquisa: junção, 5k+, distribuições, filtro de renda, desafios
@@ -76,15 +82,15 @@ src/lib/marketing/
   breakdowns.ts       NOVO  funil Power|Start, webinário a webinário, extras por criativo
   tabs.ts             NOVO  (servidor) contexto + cálculo de uma aba do painel
   settings.ts         + gids novos, meta_campaign_filter
-  store.ts            + snapshots seletivos, mkt_disparos, mkt_meta_window
+  store.ts            + snapshots seletivos, datas dos snapshots, mkt_disparos, mkt_meta_window
   sync.ts             + abas novas, alcance por janela
   view.ts             + filtro de campanha na leitura, snapshots seletivos
   sources/meta.ts     + fetchMetaWindow
-  sources/platform.ts + loadLive
+  sources/platform.ts + loadLive (leitor paginado próprio, que lança erro)
   *.test.ts           testes de cada módulo puro
 src/app/api/marketing/data/route.ts       + ?tab=
 src/app/api/marketing/settings/route.ts   + gids novos, metaCampaignFilter
-src/app/api/marketing/disparos/route.ts   NOVO  GET/POST/PATCH/DELETE
+src/app/api/marketing/disparos/route.ts   NOVO  POST/PATCH/DELETE
 src/components/marketing/
   ui.tsx              NOVO  Kpi, BarList, DistChart, PeopleList, TabState, formatadores
   useTabData.ts       NOVO  hook de busca por aba
@@ -95,7 +101,7 @@ supabase/marketing.sql    + mkt_disparos, mkt_meta_window
 <fora do repo> C:\Projetos\Clientes\Mentoria Power\scratch\import-disparos.mjs
 ```
 
-Regras de negócio portadas do HTML antigo (`dash-exemplo.md`, fora do git, a partir da linha 773): `findCol`, `parseBR`, `normProd`, `TICKET_PADRAO`, status de negócio, dedupe de aplicações, bigramas dos desafios, `normSource`, `classifyPublico`, curva ao vivo. O HTML **não** deve ser aberto pelo implementador: tudo o que é preciso está neste plano.
+Regras de negócio portadas do HTML antigo (`dash-exemplo.md`, fora do git, a partir da linha 773): `findCol`, `parseBR`, `normProd`, `TICKET_PADRAO`, status de negócio, dedupe de aplicações, bigramas dos desafios, `normSource`, `classifyPublico`, curva ao vivo. O HTML **não** deve ser aberto pelo implementador: tudo o que é preciso está neste plano (a Task 19 só o passa como argumento ao script de import). Conferir números contra o HTML é **verificação do usuário**, marcada assim nos passos manuais.
 
 ---
 
@@ -105,13 +111,15 @@ Regras de negócio portadas do HTML antigo (`dash-exemplo.md`, fora do git, a pa
 - Modify: `src/lib/marketing/types.ts`
 - Modify: `src/lib/marketing/parse.ts`
 - Modify: `src/lib/marketing/sheet-rows.ts`
+- Modify: `src/lib/marketing/settings.ts` (`SETTING_KEYS`, `DEFAULT_GIDS`, `gids`) e `src/lib/marketing/sync.ts` (`TAB_TITLES`) — exigidos pelo `TabKey` novo
 - Test: `src/lib/marketing/parse.test.ts`, `src/lib/marketing/sheet-rows.test.ts`
-- Modify (fixtures): `src/lib/marketing/metrics.test.ts`
+- Modify (fixtures): `src/lib/marketing/metrics.test.ts`, `src/lib/marketing/editions.test.ts`
 
 **Interfaces:**
 - Consumes: nada novo.
 - Produces:
-  - `parse.ts`: `normHeader(h: string): string`, `findCol(headers: string[], ...needles: string[]): string | null`, `findColAll(headers, ...needles): string | null`, `firstCol(headers, ...needles): string | null`, `parseBR(v: string): number`, `parseBROrNull(v: string): number | null`, `shiftHours(at: string | null, hours: number): string | null`, `normName(s: string): string`. `toRecords` passa a normalizar cabeçalhos.
+  - `parse.ts`: `normHeader(h: string): string`, `findCol(headers: string[], ...needles: string[]): string | null`, `findColAll(headers, ...needles): string | null`, `firstCol(headers, ...needles): string | null`, `parseBR(v: string): number`, `parseBROrNull(v: string): number | null`, `shiftHours(at: string | null, hours: number): string | null`, `normName(s: string): string`. `toRecords` passa a normalizar cabeçalhos; `parseDateTime` aceita separador espaço/vírgula/T e só anos 2021–2099 (sentinela → null). Ticket e números da Visão Geral passam a usar `parseBR` ("16.788" = 16788).
+  - `settings.ts`/`sync.ts`: `DEFAULT_GIDS` e `TAB_TITLES` com as 6 abas (`survey` = gid `503784201`, `applications` = gid `336862755`).
   - `sheet-rows.ts`: `type TabKey = 'capture' | 'overview' | 'sales' | 'schedule' | 'survey' | 'applications'`, `TAB_KEYS: TabKey[]`, `TAB_NEEDLES`, `isRefund(status: string): boolean`, `toSurveyRows(recs): SurveyRow[]`, `toApplicationRows(recs): ApplicationRow[]`; `toSaleRows`/`toScheduleRows`/`toCaptureRows`/`toOverviewRows` com campos novos.
   - `types.ts`: `CaptureRow` + `name`, `utmTerm`; `SaleRow` + `refunded`, `status`, `name`, `capSource`, `capMedium`, `capCampaign`, `saleSource`, `saleCampaign`, `funnel`; `ScheduleRow` + `title`, `personName`, `emails`, `via`, `realizedRaw`, `productRaw`, `income`, `value`, `utmSource`, `utmCampaign`, `utmMedium`; `OverviewCheck`; `OverviewRow.check`; `SurveyRow`; `ApplicationRow`; `MetaWindow`.
 
@@ -244,7 +252,17 @@ export type MetaWindow = {
 
 - [ ] **Step 2: Testes de parse (falhando)**
 
-Acrescentar ao fim de `src/lib/marketing/parse.test.ts` (e incluir `normHeader, findCol, findColAll, firstCol, parseBR, parseBROrNull, shiftHours, normName` no import de `./parse.ts`):
+Em `src/lib/marketing/parse.test.ts`, trocar o import de `./parse.ts` por:
+
+```ts
+import {
+  parseCsv, toRecords, parseBRL, parseDateTime, parseDay, parseEditionNumber,
+  normEmail, phoneKey, inferLiveDate, addDays,
+  normHeader, findCol, findColAll, firstCol, parseBR, parseBROrNull, shiftHours, normName,
+} from './parse.ts';
+```
+
+e acrescentar ao fim do arquivo:
 
 ```ts
 test('normHeader and toRecords collapse spaces and newlines in headers', () => {
@@ -262,15 +280,27 @@ test('findCol tries needles in order; findColAll needs every needle; firstCol ke
   assert.equal(firstCol(['utm_content_venda', 'utm_content_captacao'], 'utm_content_captacao', 'utm_content_venda'), 'utm_content_venda');
 });
 
-test('parseBR reads sheet numbers like the old dashboard', () => {
+test('parseBR reads sheet numbers like the old dashboard (thousand dots, R$, %, formula errors)', () => {
+  assert.equal(parseBR('16.788'), 16788);
+  assert.equal(parseBR('R$ 1.000'), 1000);
+  assert.equal(parseBR('1.997,00'), 1997);
   assert.equal(parseBR('R$ 1.234,56'), 1234.56);
   assert.equal(parseBR('45%'), 45);
-  assert.equal(parseBR('1.234'), 1234);
   assert.equal(parseBR('9.9'), 9.9);
   assert.equal(parseBR('#DIV/0!'), 0);
+  assert.equal(parseBR(''), 0);
   assert.equal(parseBROrNull(''), null);
   assert.equal(parseBROrNull('#N/A'), null);
   assert.equal(parseBROrNull('0'), 0);
+});
+
+test('parseDateTime: comma/T separators, 1-digit fields, only years 2021–2099', () => {
+  assert.equal(parseDateTime('10/10/2026, 08:57:00'), '2026-10-10T08:57:00');
+  assert.equal(parseDateTime('1/2/2026 8:5'), '2026-02-01T08:05:00');
+  assert.equal(parseDateTime('2026-10-14T01:30:00.000Z'), '2026-10-14T01:30:00');
+  assert.equal(parseDateTime('01/01/0001 00:00'), null);
+  assert.equal(parseDateTime('1899-12-30'), null);
+  assert.equal(parseDay('0001-01-01'), null);
 });
 
 test('shiftHours moves Typeform UTC to Brasília across midnight', () => {
@@ -286,7 +316,7 @@ test('normName drops accents and punctuation', () => {
 - [ ] **Step 3: Rodar e ver falhar**
 
 Run: `npm test`
-Expected: FAIL — `normHeader is not a function` (e afins).
+Expected: FAIL — `SyntaxError: The requested module './parse.ts' does not provide an export named 'findCol'` (export ainda não existe).
 
 - [ ] **Step 4: Implementar em `parse.ts`**
 
@@ -296,7 +326,28 @@ Em `toRecords`, trocar `const header = rows[0].map(h => h.trim());` por:
   const header = rows[0].map(normHeader);
 ```
 
-E acrescentar ao fim de `src/lib/marketing/parse.ts`:
+Substituir a função `parseDateTime` inteira por (separador espaço/vírgula/T, campos de 1 dígito, só anos 2021–2099 — o `01/01/0001` do Typeform vira null aqui):
+
+```ts
+// Aceita "DD/MM/AAAA HH:MM[:SS]" (separador espaço, vírgula ou T) e ISO. Só anos 2021–2099:
+// o "01/01/0001" do Typeform (sem data) e datas absurdas viram null.
+export function parseDateTime(s: string): string | null {
+  const t = (s ?? '').trim();
+  const time = '(?:[\\s,T]+(\\d{1,2}):(\\d{1,2})(?::(\\d{1,2}))?)?';
+  let m = t.match(new RegExp(`^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})${time}`));
+  let out: string | null = null;
+  if (m) out = `${m[3]}-${pad(m[2])}-${pad(m[1])}T${pad(m[4] ?? 0)}:${pad(m[5] ?? 0)}:${pad(m[6] ?? 0)}`;
+  else {
+    m = t.match(new RegExp(`^(\\d{4})-(\\d{2})-(\\d{2})${time}`));
+    if (m) out = `${m[1]}-${m[2]}-${m[3]}T${pad(m[4] ?? 0)}:${pad(m[5] ?? 0)}:${pad(m[6] ?? 0)}`;
+  }
+  if (!out) return null;
+  const year = Number(out.slice(0, 4));
+  return year >= 2021 && year <= 2099 ? out : null;
+}
+```
+
+`parseBRL` continua exportada (a linha de testes antiga usa), mas as abas passam a usar `parseBR`. Acrescentar ao fim de `src/lib/marketing/parse.ts`:
 
 ```ts
 // Cabeçalho da planilha: a Visão Geral tem "Investimento Total \nAPI" e espaços duplos.
@@ -332,7 +383,8 @@ export function firstCol(headers: string[], ...needles: string[]): string | null
   return null;
 }
 
-// parseBR do dash antigo: "R$ 1.234,56", "12,5%", "1.234"; vazio e "#DIV/0!" = 0.
+// parseBR do dash antigo: tira R$, espaços e %, pontos de milhar ("16.788" = 16788), vírgula = decimal;
+// vazio e erro de fórmula ("#DIV/0!") = 0.
 export function parseBR(v: string): number {
   const s = String(v ?? '').trim();
   if (!s || s.startsWith('#')) return 0;
@@ -367,7 +419,7 @@ Expected: os testes de `parse.test.ts` passam (os de `sheet-rows` ainda passam t
 
 - [ ] **Step 6: Testes de sheet-rows (falhando)**
 
-Em `src/lib/marketing/sheet-rows.test.ts`: trocar o import por
+Em `src/lib/marketing/sheet-rows.test.ts`: trocar o import de `./sheet-rows.ts` por
 
 ```ts
 import {
@@ -421,14 +473,6 @@ test('toSaleRows: refund regex, blank status counts, capture/sale UTMs', () => {
   assert.equal(rows[1].approved, false);
 });
 
-test('toSaleRows falls back to column position when UTM columns have no suffix', () => {
-  const [r] = toSaleRows([{
-    STATUS: 'Aprovada', Produto: 'Power', Ticket: '', Email: '', Telefone: '', utm_content_captacao: '', utm_content_venda: '',
-    Data: '', 'Webinário': '#020', utm_source: 'api', 'utm_source 2': 'whats', utm_campaign: 'c1',
-  }]);
-  assert.deepEqual([r.capSource, r.saleSource, r.capCampaign], ['api', 'whats', 'c1']);
-});
-
 test('toScheduleRows reads the extra Pipedrive columns', () => {
   const [s] = toScheduleRows([{
     'Motivo da perda': '', Closer: '', utm_content: '', 'SE - Agendada': 'Sim, pelo Comercial', 'Agendada em': '2026-10-01',
@@ -467,12 +511,22 @@ test('toSurveyRows and toApplicationRows', () => {
   assert.equal(apps[1].at, null);
   assert.equal(apps[1].interest, 'Não');
 });
+
+test('Ticket and Visão Geral numbers use thousand dots like the old dashboard', () => {
+  const [s] = toSaleRows([{ STATUS: 'Aprovada', Produto: 'Power', Ticket: '16.788', Email: '', Telefone: '', utm_content_captacao: '', utm_content_venda: '', Data: '', 'Webinário': '#020' }]);
+  assert.equal(s.amount, 16788);
+  const [o] = toOverviewRows([{
+    Data: '13/10', 'Webinário': '#020', 'Aplicações': '1.204', 'Agendamentos PWR': '', 'Agendamentos PWS': '',
+    'Realizadas PWR': '', 'Realizadas PWS': '', 'Investimento Total': 'R$ 1.000',
+  }]);
+  assert.deepEqual([o.applications, o.investment, o.check.investment], [1204, 1000, 1000]);
+});
 ```
 
 - [ ] **Step 7: Rodar e ver falhar**
 
 Run: `npm test`
-Expected: FAIL — `toSurveyRows is not a function` e asserções de `check`/`emails`.
+Expected: FAIL — `SyntaxError: The requested module './sheet-rows.ts' does not provide an export named 'toSurveyRows'`.
 
 - [ ] **Step 8: Implementar `sheet-rows.ts`**
 
@@ -481,7 +535,7 @@ Substituir `src/lib/marketing/sheet-rows.ts` inteiro por:
 ```ts
 import type { ApplicationRow, CaptureRow, OverviewCheck, OverviewRow, SaleRow, ScheduleRow, SurveyRow } from './types.ts';
 import {
-  findCol, findColAll, firstCol, normEmail, normHeader, parseBR, parseBROrNull, parseBRL, parseDateTime, parseDay,
+  findCol, findColAll, firstCol, normEmail, normHeader, parseBR, parseBROrNull, parseDateTime, parseDay,
   parseEditionNumber, shiftHours,
 } from './parse.ts';
 
@@ -527,7 +581,8 @@ export function checkHeaders(tab: TabKey, records: Record<string, string>[]): vo
 
 export const isRefund = (status: string) => /reembol|estorno|cancel/i.test(status ?? '');
 
-const num = (s: string) => parseBRL(s);
+// Ticket e números da Visão Geral: "16.788" = 16788 (ponto de milhar), como o dash antigo.
+const num = (s: string) => parseBR(s);
 const v = (r: Record<string, string>, k: string) => (r[k] ?? '').trim();
 const cell = (r: Record<string, string>, k: string | null) => (k ? (r[k] ?? '').trim() : '');
 const headersOf = (recs: Record<string, string>[]) => (recs.length ? Object.keys(recs[0]) : []);
@@ -564,20 +619,11 @@ export function toCaptureRows(recs: Record<string, string>[]): CaptureRow[] {
 
 export function toSaleRows(recs: Record<string, string>[]): SaleRow[] {
   const h = headersOf(recs);
-  let capSrc = firstCol(h, 'utm_source_captacao', 'utm_source_captação');
-  let capMed = firstCol(h, 'utm_medium_captacao', 'utm_medium_captação');
-  let capCmp = firstCol(h, 'utm_campaign_captacao', 'utm_campaign_captação');
-  let saleSrc = firstCol(h, 'utm_source_venda', 'utm_source_vendas');
-  let saleCmp = firstCol(h, 'utm_campaign_venda');
-  if (!capSrc && !saleSrc) {
-    // Sem sufixo: 1ª ocorrência = captação, 2ª = venda (como o dash antigo).
-    const all = (k: string) => h.filter(x => x.toLowerCase().includes(k));
-    capSrc = all('utm_source')[0] ?? null;
-    saleSrc = all('utm_source')[1] ?? null;
-    capMed = all('utm_medium')[0] ?? null;
-    capCmp = all('utm_campaign')[0] ?? null;
-    saleCmp = all('utm_campaign')[1] ?? null;
-  }
+  const capSrc = firstCol(h, 'utm_source_captacao', 'utm_source_captação');
+  const capMed = firstCol(h, 'utm_medium_captacao', 'utm_medium_captação');
+  const capCmp = firstCol(h, 'utm_campaign_captacao', 'utm_campaign_captação');
+  const saleSrc = firstCol(h, 'utm_source_venda', 'utm_source_vendas');
+  const saleCmp = firstCol(h, 'utm_campaign_venda');
   const cName = firstCol(h, 'nome contato', 'nome');
   const cFunnel = findCol(h, 'edição', 'edicao');
   return recs.map(r => {
@@ -716,8 +762,8 @@ export function toApplicationRows(recs: Record<string, string>[]): ApplicationRo
       email: normEmail(cell(r, c.email)),
       phone: cell(r, c.phone),
       name: cell(r, c.name),
-      // Submitted At vem em UTC; 01/01/0001 = sem data.
-      at: raw && raw.slice(0, 4) >= '2000' ? shiftHours(raw, -3) : null,
+      // Submitted At vem em UTC; "01/01/0001" (sem data) já vira null no parseDateTime.
+      at: shiftHours(raw, -3),
       product: cell(r, c.product),
       income: cell(r, c.income),
       revenue: cell(r, c.revenue),
@@ -733,7 +779,22 @@ export function toApplicationRows(recs: Record<string, string>[]): ApplicationRo
 }
 ```
 
-- [ ] **Step 9: Ajustar fixtures de `metrics.test.ts` aos tipos novos**
+- [ ] **Step 9: Ajustar fixtures dos testes existentes aos tipos novos**
+
+`OverviewRow.check` e os campos novos são obrigatórios; sem isto `tsc` e `next build` (que checa os `.test.ts`) quebram.
+
+Em `src/lib/marketing/editions.test.ts`, trocar o topo (import + helper `ov`) por:
+
+```ts
+import type { OverviewRow } from './types.ts';
+import { buildEditions } from './editions.ts';
+
+const noCheck = { applications: null, scheduled: null, done: null, peak: null, attendance: null, metaSpend: null, investment: null, sales: null, revenue: null };
+const ov = (edition: number, dayMonth: string): OverviewRow =>
+  ({ edition, dayMonth, applications: 0, scheduled: 0, done: 0, investment: 0, check: noCheck });
+```
+
+(as linhas `import test` e `import assert` continuam no topo, antes destas.)
 
 Em `src/lib/marketing/metrics.test.ts`: no import de tipos, acrescentar `OverviewRow, SaleRow, ScheduleRow`; no helper `sale`, acrescentar `name: '', utmTerm: '',` ao objeto; e no teste `'backSummary: ...'` envolver os três literais com asserção de tipo:
 
@@ -750,35 +811,9 @@ Em `src/lib/marketing/metrics.test.ts`: no import de tipos, acrescentar `Overvie
   );
 ```
 
-- [ ] **Step 10: Rodar testes e checar tipos**
+- [ ] **Step 10: `TabKey` com 6 abas — gids e títulos**
 
-Run: `npm test && npx tsc --noEmit`
-Expected: todos os testes passam; `tsc` sem erros.
-
-- [ ] **Step 11: Commit**
-
-```bash
-git add src/lib/marketing/types.ts src/lib/marketing/parse.ts src/lib/marketing/sheet-rows.ts src/lib/marketing/parse.test.ts src/lib/marketing/sheet-rows.test.ts src/lib/marketing/metrics.test.ts
-git commit -m "feat(marketing): normalized headers, survey/Typeform rows and extra sheet columns"
-```
-
----
-
-### Task 2: Abas novas no sync e em Configurações (snapshots seletivos)
-
-**Files:**
-- Modify: `src/lib/marketing/settings.ts`
-- Modify: `src/lib/marketing/sync.ts`
-- Modify: `src/lib/marketing/store.ts:15-19` (`loadSnapshots`)
-- Modify: `src/lib/marketing/view.ts:34-36`
-- Modify: `src/app/api/marketing/settings/route.ts:11`
-- Modify: `src/components/marketing/IntegrationsCard.tsx:12,24-27`
-
-**Interfaces:**
-- Consumes: `TabKey`, `TAB_KEYS` (Task 1).
-- Produces: `DEFAULT_GIDS.survey = '503784201'`, `DEFAULT_GIDS.applications = '336862755'`; `MarketingSettings.gids` com as 6 abas; `loadSnapshots(tabs?: TabKey[])`; `TAB_TITLES` com 6 títulos.
-
-- [ ] **Step 1: `settings.ts` — gids novos**
+O `TabKey` novo exige as 6 chaves em todo `Record<TabKey, …>`; por isso estes três ajustes entram já nesta task (a busca das abas novas no sync fica na Task 2).
 
 Em `src/lib/marketing/settings.ts`, substituir `SETTING_KEYS`, `DEFAULT_GIDS` e o bloco `gids:` de `getMarketingSettings`:
 
@@ -812,9 +847,7 @@ export const DEFAULT_GIDS: Record<TabKey, string> = {
     },
 ```
 
-- [ ] **Step 2: `sync.ts` — buscar as 6 abas**
-
-Em `src/lib/marketing/sync.ts`: trocar o import de `sheet-rows` por `import { TAB_KEYS, toOverviewRows, type TabKey } from './sheet-rows.ts';`, substituir `TAB_TITLES` por
+Em `src/lib/marketing/sync.ts`, substituir `TAB_TITLES` por:
 
 ```ts
 export const TAB_TITLES: Record<TabKey, string> = {
@@ -827,9 +860,38 @@ export const TAB_TITLES: Record<TabKey, string> = {
 };
 ```
 
-e trocar `for (const tab of ['capture', 'overview', 'sales', 'schedule'] as TabKey[]) {` por `for (const tab of TAB_KEYS) {`.
+- [ ] **Step 11: Rodar testes e checar tipos**
 
-- [ ] **Step 3: `store.ts` — snapshots só das abas pedidas**
+Run: `npm test && npx tsc --noEmit`
+Expected: todos os testes passam; `tsc` sem erros (o sync ainda busca só as 4 abas antigas).
+
+- [ ] **Step 12: Commit**
+
+```bash
+git add src/lib/marketing/types.ts src/lib/marketing/parse.ts src/lib/marketing/sheet-rows.ts src/lib/marketing/parse.test.ts src/lib/marketing/sheet-rows.test.ts src/lib/marketing/metrics.test.ts src/lib/marketing/editions.test.ts src/lib/marketing/settings.ts src/lib/marketing/sync.ts
+git commit -m "feat(marketing): normalized headers, survey/Typeform rows and extra sheet columns"
+```
+
+---
+
+### Task 2: Abas novas no sync e em Configurações (snapshots seletivos)
+
+**Files:**
+- Modify: `src/lib/marketing/sync.ts`
+- Modify: `src/lib/marketing/store.ts:15-19` (`loadSnapshots`)
+- Modify: `src/lib/marketing/view.ts:34-36`
+- Modify: `src/app/api/marketing/settings/route.ts:11`
+- Modify: `src/components/marketing/IntegrationsCard.tsx:12,24-27`
+
+**Interfaces:**
+- Consumes: `TabKey`, `TAB_KEYS`, `DEFAULT_GIDS`, `TAB_TITLES` (Task 1).
+- Produces: sync busca as 6 abas; `loadSnapshots(tabs?: TabKey[])`; gids das abas novas editáveis em Configurações.
+
+- [ ] **Step 1: `sync.ts` — buscar as 6 abas**
+
+Em `src/lib/marketing/sync.ts`: trocar o import de `sheet-rows` por `import { TAB_KEYS, toOverviewRows, type TabKey } from './sheet-rows.ts';` e trocar `for (const tab of ['capture', 'overview', 'sales', 'schedule'] as TabKey[]) {` por `for (const tab of TAB_KEYS) {`.
+
+- [ ] **Step 2: `store.ts` — snapshots só das abas pedidas**
 
 Substituir `loadSnapshots` em `src/lib/marketing/store.ts`:
 
@@ -846,7 +908,7 @@ export async function loadSnapshots(tabs?: TabKey[]): Promise<Partial<Record<Tab
 
 Em `src/lib/marketing/view.ts`, dentro do `Promise.all` de `buildView`, trocar `loadSnapshots()` por `loadSnapshots(['capture', 'overview', 'sales', 'schedule'])`.
 
-- [ ] **Step 4: Rota de settings e card de integrações**
+- [ ] **Step 3: Rota de settings e card de integrações**
 
 Em `src/app/api/marketing/settings/route.ts`: trocar `import type { TabKey } from '@/lib/marketing/sheet-rows';` por `import { TAB_KEYS } from '@/lib/marketing/sheet-rows';` e a linha `const TABS: TabKey[] = [...]` por `const TABS = TAB_KEYS;`.
 
@@ -872,17 +934,17 @@ const TABS: [Tab, string][] = [
 ];
 ```
 
-- [ ] **Step 5: Verificar**
+- [ ] **Step 4: Verificar**
 
 Run: `npm test && npx tsc --noEmit`
 Expected: PASS, sem erros de tipo.
 
-Manual (com `npm run dev` e `.env.local`): em Configurações → Integrações → **Testar conexão**, aparecem 6 linhas "Planilha · …", incluindo "Pesquisa [novo]" e "Análise Individual (Typeform)" com "N linhas, cabeçalho ok". Em `/admin/marketing`, **Atualizar** não gera aviso novo e Edição/Criativos/Validação mostram os mesmos números de antes.
+Manual (com `npm run dev` e `.env.local`): em Configurações → Integrações → **Testar conexão**, aparecem 6 linhas "Planilha · …", incluindo "Pesquisa [novo]" e "Análise Individual (Typeform)" com "N linhas, cabeçalho ok". Em `/admin/marketing`, **Atualizar** não gera aviso novo. Edição/Criativos/Validação mostram os mesmos números de antes, **exceto** as vendas high ticket: venda com STATUS diferente de "Aprovada" que não seja reembolso/estorno/cancelamento (ex.: vazio, "Pendente") passa a contar (Task 1), e Ticket com ponto de milhar ("16.788") passa a valer 16.788 em vez de 16,788 — ambos corretos e esperados.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add src/lib/marketing/settings.ts src/lib/marketing/sync.ts src/lib/marketing/store.ts src/lib/marketing/view.ts src/app/api/marketing/settings/route.ts src/components/marketing/IntegrationsCard.tsx
+git add src/lib/marketing/sync.ts src/lib/marketing/store.ts src/lib/marketing/view.ts src/app/api/marketing/settings/route.ts src/components/marketing/IntegrationsCard.tsx
 git commit -m "feat(marketing): sync Pesquisa and Typeform tabs; load only needed snapshots"
 ```
 
@@ -901,11 +963,11 @@ git commit -m "feat(marketing): sync Pesquisa and Typeform tabs; load only neede
 - Produces:
   - `editions.ts`: `PAGO_MIN = 21`, `CYCLE_MIN = 15`, `type EditionKind = 'pago' | 'nf10k' | 'antiga'`, `editionKind(n: number): EditionKind`, `lastLiveOnOrBefore(eds: { number: number; liveDate: string }[], day: string | null): number | null`, `cycleStartAt(captures: CaptureRow[]): string | null`, `type CaptureIndex = Record<string, CaptureRow[]>`, `indexCaptures(captures): CaptureIndex`, `latestCycleCapture(idx: CaptureIndex, emails: string[], until: string | null): CaptureRow | null`.
   - `metrics.ts`: `type Count = { key: string; count: number }`, `countBy<T>(items: T[], key: (t: T) => string): Count[]`.
-  - `survey.ts`: `ORDER_RENDA`, `QUALIFIED_RENDA`, `LABEL_RENDA`, `type SurveyField = 'renda' | 'fat' | 'tempo' | 'servico' | 'conhece'`, `surveyLabel(field, v): string`, `qualified5k(renda: string): boolean`, `latestSurveys(rows: SurveyRow[], cycleStart: string | null): Record<string, SurveyRow>`, `type DistItem = { key: string; label: string; count: number; qualified: boolean }`, `distribution(items, field): DistItem[]`, `INCOME_FILTERS`, `filterIncome(items, f): SurveyRow[]`, `type Challenges = { keywords: { word: string; count: number; examples: string[] }[]; phrases: { text: string; count: number }[] }`, `challenges(items: SurveyRow[]): Challenges`, `type SurveyTab`, `surveyTab(leads: CaptureRow[], surveys: Record<string, SurveyRow>, filter: string): SurveyTab`.
+  - `survey.ts`: `ORDER_RENDA`, `QUALIFIED_RENDA`, `LABEL_RENDA`, `type SurveyField = 'renda' | 'fat' | 'tempo' | 'servico' | 'conhece'`, `surveyLabel(field, v): string`, `qualified5k(renda: string): boolean`, `latestSurveys(rows: SurveyRow[], cycleStart: string | null): Record<string, SurveyRow>` (resposta sem data nunca substitui uma datada), `type DistItem = { key: string; label: string; count: number; qualified: boolean }`, `distribution(items, field): DistItem[]`, `INCOME_FILTERS`, `filterIncome(items, f): SurveyRow[]`, `type Challenges = { keywords: { word: string; count: number; examples: string[] }[]; phrases: { text: string; count: number }[] }`, `challenges(items: SurveyRow[]): Challenges`, `type SurveyTab`, `surveyTab(leads: CaptureRow[], surveys: Record<string, SurveyRow>, filter: string): SurveyTab`.
 
 - [ ] **Step 1: Testes de edições (falhando)**
 
-Acrescentar a `src/lib/marketing/editions.test.ts` (import novo: `import { buildEditions, editionKind, lastLiveOnOrBefore, cycleStartAt, indexCaptures, latestCycleCapture } from './editions.ts';` e `import type { CaptureRow } from './types.ts';`, substituindo o import antigo):
+Em `src/lib/marketing/editions.test.ts`, trocar `import type { OverviewRow } from './types.ts';` por `import type { CaptureRow, OverviewRow } from './types.ts';` e `import { buildEditions } from './editions.ts';` por `import { buildEditions, editionKind, lastLiveOnOrBefore, cycleStartAt, indexCaptures, latestCycleCapture } from './editions.ts';` (o helper `ov` da Task 1 fica). Acrescentar ao fim:
 
 ```ts
 const cap = (email: string, at: string, edition: number): CaptureRow => ({
@@ -942,7 +1004,7 @@ test('cycleStartAt and latestCycleCapture', () => {
 - [ ] **Step 2: Rodar e ver falhar**
 
 Run: `npm test`
-Expected: FAIL — `editionKind is not a function`.
+Expected: FAIL — `SyntaxError: The requested module './editions.ts' does not provide an export named 'editionKind'`.
 
 - [ ] **Step 3: Implementar em `editions.ts`**
 
@@ -1050,6 +1112,12 @@ test('latestSurveys keeps the most recent answer of the cycle', () => {
   assert.deepEqual(Object.keys(m), ['a@x']);
 });
 
+test('latestSurveys: an undated row never overwrites a dated answer', () => {
+  const m = latestSurveys([sv('a@x', '5a7k', '2026-09-05T10:00:00'), sv('a@x', '1a3k', null), sv('b@x', '1a3k', null), sv('b@x', '7a10k', '2026-09-06T10:00:00')], null);
+  assert.equal(m['a@x'].renda, '5a7k');
+  assert.equal(m['b@x'].renda, '7a10k');
+});
+
 test('qualified5k and income filters', () => {
   assert.equal(qualified5k('5a7k'), true);
   assert.equal(qualified5k('3a5k'), false);
@@ -1090,7 +1158,7 @@ test('surveyTab joins survey to leads by e-mail and computes rates', () => {
 - [ ] **Step 6: Rodar e ver falhar**
 
 Run: `npm test`
-Expected: FAIL — `Cannot find module './survey.ts'`.
+Expected: FAIL — `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '…/survey.ts'`.
 
 - [ ] **Step 7: Implementar `survey.ts`**
 
@@ -1127,7 +1195,8 @@ export function latestSurveys(rows: SurveyRow[], cycleStart: string | null): Rec
     if (!r.email) return;
     if (cycleStart && r.at && r.at < cycleStart) return; // resposta de ciclo anterior
     const prev = out[r.email];
-    if (prev && prev.at && r.at && r.at <= prev.at) return; // fica a mais recente
+    // Fica a mais recente; resposta sem data não substitui uma datada.
+    if (prev && (!r.at || (prev.at && r.at <= prev.at))) return;
     out[r.email] = r;
   });
   return out;
@@ -1255,9 +1324,10 @@ git commit -m "feat(marketing): survey module (5k+, distributions, income filter
 - Test: `src/lib/marketing/applications.test.ts`
 
 **Interfaces:**
-- Consumes: `ApplicationRow`, `DateRange` (Task 1); `CaptureIndex`, `latestCycleCapture`, `lastLiveOnOrBefore`, `indexCaptures` (Task 3); `inRange` (metrics.ts).
+- Consumes: `ApplicationRow`, `DateRange` (Task 1); `phoneKey` (parse.ts, já existe); `CaptureIndex`, `latestCycleCapture`, `lastLiveOnOrBefore`, `indexCaptures` (Task 3); `inRange` (metrics.ts).
 - Produces:
   - `applicationOrigin(src: string, cmp: string, content: string): string`, `applicationOriginGroup(src: string, cmp: string): string`
+  - Origens com o rótulo do HTML: "Botão da plataforma (ao vivo)", "Comentários (ao vivo)". Pessoa = `phoneKey` (últimos 8 dígitos; com ou sem +55 é a mesma), senão e-mail, senão nome.
   - `type Application = { name: string; email: string; at: string | null; product: string; qualif: 'Power' | 'Start' | 'Desafio' | ''; qualified: boolean; complete: boolean; income: string; revenue: string; relation: string; interest: 'Sim' | 'Não' | ''; scheduled: boolean; origin: string; originGroup: string; edition: number | null; editionByEmail: boolean; creative: string; repeats: number; key: string }`
   - `buildApplications(rows: ApplicationRow[], idx: CaptureIndex, eds: { number: number; liveDate: string }[]): Application[]`
   - `type AppAgg = { key: string; count: number; qualified: number }`, `type ApplicationListItem`, `type ApplicationsTab`, `applicationsTab(apps: Application[], selected: number[], range: DateRange | null, lists: boolean): ApplicationsTab`
@@ -1283,8 +1353,8 @@ const cap = (email: string, at: string, edition: number): CaptureRow => ({
 const eds = [{ number: 21, liveDate: '2026-10-06' }, { number: 22, liveDate: '2026-10-13' }];
 
 test('applicationOrigin labels', () => {
-  assert.equal(applicationOrigin('plataforma', '', 'botao'), 'Botão da plataforma');
-  assert.equal(applicationOrigin('plataforma', '', 'comentarios'), 'Comentários');
+  assert.equal(applicationOrigin('plataforma', '', 'botao'), 'Botão da plataforma (ao vivo)');
+  assert.equal(applicationOrigin('plataforma', '', 'comentarios'), 'Comentários (ao vivo)');
   assert.equal(applicationOrigin('whatsapp', 'grupo', '3'), 'Grupo WhatsApp · msg 3');
   assert.equal(applicationOrigin('whats', 'replay', '2'), 'Replay WhatsApp · msg 2');
   assert.equal(applicationOrigin('api', 'apiweb01', '1'), 'API apiweb01 · msg 1');
@@ -1296,7 +1366,7 @@ test('applicationOrigin labels', () => {
 test('buildApplications: dedupe by phone digits, latest complete wins, incomplete dropped when the person completed', () => {
   const apps = buildApplications([
     row({ phone: '(51) 99999-0001', email: 'a@x', at: '2026-10-13T21:00:00', product: 'Power', name: 'A' }),
-    row({ phone: '51999990001', email: 'outro@x', at: '2026-10-13T22:00:00', product: 'Start', name: 'A' }),
+    row({ phone: '+55 51 99999-0001', email: 'outro@x', at: '2026-10-13T22:00:00', product: 'Start', name: 'A' }),
     row({ phone: '51999990001', at: '2026-10-13T20:30:00', name: 'A' }),
     row({ email: 'b@x', at: '2026-10-13T23:00:00', name: 'B' }),
     row({ email: 'b@x', at: '2026-10-13T23:05:00', name: 'B' }),
@@ -1335,7 +1405,7 @@ test('applicationsTab counts per edition and only lists people with lists=1', ()
 - [ ] **Step 2: Rodar e ver falhar**
 
 Run: `npm test`
-Expected: FAIL — `Cannot find module './applications.ts'`.
+Expected: FAIL — `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '…/applications.ts'`.
 
 - [ ] **Step 3: Implementar**
 
@@ -1345,12 +1415,13 @@ Criar `src/lib/marketing/applications.ts`:
 import type { ApplicationRow, DateRange } from './types.ts';
 import { lastLiveOnOrBefore, latestCycleCapture, type CaptureIndex } from './editions.ts';
 import { inRange } from './metrics.ts';
+import { phoneKey } from './parse.ts';
 
 export function applicationOrigin(src: string, cmp: string, content: string): string {
   const s = src.toLowerCase(), c = cmp.toLowerCase(), k = content.toLowerCase();
   if (!s && !k) return '(sem utm)';
-  if (s === 'plataforma' && k === 'botao') return 'Botão da plataforma';
-  if (s === 'plataforma' && k === 'comentarios') return 'Comentários';
+  if (s === 'plataforma' && k === 'botao') return 'Botão da plataforma (ao vivo)';
+  if (s === 'plataforma' && k === 'comentarios') return 'Comentários (ao vivo)';
   if (s === 'plataforma') return `Plataforma · ${content || cmp}`;
   if (/^whats/.test(s) && c === 'grupo') return `Grupo WhatsApp · msg ${content}`;
   if (/^whats/.test(s) && c === 'replay') return `Replay WhatsApp · msg ${content}`;
@@ -1375,7 +1446,7 @@ export type Application = {
   origin: string; originGroup: string;
   edition: number | null; editionByEmail: boolean; // false = atribuída pela data (mostrada com *)
   creative: string; repeats: number;
-  key: string; // pessoa: telefone (dígitos) > e-mail > nome
+  key: string; // pessoa: telefone (últimos 8 dígitos, ignora +55/DDD) > e-mail > nome
 };
 
 export function buildApplications(rows: ApplicationRow[], idx: CaptureIndex, eds: { number: number; liveDate: string }[]): Application[] {
@@ -1393,7 +1464,7 @@ export function buildApplications(rows: ApplicationRow[], idx: CaptureIndex, eds
       editionByEmail: !!lead,
       creative: lead ? lead.utmContent : '',
       repeats: 0,
-      key: r.phone.replace(/\D/g, '') || r.email || r.name.toLowerCase(),
+      key: phoneKey(r.phone) || r.email || r.name.toLowerCase(),
     };
   });
   // Das completas fica a mais recente de cada pessoa; incompletas caem se a pessoa completou.
@@ -1590,7 +1661,7 @@ test('buyersTab joins survey by e-mail and filters product', () => {
 - [ ] **Step 2: Rodar e ver falhar**
 
 Run: `npm test`
-Expected: FAIL — `Cannot find module './sales.ts'`.
+Expected: FAIL — `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '…/sales.ts'`.
 
 - [ ] **Step 3: Implementar**
 
@@ -1761,7 +1832,8 @@ git commit -m "feat(marketing): sales module (product, default ticket, audience,
 - Produces:
   - `type DealStatus = 'agendada' | 'realizada' | 'reagendada' | 'cancelada' | 'nao_realizada' | 'sem_registro' | 'perdido' | 'ganho' | 'reembolsado'`, `STATUS_LABEL: Record<DealStatus, string>`
   - `dealStatus(d: { won: boolean; saleOk: boolean; saleRefunded: boolean; lostReason: string; realizedRaw: string; callDate: string | null }, today: string): DealStatus`
-  - `type Deal = { name: string; type: 'SE' | 'WB' | ''; closer: string; via: string; product: string; scheduledAt: string | null; callDate: string | null; realized: boolean; lostReason: string; status: DealStatus; alerts: string[]; income: string; value: number; edition: number | null; editionBy: 'planilha' | 'email' | 'data' | null; creative: string; utmSource: string }`
+  - `type Deal = { name: string; type: 'SE' | 'WB' | ''; closer: string; via: string; product: string; scheduledAt: string | null; callDate: string | null; realized: boolean; lostReason: string; status: DealStatus; alerts: string[]; income: string; value: number; edition: number | null; editionBy: 'planilha' | 'email' | 'data' | null; creative: string; utmContent: string; utmSource: string }` (`creative` = utm_content do negócio, senão o do lead; `utmContent` = só o do negócio, usado em "Via API")
+  - Venda casada por ciclo: negócio de edição NF10K (#015–#020) só com venda NF10K; negócio do pago só com venda do pago (a edição do negócio é calculada antes do casamento).
   - `buildDeals(rows: ScheduleRow[], sales: SaleRow[], idx: CaptureIndex, surveys: Record<string, SurveyRow>, eds: { number: number; liveDate: string }[], today: string): Deal[]`
   - `dealDone(d: Deal): boolean`, `type MomentCat`, `momentCat(d: Deal): MomentCat`, `type CatCounts = { total; ganho; perdCall; perdSem; andamento; aberto: number }`, `type CostRow`, `type DealListItem`, `type DealsTab`, `dealsTab(deals: Deal[], eds: { number: number; liveDate: string }[], spend: Record<number, number | null>, range: DateRange | null, lists: boolean): DealsTab`
 
@@ -1829,11 +1901,22 @@ test('buildDeals matches a sale by normalized name when there is no e-mail', () 
   assert.deepEqual([d.status, d.value], ['ganho', 1997]);
 });
 
+test('buildDeals: an NF10K deal only matches #015–#020 sales; a paid deal only paid sales', () => {
+  const ds = buildDeals([
+    sch({ emails: ['a@x'], edition: 18 }),
+    sch({ emails: ['b@x'], edition: 22 }),
+  ], [sale({ email: 'a@x', edition: 22 }), sale({ email: 'b@x', edition: 22, amount: 20040 })], indexCaptures([]), {}, eds, '2026-10-13');
+  assert.deepEqual([ds[0].status, ds[0].value], ['agendada', 0]);
+  assert.deepEqual([ds[1].status, ds[1].value], ['ganho', 20040]);
+  const [nf] = buildDeals([sch({ emails: ['a@x'], edition: 18 })], [sale({ email: 'a@x', edition: 18, product: 'Power Start' })], indexCaptures([]), {}, eds, '2026-10-13');
+  assert.equal(nf.status, 'ganho');
+});
+
 test('dealsTab: KPIs, moment buckets, losing creatives (n ≥ 3), cost per call', () => {
   const mk = (o: Partial<Deal>): Deal => ({
     name: 'x', type: 'WB', closer: 'Ana', via: 'Automático', product: 'Power', scheduledAt: '2026-10-13', callDate: '2026-10-15',
     realized: false, lostReason: '', status: 'agendada', alerts: [], income: '', value: 0, edition: 22, editionBy: 'planilha',
-    creative: 'vid_1', utmSource: '', ...o,
+    creative: 'vid_1', utmContent: '', utmSource: '', ...o,
   });
   const deals = [
     mk({ status: 'ganho', realized: true, value: 20040, scheduledAt: '2026-10-12' }),
@@ -1859,7 +1942,7 @@ test('dealsTab: KPIs, moment buckets, losing creatives (n ≥ 3), cost per call'
 - [ ] **Step 2: Rodar e ver falhar**
 
 Run: `npm test`
-Expected: FAIL — `Cannot find module './deals.ts'`.
+Expected: FAIL — `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '…/deals.ts'`.
 
 - [ ] **Step 3: Implementar**
 
@@ -1868,7 +1951,7 @@ Criar `src/lib/marketing/deals.ts`:
 ```ts
 import type { DateRange, SaleRow, ScheduleRow, SurveyRow } from './types.ts';
 import { addDays, normName } from './parse.ts';
-import { CYCLE_MIN, lastLiveOnOrBefore, latestCycleCapture, type CaptureIndex } from './editions.ts';
+import { CYCLE_MIN, editionKind, lastLiveOnOrBefore, latestCycleCapture, type CaptureIndex } from './editions.ts';
 import { normProd, saleValue } from './sales.ts';
 import { LABEL_RENDA } from './survey.ts';
 import { countBy, inRange, type Count } from './metrics.ts';
@@ -1900,7 +1983,9 @@ export type Deal = {
   scheduledAt: string | null; callDate: string | null; realized: boolean; lostReason: string;
   status: DealStatus; alerts: string[]; income: string; value: number;
   edition: number | null; editionBy: 'planilha' | 'email' | 'data' | null;
-  creative: string; utmSource: string;
+  creative: string;   // utm_content do negócio, senão o do lead
+  utmContent: string; // utm_content do próprio negócio ("Via API")
+  utmSource: string;
 };
 
 const days = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
@@ -1919,9 +2004,17 @@ export function buildDeals(
   });
   return rows.map((r): Deal => {
     const name = r.personName || r.title.replace(/^(SE|WB)\s*-\s*/i, '');
+    // Webinário: coluna WEBNÁRIO > captação pelo e-mail (até agendamento + 1 dia) > última live até o agendamento.
+    const lead = latestCycleCapture(idx, r.emails, r.scheduledAt ? `${addDays(r.scheduledAt, 1)}T00:00:00` : null);
+    const byDate = lastLiveOnOrBefore(eds, r.scheduledAt);
+    const edition = r.edition ?? (lead ? lead.edition : byDate);
+    const editionBy = r.edition !== null ? 'planilha' : lead ? 'email' : byDate !== null ? 'data' : null;
+    // Negócio NF10K só casa com venda de #015–#020; negócio do pago, com venda do pago (como o dash antigo, por ciclo).
+    const sameCycle = (s: SaleRow) => edition === null || editionKind(s.edition as number) === editionKind(edition);
     let mine: SaleRow[] = [];
     r.emails.forEach(e => { (byEmail[e] || []).forEach(s => mine.push(s)); });
     if (!mine.length) { const nn = normName(name); if (nn) mine = byName[nn] || []; }
+    mine = mine.filter(sameCycle);
     const saleOk = mine.filter(s => !s.refunded)[0] ?? null;
     const saleRef = saleOk ? null : mine.filter(s => s.refunded)[0] ?? null;
     const status = dealStatus({
@@ -1933,11 +2026,6 @@ export function buildDeals(
     if (gap !== null && gap < 0) alerts.push('call antes do agendamento');
     if (status === 'sem_registro') alerts.push('call já passou sem registro');
     if (!r.closer) alerts.push('sem closer');
-    // Webinário: coluna WEBNÁRIO > captação pelo e-mail (até agendamento + 1 dia) > última live até o agendamento.
-    const lead = latestCycleCapture(idx, r.emails, r.scheduledAt ? `${addDays(r.scheduledAt, 1)}T00:00:00` : null);
-    const byDate = lastLiveOnOrBefore(eds, r.scheduledAt);
-    const edition = r.edition ?? (lead ? lead.edition : byDate);
-    const editionBy = r.edition !== null ? 'planilha' : lead ? 'email' : byDate !== null ? 'data' : null;
     const survey = r.emails.map(e => surveys[e]).filter(Boolean)[0];
     const viaRaw = r.via.toLowerCase();
     const isWB = /^wb\b/i.test(r.title), isSE = /^se\b/i.test(r.title);
@@ -1949,7 +2037,7 @@ export function buildDeals(
       status, alerts,
       income: r.income || (survey ? LABEL_RENDA[survey.renda] ?? survey.renda : ''),
       value: saleOk ? saleValue(saleOk) : 0,
-      edition, editionBy, creative: r.utmContent || (lead ? lead.utmContent : ''), utmSource: r.utmSource,
+      edition, editionBy, creative: r.utmContent || (lead ? lead.utmContent : ''), utmContent: r.utmContent, utmSource: r.utmSource,
     };
   });
 }
@@ -2123,7 +2211,7 @@ git commit -m "feat(marketing): deals module (status, edition attribution, alert
 - Consumes: `CaptureRow`, `SaleRow`, `SurveyRow`, `DateRange` (Task 1); `qualified5k` (Task 3); `saleValue` (Task 5); `countBy`, `Count`, `inRange` (metrics.ts).
 - Produces:
   - `api-leads.ts`: `isApiLead(l: CaptureRow): boolean`, `type ApiAgg = { key: string; leads: number; qualified: number; responded: number }`, `type ApiTab = { leads: number; totalLeads: number; qualified: number; responded: number; bestDay: Count | null; bases: ApiAgg[]; versions: ApiAgg[]; shots: ApiAgg[]; matrix: Record<string, { leads: number; qualified: number }>; byDay: Count[]; sales: number; revenue: number }`, `apiTab(leads: CaptureRow[], surveys: Record<string, SurveyRow>, sales: SaleRow[]): ApiTab`. Chave da matriz: `` `${base}|${version}` ``.
-  - `disparos.ts`: `type DisparoKind = 'convite' | 'recuperacao'`, `type Disparo = { id: string; kind: DisparoKind; ciclo: string | null; nome: string; data: string | null; contatos: number | null; agendamentos: number | null; vendas: number | null; faturamento: number | null; custo: number | null; template: string | null }`, `type DisparoInput = Omit<Disparo, 'id'>`, `type DisparoBlock`, `disparoBlock(rows: Disparo[]): DisparoBlock`, `type DisparosTab = { convite: DisparoBlock; recuperacao: DisparoBlock; total: DisparoBlock; ranking: Disparo[]; rows: Disparo[] }`, `disparosTab(rows: Disparo[], range: DateRange | null): DisparosTab`, `parseDisparoInput(body: unknown, partial: boolean): { ok: true; value: Partial<DisparoInput> } | { ok: false; error: string }`.
+  - `disparos.ts`: `type DisparoKind = 'convite' | 'recuperacao'`, `type Disparo = { id: string; kind: DisparoKind; ciclo: string | null; nome: string; data: string | null; contatos: number | null; agendamentos: number | null; vendas: number | null; faturamento: number | null; custo: number | null; template: string | null }`, `type DisparoInput = Omit<Disparo, 'id'>`, `type DisparoBlock`, `disparoBlock(rows: Disparo[]): DisparoBlock`, `type DisparosTab = { convite: DisparoBlock; recuperacao: DisparoBlock; total: DisparoBlock; ranking: Disparo[]; rows: Disparo[] }`, `disparosTab(rows: Disparo[], range: DateRange | null): DisparosTab`, `parseDisparoInput(body: unknown, partial: boolean): { ok: true; value: Partial<DisparoInput> } | { ok: false; error: string }`, `formatNumberInput(n: number | null): string` ("16,8", sem milhar) e `parseNumberInput(s: string): number | null` (com vírgula o ponto é milhar; sem vírgula é decimal) — usados pelo editor da Task 16.
 
 - [ ] **Step 1: Testes (falhando)**
 
@@ -2168,7 +2256,7 @@ Criar `src/lib/marketing/disparos.test.ts`:
 ```ts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { disparoBlock, disparosTab, parseDisparoInput, type Disparo } from './disparos.ts';
+import { disparoBlock, disparosTab, formatNumberInput, parseDisparoInput, parseNumberInput, type Disparo } from './disparos.ts';
 
 const d = (o: Partial<Disparo>): Disparo => ({
   id: '1', kind: 'convite', ciclo: null, nome: 'Copy 01', data: '2026-09-20', contatos: 1000, agendamentos: 10,
@@ -2201,12 +2289,25 @@ test('parseDisparoInput validates at the trust boundary', () => {
   assert.deepEqual(parseDisparoInput({ custo: '' }, true), { ok: true, value: { custo: null } });
   assert.equal(parseDisparoInput(null, true).ok, false);
 });
+
+test('editor numbers round-trip without losing decimals', () => {
+  assert.equal(parseNumberInput('16,80'), 16.8);
+  assert.equal(parseNumberInput('16.8'), 16.8);
+  assert.equal(parseNumberInput('1.234,56'), 1234.56);
+  assert.equal(parseNumberInput('3213'), 3213);
+  assert.equal(parseNumberInput('  '), null);
+  assert.ok(Number.isNaN(parseNumberInput('abc')));
+  assert.equal(formatNumberInput(16.8), '16,8');
+  assert.equal(formatNumberInput(1234.5), '1234,5');
+  assert.equal(formatNumberInput(null), '');
+  assert.equal(parseNumberInput(formatNumberInput(158.68)), 158.68); // editar sem mudar mantém o valor
+});
 ```
 
 - [ ] **Step 2: Rodar e ver falhar**
 
 Run: `npm test`
-Expected: FAIL — módulos inexistentes.
+Expected: FAIL — `Error [ERR_MODULE_NOT_FOUND]: Cannot find module` (os módulos ainda não existem).
 
 - [ ] **Step 3: Implementar `api-leads.ts`**
 
@@ -2361,6 +2462,18 @@ export function parseDisparoInput(body: unknown, partial: boolean): Parsed {
   }
   return { ok: true, value: out as Partial<DisparoInput> };
 }
+
+// Campo numérico do editor: mostra "16,8" (sem separador de milhar) e lê de volta sem perder casas.
+export const formatNumberInput = (n: number | null) =>
+  (n === null ? '' : n.toLocaleString('pt-BR', { useGrouping: false, maximumFractionDigits: 2 }));
+
+// Vazio = null. Com vírgula, ponto é milhar ("1.234,56"); sem vírgula, ponto é decimal ("16.8").
+// Texto inválido vira NaN e a API recusa com mensagem.
+export function parseNumberInput(s: string): number | null {
+  const t = (s ?? '').trim();
+  if (!t) return null;
+  return Number(t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t);
+}
 ```
 
 - [ ] **Step 5: Rodar testes e tipos**
@@ -2443,7 +2556,7 @@ Conta do teste: `a` entra 5 min antes (conta a partir do minuto 0) e sai aos 70;
 - [ ] **Step 2: Rodar e ver falhar**
 
 Run: `npm test`
-Expected: FAIL — `Cannot find module './live.ts'`.
+Expected: FAIL — `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '…/live.ts'`.
 
 - [ ] **Step 3: Implementar**
 
@@ -2569,7 +2682,7 @@ git commit -m "feat(marketing): live presence curve, peak, pitch and histogram f
 - Consumes: `OverviewCheck`, `CaptureRow`, `EditionConfig`, `MetaAdDay`, `MetaWindow`, `DateRange` (Task 1); `PAGO_MIN` (Task 3); `div` (metrics.ts); `addDays` (parse.ts).
 - Produces:
   - `reconcile.ts`: `type ReconState = 'ok' | 'diverge' | 'so_planilha' | 'so_plataforma'`, `type OfficialNumbers = { peak; attendance; metaSpend; applications; scheduled; done; sales; revenue: number | null }`, `RECON_METRICS`, `type ReconRow = { edition: number; key: keyof OfficialNumbers; label: string; official: number | null; sheet: number | null; diff: number | null; diffPct: number | null; state: ReconState }`, `reconcileEdition(edition: number, official: OfficialNumbers, sheet: OverviewCheck | null): ReconRow[]`.
-  - `full-funnel.ts`: `DEFAULT_CAMPAIGN_FILTER`, `campaignFilterOf(stored: string | undefined): string`, `matchesCampaign(name: string, filter: string): boolean`, `filterAds(ads: MetaAdDay[], filter: string): MetaAdDay[]`, `type FunnelMetrics`, `funnelMetrics(ads, sales: number, win): FunnelMetrics`, `FUNNEL_ROWS`, `captureDays(ed: EditionConfig, today: string): number`, `ticketSalesIn(captures, edition: number, filter: string, range: DateRange | null): number`, `type FunnelColumn`, `type FunnelCompare`, `type FullFunnel = { filter: string; columns: FunnelColumn[]; compare: FunnelCompare | null }`, `fullFunnel(eds: EditionConfig[], ads: MetaAdDay[], captures: CaptureRow[], windows: MetaWindow[], filter: string, today: string): FullFunnel`, `metaWindowRanges(eds: EditionConfig[], today: string): { edition: number; since: string; until: string }[]`.
+  - `full-funnel.ts`: `DEFAULT_CAMPAIGN_FILTER`, `campaignFilterOf(stored: string | undefined): string`, `matchesCampaign(name: string, filter: string): boolean`, `filterAds(ads: MetaAdDay[], filter: string): MetaAdDay[]`, `type FunnelMetrics`, `funnelMetrics(ads, sales: number, win): FunnelMetrics`, `FUNNEL_ROWS`, `captureDays(ed: EditionConfig, today: string): number`, `ticketSalesIn(captures, edition: number, filter: string, range: DateRange | null): number`, `type FunnelColumn`, `type FunnelCompare` (inclui `prevSales`/`curSales`: vendas das duas edições no mesmo nº de dias), `type FullFunnel = { filter: string; columns: FunnelColumn[]; compare: FunnelCompare | null }`, `fullFunnel(eds: EditionConfig[], ads: MetaAdDay[], captures: CaptureRow[], windows: MetaWindow[], filter: string, today: string): FullFunnel`, `metaWindowRanges(eds: EditionConfig[], today: string): { edition: number; since: string; until: string }[]`.
 
 - [ ] **Step 1: Testes (falhando)**
 
@@ -2657,6 +2770,7 @@ test('fullFunnel after the live: window ends the day before the live (rule verif
   assert.equal(f.compare?.cutDays, 6);
   assert.deepEqual(f.compare?.prevRange, { from: '2026-09-30', to: '2026-10-05' });
   assert.deepEqual(f.compare?.curRange, { from: '2026-10-07', to: '2026-10-12' });
+  assert.deepEqual([f.compare?.prevSales, f.compare?.curSales], [3, 2]);
   assert.equal(f.compare?.deltas.sales, (2 - 3) / 3);
   assert.equal(fullFunnel([e22], ads, caps, [], 'WB PG', '2026-10-14').compare, null);
 });
@@ -2681,7 +2795,7 @@ test('metaWindowRanges: only paid editions already started, capped at today', ()
 - [ ] **Step 2: Rodar e ver falhar**
 
 Run: `npm test`
-Expected: FAIL — módulos inexistentes.
+Expected: FAIL — `Error [ERR_MODULE_NOT_FOUND]: Cannot find module` (os módulos ainda não existem).
 
 - [ ] **Step 3: Implementar `reconcile.ts`**
 
@@ -2817,6 +2931,7 @@ export function ticketSalesIn(captures: CaptureRow[], edition: number, filter: s
 export type FunnelColumn = { edition: number; from: string; to: string; metrics: FunnelMetrics };
 export type FunnelCompare = {
   prev: number; cur: number; cutDays: number; prevRange: DateRange; curRange: DateRange;
+  prevSales: number; curSales: number; // vendas no mesmo nº de dias de captação
   deltas: Partial<Record<keyof FunnelMetrics, number | null>>; reachComparable: boolean;
 };
 export type FullFunnel = { filter: string; columns: FunnelColumn[]; compare: FunnelCompare | null };
@@ -2854,7 +2969,7 @@ export function fullFunnel(eds: EditionConfig[], ads: MetaAdDay[], captures: Cap
     const a = pick(wp, pm), b = pick(wc, cm);
     deltas[r.key] = a !== null && b !== null && a !== 0 ? (b - a) / a : null;
   });
-  return { filter, columns, compare: { prev: prevEd.number, cur: curEd.number, cutDays, prevRange: pr, curRange: cr, deltas, reachComparable } };
+  return { filter, columns, compare: { prev: prevEd.number, cur: curEd.number, cutDays, prevRange: pr, curRange: cr, prevSales: pm.sales, curSales: cm.sales, deltas, reachComparable } };
 }
 
 // Janelas de alcance que o sync pede ao Meta: edições pagas já começadas, até hoje.
@@ -3191,6 +3306,7 @@ git commit -m "feat(marketing): reach/frequency per edition window in sync; camp
 ### Task 12: Rota por aba, navegação em dois níveis e aba Pesquisa
 
 **Files:**
+- Modify: `src/lib/marketing/store.ts` (`loadSnapshotTimes`)
 - Create: `src/lib/marketing/tabs.ts`
 - Modify: `src/app/api/marketing/data/route.ts`
 - Create: `src/components/marketing/useTabData.ts`
@@ -3199,30 +3315,45 @@ git commit -m "feat(marketing): reach/frequency per edition window in sync; camp
 - Modify: `src/components/marketing/MarketingDashboard.tsx`
 
 **Interfaces:**
-- Consumes: `surveyTab`, `latestSurveys`, `SurveyTab`, `ORDER_RENDA`, `LABEL_RENDA`, `Challenges` (Task 3); `toCaptureRows`, `toOverviewRows`, `toSurveyRows`, `TabKey` (Task 1); `buildEditions`, `cycleStartAt` (Task 3); `loadSnapshots(tabs)` (Task 2), `loadEditionOverrides` (store).
+- Consumes: `surveyTab`, `latestSurveys`, `SurveyTab`, `ORDER_RENDA`, `LABEL_RENDA`, `Challenges` (Task 3); `toCaptureRows`, `toOverviewRows`, `toSurveyRows`, `TabKey` (Task 1); `buildEditions`, `cycleStartAt` (Task 3); `loadSnapshots(tabs)` (Task 2), `loadEditionOverrides` (store); `TAB_TITLES` (Task 1).
 - Produces:
-  - `tabs.ts`: `PANEL_TABS`, `type PanelTab`, `isPanelTab(t: string): t is PanelTab`, `type TabOptions = { lists: boolean; renda: string; produto: string }`, `type TabData` (mapa aba → payload), `type Ctx`, `buildTab(tab: PanelTab, selected: number[], range: DateRange | null, o: TabOptions): Promise<TabData[PanelTab]>`. As próximas tasks só acrescentam entradas em `PANEL_TABS`, `TabData`, `NEEDS` e `BUILDERS`.
-  - Rota: `GET /api/marketing/data?tab=pesquisa&editions=…&from=…&to=…&renda=…` → `SurveyTab`; aba desconhecida → 400; sem `tab` → `MarketingView` (igual a hoje).
-  - `useTabData<T>(tab: string, query: string, extra?: string, enabled?: boolean): { data: T | null; loading: boolean; error: string }`.
+  - `tabs.ts`: `PANEL_TABS`, `type PanelTab`, `isPanelTab(t: string): t is PanelTab`, `type TabOptions = { lists: boolean; renda: string; produto: string }`, `type TabData` (mapa aba → payload), `type Ctx`, `type MissingSources = { missing: string[] }`, `buildTab(tab: PanelTab, selected: number[], range: DateRange | null, o: TabOptions): Promise<TabData[PanelTab] | MissingSources>`. `NEEDS` lista as abas da planilha de cada aba do painel (Visão Geral sempre; Captação só quem usa — Ao vivo e Disparos não). Linhas da planilha ficam em memória da instância enquanto o `fetched_at` do snapshot não muda; aba da planilha sem dados → `{ missing: [títulos] }` em vez de zeros. As próximas tasks só trocam o bloco de imports e acrescentam entradas em `PANEL_TABS`, `TabData`, `NEEDS`, helpers e `BUILDERS`.
+  - `store.ts`: `loadSnapshotTimes(tabs: TabKey[]): Promise<{ tab: TabKey; fetchedAt: string }[]>` (só `tab, fetched_at`, consulta barata).
+  - Rota: `GET /api/marketing/data?tab=pesquisa&editions=…&from=…&to=…&renda=…` → `SurveyTab` (ou `{ missing }`); aba desconhecida → 400; sem `tab` → `MarketingView` (igual a hoje). `maxDuration = 60`.
+  - `useTabData<T>(tab: string, query: string, extra?: string, enabled?: boolean): { data: T | null; loading: boolean; error: string }` — guarda a resposta por URL (até 40): a mesma URL não é buscada de novo (o painel desmonta a aba fechada; voltar a ela é instantâneo); `{ missing }` vira erro "Fonte sem dados: … Clique em Atualizar.".
   - `ui.tsx`: `brl`, `int`, `dec`, `pct`, `ratio`, `ed`, `dm`, `mins`, `sectionTitle`, `kpiGrid`, `Kpi`, `TabState`, `BarList`, `DistChart`, `PeopleList<T>`.
   - `SurveyTab.tsx`: default `SurveyTab({ query })`, named `ChallengesView({ data }: { data: Challenges })`.
   - `MarketingDashboard`: estado `query` (string `editions=…&from=…&to=…&v=N`, muda a cada carga bem-sucedida), `group`, `tab`; `GROUPS`.
 
 - [ ] **Step 1: Módulo servidor `tabs.ts`**
 
+Acrescentar a `src/lib/marketing/store.ts`, logo antes de `loadSnapshots`:
+
+```ts
+// Só a data de cada aba (barato): quem guarda as linhas em memória sabe se precisa reler.
+export async function loadSnapshotTimes(tabs: TabKey[]): Promise<{ tab: TabKey; fetchedAt: string }[]> {
+  const { data, error } = await supabase.from('mkt_sheet_snapshot').select('tab, fetched_at').in('tab', tabs);
+  check(error, 'snapshot times');
+  return (data ?? []).map(r => ({ tab: r.tab as TabKey, fetchedAt: String(r.fetched_at) }));
+}
+```
+
 Criar `src/lib/marketing/tabs.ts`:
 
 ```ts
 // Dados de cada aba do painel (/api/marketing/data?tab=...). Só servidor: calcula só a aba pedida
-// e lê só as abas da planilha que ela usa (Captação e Visão Geral sempre).
+// e lê só as abas da planilha que ela usa (Visão Geral sempre, para montar as edições).
 import type { CaptureRow, DateRange, EditionConfig, OverviewRow, SurveyRow } from './types.ts';
 import { toCaptureRows, toOverviewRows, toSurveyRows, type TabKey } from './sheet-rows.ts';
 import { buildEditions, cycleStartAt } from './editions.ts';
 import { inRange } from './metrics.ts';
 import { latestSurveys, surveyTab, type SurveyTab } from './survey.ts';
-import { loadEditionOverrides, loadSnapshots } from './store.ts';
+import { TAB_TITLES } from './sync.ts';
+import { loadEditionOverrides, loadSnapshotTimes, loadSnapshots } from './store.ts';
 
-export const PANEL_TABS = ['pesquisa'] as const;
+export const PANEL_TABS = [
+  'pesquisa',
+] as const;
 export type PanelTab = typeof PANEL_TABS[number];
 export const isPanelTab = (t: string): t is PanelTab => (PANEL_TABS as readonly string[]).indexOf(t) >= 0;
 export type TabOptions = { lists: boolean; renda: string; produto: string };
@@ -3230,15 +3361,43 @@ export type TabOptions = { lists: boolean; renda: string; produto: string };
 export type TabData = {
   pesquisa: SurveyTab;
 };
+// Aba da planilha sem dados: a tela diz qual fonte falta, em vez de mostrar zeros.
+export type MissingSources = { missing: string[] };
 
+// Abas da planilha que cada aba do painel lê, além da Visão Geral. Ao vivo e Disparos não leem a Captação.
 const NEEDS: Record<PanelTab, TabKey[]> = {
-  pesquisa: ['survey'],
+  pesquisa: ['capture', 'survey'],
 };
+
+// Linhas da planilha em memória da instância, por aba, enquanto o `fetched_at` do snapshot não muda.
+// ponytail: some no cold start da Vercel; se ainda ficar lento, guardar o resultado por aba no banco.
+type Entry = { at: string; recs: Record<string, string>[]; typed?: unknown[] };
+const memo: Partial<Record<TabKey, Entry>> = {};
+let surveyMemo: { key: string; value: Record<string, SurveyRow> } | null = null;
+
+async function snapshots(tabs: TabKey[]): Promise<Partial<Record<TabKey, Entry>>> {
+  const times = await loadSnapshotTimes(tabs);
+  const stale = times.filter(t => { const m = memo[t.tab]; return !m || m.at !== t.fetchedAt; });
+  if (stale.length) {
+    const fresh = await loadSnapshots(stale.map(t => t.tab));
+    stale.forEach(t => { memo[t.tab] = { at: t.fetchedAt, recs: fresh[t.tab] ?? [] }; });
+  }
+  const out: Partial<Record<TabKey, Entry>> = {};
+  times.forEach(t => { out[t.tab] = memo[t.tab]; });
+  return out;
+}
+
+// Conversão tipada também fica na memória, junto das linhas.
+function typed<T>(e: Entry | undefined, convert: (recs: Record<string, string>[]) => T[]): T[] {
+  if (!e) return [];
+  if (!e.typed) e.typed = convert(e.recs);
+  return e.typed as T[];
+}
 
 export type Ctx = {
   today: string; range: DateRange | null;
   editions: EditionConfig[]; selected: number[]; eds: EditionConfig[];
-  snap: Partial<Record<TabKey, Record<string, string>[]>>;
+  snap: Partial<Record<TabKey, Entry>>;
   captures: CaptureRow[];   // Captação inteira
   leads: CaptureRow[];      // Captação das edições selecionadas, no período
   overview: OverviewRow[];
@@ -3249,20 +3408,27 @@ const todayBRT = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0
 const day = (at: string | null) => (at ? at.slice(0, 10) : null);
 const inSel = (c: Ctx, n: number | null) => n !== null && c.selected.indexOf(n) >= 0;
 
-async function context(tab: PanelTab, selectedIn: number[], range: DateRange | null): Promise<Ctx> {
+async function context(tab: PanelTab, selectedIn: number[], range: DateRange | null): Promise<Ctx | MissingSources> {
   const today = todayBRT();
-  const [snap, overrides] = await Promise.all([
-    loadSnapshots((['capture', 'overview'] as TabKey[]).concat(NEEDS[tab])), loadEditionOverrides(),
-  ]);
-  const captures = toCaptureRows(snap.capture ?? []);
-  const overview = toOverviewRows(snap.overview ?? []);
+  const need = (['overview'] as TabKey[]).concat(NEEDS[tab]);
+  const [snap, overrides] = await Promise.all([snapshots(need), loadEditionOverrides()]);
+  const missing = need.filter(t => { const e = snap[t]; return !e || !e.recs.length; }).map(t => TAB_TITLES[t]);
+  if (missing.length) return { missing };
+  const captures = typed(snap.capture, toCaptureRows);
+  const overview = typed(snap.overview, toOverviewRows);
   const editions = buildEditions(overview, overrides, today);
   // Mesma regra do buildView: sem seleção, a edição mais recente.
   const selected = selectedIn.length ? selectedIn : editions.slice(-1).map(e => e.number);
+  let surveys: Record<string, SurveyRow> = {};
+  const sv = snap.survey, cap = snap.capture;
+  if (sv && cap) {
+    const key = `${sv.at}|${cap.at}`;
+    if (!surveyMemo || surveyMemo.key !== key) surveyMemo = { key, value: latestSurveys(typed(sv, toSurveyRows), cycleStartAt(captures)) };
+    surveys = surveyMemo.value;
+  }
   const ctx: Ctx = {
     today, range, editions, selected, eds: editions.filter(e => selected.indexOf(e.number) >= 0),
-    snap, captures, overview, leads: [],
-    surveys: snap.survey ? latestSurveys(toSurveyRows(snap.survey), cycleStartAt(captures)) : {},
+    snap, captures, overview, leads: [], surveys,
   };
   ctx.leads = captures.filter(c => inSel(ctx, c.edition) && inRange(day(c.at), range));
   return ctx;
@@ -3272,9 +3438,10 @@ type Builder<K extends PanelTab> = (c: Ctx, o: TabOptions) => TabData[K] | Promi
 const BUILDERS: { [K in PanelTab]: Builder<K> } = {
   pesquisa: (c, o) => surveyTab(c.leads, c.surveys, o.renda),
 };
-
-export async function buildTab(tab: PanelTab, selected: number[], range: DateRange | null, o: TabOptions): Promise<TabData[PanelTab]> {
-  return BUILDERS[tab](await context(tab, selected, range), o);
+export async function buildTab(tab: PanelTab, selected: number[], range: DateRange | null, o: TabOptions): Promise<TabData[PanelTab] | MissingSources> {
+  const c = await context(tab, selected, range);
+  if ('missing' in c) return c;
+  return BUILDERS[tab](c, o);
 }
 ```
 
@@ -3287,6 +3454,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { buildView } from '@/lib/marketing/view';
 import { buildTab, isPanelTab } from '@/lib/marketing/tabs';
+
+// Abas pesadas (Edição com várias lives) podem passar dos 10 s padrão no primeiro acesso.
+export const maxDuration = 60;
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -3325,23 +3495,39 @@ Criar `src/components/marketing/useTabData.ts`:
 
 import { useEffect, useRef, useState } from 'react';
 
-// Busca o payload de uma aba. `query` muda a cada carga do painel (filtros ou Atualizar), então refaz a busca.
+// Resposta por URL. `query` traz a versão da carga (&v=N), então a mesma URL = mesmos dados:
+// voltar a uma aba (o painel desmonta abas fechadas) mostra na hora, sem nova requisição.
+// ponytail: guarda só as 40 últimas URLs.
+const cache: Record<string, unknown> = {};
+const order: string[] = [];
+function remember(url: string, data: unknown) {
+  if (!(url in cache)) { order.push(url); if (order.length > 40) delete cache[order.shift() as string]; }
+  cache[url] = data;
+}
+
 export function useTabData<T>(tab: string, query: string, extra = '', enabled = true) {
-  const [state, setState] = useState<{ data: T | null; loading: boolean; error: string }>({ data: null, loading: enabled, error: '' });
+  const url = `/api/marketing/data?tab=${tab}&${query}${extra}`;
+  const [state, setState] = useState<{ data: T | null; loading: boolean; error: string }>(
+    () => (url in cache ? { data: cache[url] as T, loading: false, error: '' } : { data: null, loading: enabled, error: '' }),
+  );
   const seq = useRef(0);
   useEffect(() => {
     if (!enabled) return;
+    if (url in cache) { setState({ data: cache[url] as T, loading: false, error: '' }); return; }
     const id = ++seq.current; // só a última requisição vale
     setState(s => ({ data: s.data, loading: true, error: '' }));
-    fetch(`/api/marketing/data?tab=${tab}&${query}${extra}`)
+    fetch(url)
       .then(async r => {
         const body = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(body.error || 'Erro ao carregar');
+        // Aba da planilha sem dados: o servidor diz qual; nada de zeros na tela.
+        if (body && Array.isArray(body.missing)) throw new Error(`Fonte sem dados: ${body.missing.join(', ')}. Clique em Atualizar.`);
+        remember(url, body);
         return body as T;
       })
       .then(data => { if (id === seq.current) setState({ data, loading: false, error: '' }); })
       .catch(e => { if (id === seq.current) setState(s => ({ data: s.data, loading: false, error: (e as Error).message || 'Erro ao carregar' })); });
-  }, [tab, query, extra, enabled]);
+  }, [url, enabled]);
   return state;
 }
 ```
@@ -3609,11 +3795,14 @@ Manual (`npm run dev`, logado como admin, em `/admin/marketing`):
 - Trocar a edição no seletor: a Pesquisa recarrega.
 - No DevTools: `GET /api/marketing/data` (sem tab) continua com o formato antigo; `?tab=xyz` → 400; deslogado → 401.
 - Celular (360 px): grupos cabem ou rolam na horizontal; nada estoura a tela.
+- Fonte vazia: com a linha `survey` de `mkt_sheet_snapshot` ausente (ambiente de teste/Preview, antes do primeiro Atualizar), Leads → Pesquisa mostra "Fonte sem dados: Pesquisa [novo]. Clique em Atualizar." — nunca zeros.
+- Cache no navegador: Pesquisa → Edição → Pesquisa não gera nova chamada `?tab=pesquisa` no DevTools; trocar a edição ou clicar Atualizar gera.
+- Tempo: no DevTools, a chamada `?tab=pesquisa` repetida (segunda vez na mesma instância, "warm") fica abaixo de 1 s.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/lib/marketing/tabs.ts src/app/api/marketing/data/route.ts src/components/marketing/useTabData.ts src/components/marketing/ui.tsx src/components/marketing/SurveyTab.tsx src/components/marketing/MarketingDashboard.tsx
+git add src/lib/marketing/store.ts src/lib/marketing/tabs.ts src/app/api/marketing/data/route.ts src/components/marketing/useTabData.ts src/components/marketing/ui.tsx src/components/marketing/SurveyTab.tsx src/components/marketing/MarketingDashboard.tsx
 git commit -m "feat(marketing): per-tab data endpoint, two-level tabs and Pesquisa tab"
 ```
 
@@ -3629,67 +3818,117 @@ git commit -m "feat(marketing): per-tab data endpoint, two-level tabs and Pesqui
 - Modify: `src/components/marketing/MarketingDashboard.tsx`
 
 **Interfaces:**
-- Consumes: `buildApplications`, `applicationsTab`, `Application`, `ApplicationsTab` (Task 4); `presenceFromEvents`, `liveStats`, `liveTotals`, `LiveStats`, `LiveTab` (Task 8); `indexCaptures` (Task 3); `toApplicationRows` (Task 1); `getLiveEventsForEdition`, `getEdition` (`@/lib/db`, só leitura), `getLiveStartMs` (`@/lib/edition`).
+- Consumes: `buildApplications`, `applicationsTab`, `Application`, `ApplicationsTab` (Task 4); `presenceFromEvents`, `liveStats`, `liveTotals`, `LiveStats`, `LiveTab` (Task 8); `indexCaptures` (Task 3); `toApplicationRows` (Task 1); `supabase` e `getEdition` (`@/lib/db`, só leitura; `db.ts` não muda), `getLiveStartMs` (`@/lib/edition`).
 - Produces:
-  - `platform.ts`: `loadLive(liveDate: string): Promise<{ events: LiveEvent[]; liveStartMs: number; pitchSeconds: number }>`.
+  - `platform.ts`: `loadLive(liveDate: string): Promise<{ events: LiveEvent[]; liveStartMs: number; pitchSeconds: number }>` com leitor paginado próprio de `events` que **lança** em erro (o `getLiveEventsForEdition` de `db.ts` engole o erro e devolve linhas parciais).
+  - `tabs.ts`: presença de lives que já passaram fica em memória da instância (não muda mais); erro não é guardado.
   - `tabs.ts`: abas `aplicacoes` (`ApplicationsTab`) e `aovivo` (`LiveTab`); helpers internos `applications(c: Ctx): Application[]` e `liveByEdition(c: Ctx): Promise<Record<number, LiveStats | null>>` (usados de novo nas Tasks 17 e 18).
   - Componentes `ApplicationsTab({ query })`, `LiveTab({ query })`.
 
 - [ ] **Step 1: Presença crua da plataforma (só leitura)**
 
-Acrescentar a `src/lib/marketing/sources/platform.ts`:
+Em `src/lib/marketing/sources/platform.ts`, acrescentar junto dos imports do topo:
 
 ```ts
 import type { LiveEvent } from '../live.ts';
+```
 
-// Eventos de presença da live (só leitura) + início e marcador do pitch.
+e ao fim do arquivo:
+
+```ts
+// Eventos de presença da live, paginados e só leitura. Ao contrário de getLiveEventsForEdition (db.ts),
+// um erro aqui lança: melhor "—" na tela do que uma curva calculada com metade dos eventos.
+async function loadLiveEvents(liveDate: string): Promise<LiveEvent[]> {
+  const out: LiveEvent[] = [];
+  for (let start = 0; ; start += 1000) {
+    const { data, error } = await supabase.from('events').select('registration_id, type, created_at')
+      .eq('edition_id', liveDate).in('type', ['enter_live', 'cta_click', 'heartbeat'])
+      .order('created_at', { ascending: true }).range(start, start + 999);
+    if (error) throw new Error(`events: ${error.message}`);
+    (data ?? []).forEach(e => out.push(e));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
+// Presença da live (só leitura) + início e marcador do pitch.
 export async function loadLive(liveDate: string): Promise<{ events: LiveEvent[]; liveStartMs: number; pitchSeconds: number }> {
-  const [events, edition] = await Promise.all([getLiveEventsForEdition(liveDate), getEdition(liveDate)]);
+  const [events, edition] = await Promise.all([loadLiveEvents(liveDate), getEdition(liveDate)]);
   return { events, liveStartMs: getLiveStartMs(liveDate), pitchSeconds: edition?.pitch_marker_seconds ?? DEFAULT_PITCH_SECONDS };
 }
 ```
 
-(Colocar o `import type` junto dos outros imports no topo do arquivo.)
-
 - [ ] **Step 2: `tabs.ts` — aplicacoes e aovivo**
 
-Em `src/lib/marketing/tabs.ts`:
+Em `src/lib/marketing/tabs.ts` (cada estado intermediário compila: o plano foi verificado aplicando as Tasks 12–18 em sequência):
 
-1. Imports: trocar a linha de `./sheet-rows.ts` por `import { toApplicationRows, toCaptureRows, toOverviewRows, toSurveyRows, type TabKey } from './sheet-rows.ts';`, a de `./editions.ts` por `import { buildEditions, cycleStartAt, indexCaptures } from './editions.ts';` e acrescentar:
+1. Substituir o bloco de imports do topo (todas as linhas `import`) por:
 
 ```ts
+import type { CaptureRow, DateRange, EditionConfig, OverviewRow, SurveyRow } from './types.ts';
+import { toApplicationRows, toCaptureRows, toOverviewRows, toSurveyRows, type TabKey } from './sheet-rows.ts';
+import { buildEditions, cycleStartAt, indexCaptures } from './editions.ts';
+import { inRange } from './metrics.ts';
+import { latestSurveys, surveyTab, type SurveyTab } from './survey.ts';
 import { applicationsTab, buildApplications, type Application, type ApplicationsTab } from './applications.ts';
 import { liveStats, liveTotals, presenceFromEvents, type LiveStats, type LiveTab } from './live.ts';
+import { TAB_TITLES } from './sync.ts';
+import { loadEditionOverrides, loadSnapshotTimes, loadSnapshots } from './store.ts';
 import { loadLive } from './sources/platform.ts';
 ```
 
-2. `export const PANEL_TABS = ['pesquisa', 'aplicacoes', 'aovivo'] as const;`
-3. Em `TabData`, acrescentar `aplicacoes: ApplicationsTab;` e `aovivo: LiveTab;`.
-4. Em `NEEDS`, acrescentar `aplicacoes: ['applications'],` e `aovivo: [],`.
-5. Antes de `type Builder`, acrescentar:
+2. Substituir a declaração de `PANEL_TABS` por:
+
+```ts
+export const PANEL_TABS = [
+  'pesquisa', 'aplicacoes', 'aovivo',
+] as const;
+```
+
+3. Dentro de `export type TabData = { … }`, acrescentar ao fim:
+
+```ts
+  aplicacoes: ApplicationsTab;
+  aovivo: LiveTab;
+```
+
+4. Dentro de `const NEEDS = { … }`, acrescentar ao fim:
+
+```ts
+  aplicacoes: ['capture', 'applications'],
+  aovivo: [],
+```
+
+5. Logo antes de `type Builder<K extends PanelTab>`, acrescentar:
 
 ```ts
 function applications(c: Ctx): Application[] {
-  return buildApplications(toApplicationRows(c.snap.applications ?? []), indexCaptures(c.captures), c.editions);
+  return buildApplications(typed(c.snap.applications, toApplicationRows), indexCaptures(c.captures), c.editions);
 }
+
+// Presença de lives que já passaram não muda mais: fica na memória da instância.
+const liveMemo: Record<string, LiveStats | null> = {};
 
 // Presença oficial por edição (plataforma). Edição sem evento ou com erro = null ("—" na tela).
 async function liveByEdition(c: Ctx): Promise<Record<number, LiveStats | null>> {
   const out: Record<number, LiveStats | null> = {};
   await Promise.all(c.eds.map(async e => {
+    const past = e.liveDate < c.today;
+    if (past && e.liveDate in liveMemo) { out[e.number] = liveMemo[e.liveDate]; return; }
     try {
       const l = await loadLive(e.liveDate);
       const people = presenceFromEvents(l.events);
       out[e.number] = people.length ? liveStats(people, l.liveStartMs, l.pitchSeconds) : null;
+      if (past) liveMemo[e.liveDate] = out[e.number];
     } catch {
-      out[e.number] = null;
+      out[e.number] = null; // erro não vai para a memória: tenta de novo na próxima
     }
   }));
   return out;
 }
 ```
 
-6. Em `BUILDERS`, acrescentar:
+6. Dentro de `const BUILDERS = { … }`, acrescentar ao fim (antes do `};`):
 
 ```ts
   aplicacoes: (c, o) => applicationsTab(applications(c), c.selected, c.range, o.lists),
@@ -3924,7 +4163,15 @@ Expected: PASS.
 Manual:
 - Leads → Aplicações: KPIs, chips de origem (ex.: "Plataforma (ao vivo)") + barras por origem, tabela por webinário, perfil em 3 colunas. "Lista de aplicações" só busca ao abrir (no DevTools aparece uma chamada `…&lists=1`); fechada, a resposta da aba não tem nomes (`list: null`).
 - Leads → Ao vivo com uma edição: KPIs, curva com a linha tracejada do pitch (~66 min), histograma colorido, cartão da edição. Com duas edições: uma linha por edição e legenda.
-- Selecionar #015–#020: Ao vivo mostra dados se houver eventos na plataforma; senão o texto "Sem presença registrada…".
+- Por edição, o cartão "Pessoas" é igual ao número de cadastros distintos com presença naquela live. Conferir uma edição (trocar a data `AAAA-MM-DD` pela data da live):
+
+```bash
+node -e "process.stdout.write(JSON.stringify({query: \"select count(distinct registration_id) from events where edition_id = 'AAAA-MM-DD' and type in ('enter_live','heartbeat')\"}))" > "$TEMP/q.json"
+curl -s -X POST "https://api.supabase.com/v1/projects/iuxdimqnjyweipawytzl/database/query" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" --data @"$TEMP/q.json"; rm "$TEMP/q.json"
+```
+
+  Expected: o `count` é exatamente o valor de "Pessoas" no cartão da edição. Edição com `count` = 0 mostra "—" no cartão e o texto "Sem presença registrada…" quando nenhuma edição selecionada tem presença.
+- Abrir Ao vivo, ir para outra aba e voltar: no DevTools não há nova chamada `?tab=aovivo`. Uma live já passada, pedida de novo depois de Atualizar, responde mais rápido que a primeira (presença em memória).
 
 - [ ] **Step 7: Commit**
 
@@ -3944,27 +4191,55 @@ git commit -m "feat(marketing): Aplicações and Ao vivo tabs"
 
 **Interfaces:**
 - Consumes: `buildDeals`, `dealsTab`, `Deal`, `DealsTab`, `CatCounts`, `STATUS_LABEL`, `DealStatus` (Task 6); `filterAds` (Task 9); `getMarketingSettings().metaCampaignFilter` (Task 10); `loadAdDays` (store); `toSaleRows`, `toScheduleRows` (Task 1).
-- Produces: aba `agendamentos` (`DealsTab`); helpers internos em `tabs.ts`: `deals(c: Ctx): Deal[]`, `adsOf(c: Ctx): Promise<{ ads: MetaAdDay[]; filter: string }>`, `spendByEdition(c: Ctx, ads: MetaAdDay[]): Record<number, number | null>` (reusados nas Tasks 17 e 18); componente `DealsTab({ query })`.
+- Produces: aba `agendamentos` (`DealsTab`); helpers internos em `tabs.ts`: `deals(c: Ctx): Deal[]`, `adsOf(c: Ctx): Promise<{ ads: MetaAdDay[]; filter: string }>`, `spendByEdition(c: Ctx, ads: MetaAdDay[]): Record<number, number | null>` — NF10K (#015–#020) sempre "Investimento Total" da Visão Geral; pago: Meta filtrado, senão Visão Geral, senão null (reusados nas Tasks 17 e 18); componente `DealsTab({ query })`.
 
 - [ ] **Step 1: `tabs.ts` — agendamentos**
 
-Em `src/lib/marketing/tabs.ts`:
+Em `src/lib/marketing/tabs.ts` (cada estado intermediário compila: o plano foi verificado aplicando as Tasks 12–18 em sequência):
 
-1. Imports: na linha de tipos, acrescentar `MetaAdDay`; na de `./sheet-rows.ts`, acrescentar `toSaleRows, toScheduleRows`; trocar a de `./store.ts` por `import { loadAdDays, loadEditionOverrides, loadSnapshots } from './store.ts';` e acrescentar:
+1. Substituir o bloco de imports do topo (todas as linhas `import`) por:
 
 ```ts
+import type { CaptureRow, DateRange, EditionConfig, MetaAdDay, OverviewRow, SurveyRow } from './types.ts';
+import { toApplicationRows, toCaptureRows, toOverviewRows, toSaleRows, toScheduleRows, toSurveyRows, type TabKey } from './sheet-rows.ts';
+import { buildEditions, cycleStartAt, editionKind, indexCaptures } from './editions.ts';
+import { inRange } from './metrics.ts';
+import { latestSurveys, surveyTab, type SurveyTab } from './survey.ts';
+import { applicationsTab, buildApplications, type Application, type ApplicationsTab } from './applications.ts';
+import { liveStats, liveTotals, presenceFromEvents, type LiveStats, type LiveTab } from './live.ts';
 import { buildDeals, dealsTab, type Deal, type DealsTab } from './deals.ts';
 import { filterAds } from './full-funnel.ts';
 import { getMarketingSettings } from './settings.ts';
+import { TAB_TITLES } from './sync.ts';
+import { loadAdDays, loadEditionOverrides, loadSnapshotTimes, loadSnapshots } from './store.ts';
+import { loadLive } from './sources/platform.ts';
 ```
 
-2. `export const PANEL_TABS = ['pesquisa', 'aplicacoes', 'aovivo', 'agendamentos'] as const;`
-3. `TabData`: acrescentar `agendamentos: DealsTab;`. `NEEDS`: acrescentar `agendamentos: ['schedule', 'sales', 'survey'],`.
-4. Antes de `type Builder`, acrescentar:
+2. Substituir a declaração de `PANEL_TABS` por:
+
+```ts
+export const PANEL_TABS = [
+  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos',
+] as const;
+```
+
+3. Dentro de `export type TabData = { … }`, acrescentar ao fim:
+
+```ts
+  agendamentos: DealsTab;
+```
+
+4. Dentro de `const NEEDS = { … }`, acrescentar ao fim:
+
+```ts
+  agendamentos: ['capture', 'schedule', 'sales', 'survey'],
+```
+
+5. Logo antes de `type Builder<K extends PanelTab>`, acrescentar:
 
 ```ts
 function deals(c: Ctx): Deal[] {
-  return buildDeals(toScheduleRows(c.snap.schedule ?? []), toSaleRows(c.snap.sales ?? []), indexCaptures(c.captures), c.surveys, c.editions, c.today);
+  return buildDeals(typed(c.snap.schedule, toScheduleRows), typed(c.snap.sales, toSaleRows), indexCaptures(c.captures), c.surveys, c.editions, c.today);
 }
 
 // Anúncios das janelas selecionadas, só das campanhas que passam no filtro.
@@ -3976,19 +4251,22 @@ async function adsOf(c: Ctx): Promise<{ ads: MetaAdDay[]; filter: string }> {
   return { ads: filterAds(await loadAdDays(from, to), settings.metaCampaignFilter), filter: settings.metaCampaignFilter };
 }
 
-// Gasto oficial da edição: Meta (filtrado) na janela; sem Meta, "Investimento Total" da Visão Geral; sem nada, null.
+// Gasto oficial da edição. NF10K (#015–#020): "Investimento Total" da Visão Geral, como o dash antigo.
+// Pago: Meta (campanhas filtradas) na janela; sem Meta, "Investimento Total"; sem nada, null ("n/d").
 function spendByEdition(c: Ctx, ads: MetaAdDay[]): Record<number, number | null> {
   const out: Record<number, number | null> = {};
   c.eds.forEach(e => {
-    const meta = ads.filter(a => a.date >= e.windowStart && a.date <= e.windowEnd).reduce((s, a) => s + a.spend, 0);
     const ov = c.overview.filter(o => o.edition === e.number)[0];
-    out[e.number] = meta > 0 ? Math.round(meta * 100) / 100 : ov && ov.investment > 0 ? ov.investment : null;
+    const sheet = ov && ov.investment > 0 ? ov.investment : null;
+    if (editionKind(e.number) !== 'pago') { out[e.number] = sheet; return; }
+    const meta = ads.filter(a => a.date >= e.windowStart && a.date <= e.windowEnd).reduce((s, a) => s + a.spend, 0);
+    out[e.number] = meta > 0 ? Math.round(meta * 100) / 100 : sheet;
   });
   return out;
 }
 ```
 
-5. Em `BUILDERS`, acrescentar:
+6. Dentro de `const BUILDERS = { … }`, acrescentar ao fim (antes do `};`):
 
 ```ts
   agendamentos: async (c, o) => dealsTab(deals(c), c.eds, spendByEdition(c, (await adsOf(c)).ads), c.range, o.lists),
@@ -4160,9 +4438,9 @@ Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS.
 
 Manual:
-- Comercial → Agendamentos com #020: KPIs batem com o HTML antigo (aba Agendamentos, só #020): total, Power/Start, realizadas, não compareceram, perdas, ganhos.
+- Comercial → Agendamentos com #020: aparecem total, Power/Start, realizadas, não compareceram, perdas e ganhos. (**Verificação do usuário**, não do implementador: comparar com o dash antigo, só com agendamentos até 06/10/2026 — ver exceções esperadas na Task 20.)
 - "Quando agendaram × resultado" com cores por categoria; linha Total só com 2+ edições.
-- "Custo por call": edição sem Meta mostra o "Investimento Total" da Visão Geral; edição sem nada mostra "n/d" com hover explicando e fica fora do total.
+- "Custo por call": edições #015–#020 mostram o "Investimento Total" da Visão Geral; edição paga sem Meta também; edição sem nada mostra "n/d" com hover explicando e fica fora do total.
 - "Tabela de agendamentos" só carrega ao abrir.
 
 - [ ] **Step 5: Commit**
@@ -4188,21 +4466,59 @@ git commit -m "feat(marketing): Agendamentos tab (status, moment, losing creativ
 
 - [ ] **Step 1: `tabs.ts` — vendas e compradores**
 
-Em `src/lib/marketing/tabs.ts`:
+Em `src/lib/marketing/tabs.ts` (cada estado intermediário compila: o plano foi verificado aplicando as Tasks 12–18 em sequência):
 
-1. Na linha de tipos, acrescentar `SaleRow`; acrescentar `import { buyersTab, salesTab, type BuyersTab, type SalesTab } from './sales.ts';`.
-2. `export const PANEL_TABS = ['pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores'] as const;`
-3. `TabData`: `vendas: SalesTab;` e `compradores: BuyersTab;`. `NEEDS`: `vendas: ['sales'],` e `compradores: ['sales', 'survey'],`.
-4. Antes de `type Builder`:
+1. Substituir o bloco de imports do topo (todas as linhas `import`) por:
+
+```ts
+import type { CaptureRow, DateRange, EditionConfig, MetaAdDay, OverviewRow, SaleRow, SurveyRow } from './types.ts';
+import { toApplicationRows, toCaptureRows, toOverviewRows, toSaleRows, toScheduleRows, toSurveyRows, type TabKey } from './sheet-rows.ts';
+import { buildEditions, cycleStartAt, editionKind, indexCaptures } from './editions.ts';
+import { inRange } from './metrics.ts';
+import { latestSurveys, surveyTab, type SurveyTab } from './survey.ts';
+import { applicationsTab, buildApplications, type Application, type ApplicationsTab } from './applications.ts';
+import { liveStats, liveTotals, presenceFromEvents, type LiveStats, type LiveTab } from './live.ts';
+import { buildDeals, dealsTab, type Deal, type DealsTab } from './deals.ts';
+import { buyersTab, salesTab, type BuyersTab, type SalesTab } from './sales.ts';
+import { filterAds } from './full-funnel.ts';
+import { getMarketingSettings } from './settings.ts';
+import { TAB_TITLES } from './sync.ts';
+import { loadAdDays, loadEditionOverrides, loadSnapshotTimes, loadSnapshots } from './store.ts';
+import { loadLive } from './sources/platform.ts';
+```
+
+2. Substituir a declaração de `PANEL_TABS` por:
+
+```ts
+export const PANEL_TABS = [
+  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores',
+] as const;
+```
+
+3. Dentro de `export type TabData = { … }`, acrescentar ao fim:
+
+```ts
+  vendas: SalesTab;
+  compradores: BuyersTab;
+```
+
+4. Dentro de `const NEEDS = { … }`, acrescentar ao fim:
+
+```ts
+  vendas: ['capture', 'sales'],
+  compradores: ['capture', 'sales', 'survey'],
+```
+
+5. Logo antes de `type Builder<K extends PanelTab>`, acrescentar:
 
 ```ts
 // Vendas high ticket das edições selecionadas; com período, só as datadas dentro dele.
 function salesOf(c: Ctx): SaleRow[] {
-  return toSaleRows(c.snap.sales ?? []).filter(s => inSel(c, s.edition) && inRange(day(s.at), c.range));
+  return typed(c.snap.sales, toSaleRows).filter(s => inSel(c, s.edition) && inRange(day(s.at), c.range));
 }
 ```
 
-5. Em `BUILDERS`:
+6. Dentro de `const BUILDERS = { … }`, acrescentar ao fim (antes do `};`):
 
 ```ts
   vendas: (c, o) => salesTab(c.leads, salesOf(c), o.lists),
@@ -4386,7 +4702,7 @@ Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS.
 
 Manual:
-- Comercial → Vendas com #018–#020: vendas aprovadas e faturamento batem com o HTML antigo (aba Vendas); reembolsos aparecem só no texto auxiliar.
+- Comercial → Vendas com #018–#020: "Vendas aprovadas" = linhas do Detalhamento Vendas dessas edições cujo STATUS não é reembolso/estorno/cancelamento; reembolsos aparecem só no texto auxiliar. (**Verificação do usuário**: comparar com o dash antigo — ver Task 20.)
 - Cartões por público com a regra no hover; "Outros" não aparece.
 - Compradores: alternar Todos/Power/Power Start/Desafio recarrega; a lista abre só ao expandir e respeita o produto escolhido.
 
@@ -4409,17 +4725,57 @@ git commit -m "feat(marketing): Vendas and Compradores tabs"
 - Modify: `src/components/marketing/MarketingDashboard.tsx`
 
 **Interfaces:**
-- Consumes: `apiTab`, `ApiTab` (Task 7); `disparosTab`, `DisparosTab`, `Disparo`, `DisparoBlock`, `DisparoInput`, `parseDisparoInput` (Task 7); `loadDisparos`, `insertDisparo`, `updateDisparo`, `deleteDisparo` (Task 10); `salesOf` (Task 15).
-- Produces: abas `api` e `disparos`; rota `GET /api/marketing/disparos` → `{ rows: Disparo[] }`, `POST` (corpo `DisparoInput`) → `{ row }`, `PATCH ?id=<uuid>` (corpo parcial) → `{ ok: true }`, `DELETE ?id=<uuid>` → `{ ok: true }`; componentes `ApiTab({ query })`, `DisparosTab({ query })`.
+- Consumes: `apiTab`, `ApiTab` (Task 7); `disparosTab`, `DisparosTab`, `Disparo`, `DisparoBlock`, `DisparoInput`, `parseDisparoInput`, `formatNumberInput`, `parseNumberInput` (Task 7); `loadDisparos`, `insertDisparo`, `updateDisparo`, `deleteDisparo` (Task 10); `salesOf` (Task 15).
+- Produces: abas `api` e `disparos`; rota `POST /api/marketing/disparos` (corpo `DisparoInput`) → `{ row }`, `PATCH ?id=<uuid>` (corpo parcial) → `{ ok: true }`, `DELETE ?id=<uuid>` → `{ ok: true }` (sem GET: a leitura é `?tab=disparos`; erro do banco vai para o log e o navegador recebe "Falha ao salvar"); editor usa `formatNumberInput`/`parseNumberInput` da Task 7; componentes `ApiTab({ query })`, `DisparosTab({ query })`.
 
 - [ ] **Step 1: `tabs.ts` — api e disparos**
 
-Em `src/lib/marketing/tabs.ts`:
+Em `src/lib/marketing/tabs.ts` (cada estado intermediário compila: o plano foi verificado aplicando as Tasks 12–18 em sequência):
 
-1. Acrescentar `import { apiTab, type ApiTab } from './api-leads.ts';` e `import { disparosTab, type DisparosTab } from './disparos.ts';`; acrescentar `loadDisparos` ao import de `./store.ts`.
-2. `export const PANEL_TABS = ['pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores', 'api', 'disparos'] as const;`
-3. `TabData`: `api: ApiTab;` e `disparos: DisparosTab;`. `NEEDS`: `api: ['survey', 'sales'],` e `disparos: [],`.
-4. Em `BUILDERS`:
+1. Substituir o bloco de imports do topo (todas as linhas `import`) por:
+
+```ts
+import type { CaptureRow, DateRange, EditionConfig, MetaAdDay, OverviewRow, SaleRow, SurveyRow } from './types.ts';
+import { toApplicationRows, toCaptureRows, toOverviewRows, toSaleRows, toScheduleRows, toSurveyRows, type TabKey } from './sheet-rows.ts';
+import { buildEditions, cycleStartAt, editionKind, indexCaptures } from './editions.ts';
+import { inRange } from './metrics.ts';
+import { latestSurveys, surveyTab, type SurveyTab } from './survey.ts';
+import { applicationsTab, buildApplications, type Application, type ApplicationsTab } from './applications.ts';
+import { liveStats, liveTotals, presenceFromEvents, type LiveStats, type LiveTab } from './live.ts';
+import { buildDeals, dealsTab, type Deal, type DealsTab } from './deals.ts';
+import { buyersTab, salesTab, type BuyersTab, type SalesTab } from './sales.ts';
+import { apiTab, type ApiTab } from './api-leads.ts';
+import { disparosTab, type DisparosTab } from './disparos.ts';
+import { filterAds } from './full-funnel.ts';
+import { getMarketingSettings } from './settings.ts';
+import { TAB_TITLES } from './sync.ts';
+import { loadAdDays, loadDisparos, loadEditionOverrides, loadSnapshotTimes, loadSnapshots } from './store.ts';
+import { loadLive } from './sources/platform.ts';
+```
+
+2. Substituir a declaração de `PANEL_TABS` por:
+
+```ts
+export const PANEL_TABS = [
+  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores', 'api', 'disparos',
+] as const;
+```
+
+3. Dentro de `export type TabData = { … }`, acrescentar ao fim:
+
+```ts
+  api: ApiTab;
+  disparos: DisparosTab;
+```
+
+4. Dentro de `const NEEDS = { … }`, acrescentar ao fim:
+
+```ts
+  api: ['capture', 'survey', 'sales'],
+  disparos: [],
+```
+
+5. Dentro de `const BUILDERS = { … }`, acrescentar ao fim (antes do `};`):
 
 ```ts
   api: c => apiTab(c.leads, c.surveys, salesOf(c)),
@@ -4434,25 +4790,25 @@ Criar `src/app/api/marketing/disparos/route.ts`:
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminFromRequest } from '@/lib/auth';
 import { parseDisparoInput, type DisparoInput } from '@/lib/marketing/disparos';
-import { deleteDisparo, insertDisparo, loadDisparos, updateDisparo } from '@/lib/marketing/store';
+import { deleteDisparo, insertDisparo, updateDisparo } from '@/lib/marketing/store';
 
 export const dynamic = 'force-dynamic';
 
+// A leitura dos disparos vem de /api/marketing/data?tab=disparos; aqui só escrita.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const deny = () => NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 const bad = (error: string) => NextResponse.json({ error }, { status: 400 });
-const fail = (e: unknown) => NextResponse.json({ error: (e as Error).message }, { status: 500 });
-
-export async function GET(req: NextRequest) {
-  if (!(await verifyAdminFromRequest(req))) return deny();
-  try { return NextResponse.json({ rows: await loadDisparos() }); } catch (e) { return fail(e); }
-}
+// Erro do banco fica no log do servidor; o navegador recebe só uma mensagem genérica.
+const fail = (what: string, e: unknown) => {
+  console.error(`marketing disparos ${what}`, e);
+  return NextResponse.json({ error: 'Falha ao salvar' }, { status: 500 });
+};
 
 export async function POST(req: NextRequest) {
   if (!(await verifyAdminFromRequest(req))) return deny();
   const parsed = parseDisparoInput(await req.json().catch(() => null), false);
   if (!parsed.ok) return bad(parsed.error);
-  try { return NextResponse.json({ row: await insertDisparo(parsed.value as DisparoInput) }); } catch (e) { return fail(e); }
+  try { return NextResponse.json({ row: await insertDisparo(parsed.value as DisparoInput) }); } catch (e) { return fail('insert', e); }
 }
 
 export async function PATCH(req: NextRequest) {
@@ -4462,7 +4818,7 @@ export async function PATCH(req: NextRequest) {
   const parsed = parseDisparoInput(await req.json().catch(() => null), true);
   if (!parsed.ok) return bad(parsed.error);
   if (!Object.keys(parsed.value).length) return bad('Nada para salvar');
-  try { await updateDisparo(id, parsed.value); return NextResponse.json({ ok: true }); } catch (e) { return fail(e); }
+  try { await updateDisparo(id, parsed.value); return NextResponse.json({ ok: true }); } catch (e) { return fail('update', e); }
 }
 
 // Remove só uma linha de mkt_disparos; nada mais é apagado.
@@ -4470,7 +4826,7 @@ export async function DELETE(req: NextRequest) {
   if (!(await verifyAdminFromRequest(req))) return deny();
   const id = req.nextUrl.searchParams.get('id') ?? '';
   if (!UUID.test(id)) return bad('id inválido');
-  try { await deleteDisparo(id); return NextResponse.json({ ok: true }); } catch (e) { return fail(e); }
+  try { await deleteDisparo(id); return NextResponse.json({ ok: true }); } catch (e) { return fail('delete', e); }
 }
 ```
 
@@ -4565,19 +4921,18 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Disparo, DisparoBlock, DisparosTab as Data } from '@/lib/marketing/disparos';
+import { formatNumberInput, parseNumberInput as n, type Disparo, type DisparoBlock, type DisparosTab as Data } from '@/lib/marketing/disparos';
 import { useTabData } from './useTabData';
 import { TabState, brl, dec, dm, int, pct, sectionTitle } from './ui';
 
 type Form = { kind: 'convite' | 'recuperacao'; ciclo: string; nome: string; data: string; contatos: string; agendamentos: string; vendas: string; faturamento: string; custo: string; template: string };
 const EMPTY: Form = { kind: 'convite', ciclo: '', nome: '', data: '', contatos: '', agendamentos: '', vendas: '', faturamento: '', custo: '', template: '' };
-const s = (n: number | null) => (n === null ? '' : String(n));
+const s = formatNumberInput; // "16,8": sem milhar, vírgula decimal
 const toForm = (r: Disparo): Form => ({
   kind: r.kind, ciclo: r.ciclo ?? '', nome: r.nome, data: r.data ?? '', contatos: s(r.contatos), agendamentos: s(r.agendamentos),
   vendas: s(r.vendas), faturamento: s(r.faturamento), custo: s(r.custo), template: r.template ?? '',
 });
-// Vazio = null; texto que não é número vira NaN e a API recusa com mensagem.
-const n = (v: string) => (v.trim() === '' ? null : Number(v.replace(/\./g, '').replace(',', '.')));
+// Vazio = null; com vírgula o ponto é milhar, sem vírgula é decimal; texto inválido vira NaN e a API recusa.
 const toBody = (f: Form) => ({
   kind: f.kind, ciclo: f.ciclo, nome: f.nome, data: f.data || null, contatos: n(f.contatos), agendamentos: n(f.agendamentos),
   vendas: n(f.vendas), faturamento: n(f.faturamento), custo: n(f.custo), template: f.template,
@@ -4746,9 +5101,9 @@ Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS.
 
 Manual:
-- Canais → API com #018–#020: leads via API, qualificados, bases e versões batem com o HTML antigo (aba API).
-- Canais → Disparos (tabela ainda vazia antes do import da Task 19): **Adicionar** um disparo de teste (convite, nome "Teste", 100 contatos, 2 agendamentos, custo 4), salvar → aparece nos blocos e no ranking; **Editar** mudando o custo para "4,50" → custo por agend. R$ 2,25; tentar contatos "1,5" → mensagem "Contatos inválido"; **Remover** pede confirmação e some. Nenhuma outra tabela é tocada.
-- `curl -X DELETE "http://localhost:3000/api/marketing/disparos?id=x"` sem cookie → 401; com cookie e id inválido → 400.
+- Canais → API com #018–#020: "Leads via API" = linhas da Captação dessas edições com `utm_source = api`; bases/versões = `utm_medium`/`utm_term`. (**Verificação do usuário**: comparar com o dash antigo — ver Task 20.)
+- Canais → Disparos (tabela ainda vazia antes do import da Task 19): **Adicionar** um disparo de teste (convite, nome "Teste", 100 contatos, 2 agendamentos, custo 4), salvar → aparece nos blocos e no ranking; **Editar** mudando o custo para "4,50" → custo por agend. R$ 2,25; **Editar** um disparo com custo R$ 16,80 e salvar sem mudar nada → continua R$ 16,80 (o campo mostra "16,8"); tentar contatos "1,5" → mensagem "Contatos inválido"; **Remover** pede confirmação e some. Nenhuma outra tabela é tocada.
+- `curl -X DELETE "http://localhost:3000/api/marketing/disparos?id=x"` sem cookie → 401; com cookie e id inválido → 400. `GET /api/marketing/disparos` → 405 (não existe).
 
 - [ ] **Step 7: Commit**
 
@@ -4771,12 +5126,12 @@ git commit -m "feat(marketing): API and Disparos tabs with admin CRUD for WhatsA
 - Modify: `src/components/marketing/MarketingDashboard.tsx`
 
 **Interfaces:**
-- Consumes: `Application` (Task 4); `Deal`, `dealDone` (Task 6); `SaleRow`, `CaptureRow` (Task 1); `normProd`, `saleValue`, `Product` (Task 5); `LiveStats` (Task 8); `fullFunnel`, `FullFunnel`, `FUNNEL_ROWS` (Task 9); `loadMetaWindows` (Task 10); `editionKind` (Task 3); helpers `applications`, `liveByEdition` (Task 13), `deals`, `adsOf` (Task 14).
+- Consumes: `Application` (Task 4); `Deal`, `dealDone` (Task 6); `SaleRow`, `CaptureRow`, `OverviewCheck`, `SurveyRow` (Task 1); `creativeFamily` (creatives.ts); `qualified5k` (Task 3); `normProd`, `saleValue`, `Product` (Task 5); `LiveStats` (Task 8); `fullFunnel`, `FullFunnel`, `FUNNEL_ROWS` (Task 9); `loadMetaWindows` (Task 10); `editionKind` (Task 3); helpers `applications`, `liveByEdition` (Task 13), `deals`, `adsOf` (Task 14).
 - Produces:
-  - `breakdowns.ts`: `type Stage4 = { qualified: number; scheduled: number; done: number; sales: number }`, `type EditionFunnel = { applications: number; qualified: number; power: Stage4; start: Stage4; desafioSales: number }`, `editionFunnel(apps: Application[], deals: Deal[], sales: SaleRow[]): EditionFunnel`, `type WebinarRow`, `type WebinarTable = { rows: WebinarRow[]; total: WebinarRow | null }`, `webinarTable(eds: { number: number; liveDate: string }[], leads: CaptureRow[], deals: Deal[], sales: SaleRow[], apps: Application[], live: Record<number, LiveStats | null>): WebinarTable`.
-  - `tabs.ts`: `type EdicaoTab = { ticketApplies: boolean; funnel: EditionFunnel; webinars: WebinarTable; fullFunnel: FullFunnel }`, aba `edicao`.
+  - `breakdowns.ts`: `type Stage4 = { qualified: number; scheduled: number; done: number; sales: number }`, `type EditionFunnel = { applications: number; qualified: number; scheduled: number; done: number; power: Stage4; start: Stage4; desafioSales: number }` (`scheduled`/`done` = todos os negócios), `editionFunnel(apps: Application[], deals: Deal[], sales: SaleRow[]): EditionFunnel`, `dealViaApi(d: Deal): boolean`, `type WebinarRow` (inclui `viaApi`, `sheetPeak`, `attendance` + `attendanceFromSheet`, `applications`), `type WebinarTable = { rows: WebinarRow[]; total: WebinarRow | null }`, `webinarTable(eds: { number: number; liveDate: string }[], leads: CaptureRow[], deals: Deal[], sales: SaleRow[], apps: Application[], live: Record<number, LiveStats | null>, sheet: Record<number, OverviewCheck | null>): WebinarTable`; e já para a Task 18: `type CreativeExtra = { family; leads; qualified; qualifiedRate: number | null; scheduled; sales; power; start; desafio }`, `creativeExtras(leads: CaptureRow[], surveys: Record<string, SurveyRow>, deals: Deal[], sales: SaleRow[], aliases: Record<string, string>): CreativeExtra[]`, `type CreativeSort = 'vendas' | 'agend' | 'qualif' | 'leads'`, `sortCreatives<T extends { x: CreativeExtra | null }>(rows: T[], s: CreativeSort): T[]` (desempates do HTML: vendas → agendamentos → leads; agendamentos → leads; qualificação → leads; leads → vendas).
+  - `tabs.ts`: `type EdicaoTab = { ticketApplies: boolean; funnel: EditionFunnel; webinars: WebinarTable; fullFunnel: FullFunnel }`, aba `edicao`, helper `sheetChecks(c)` (números da Visão Geral por edição).
   - `EditionExtras.tsx`: `WebinarTableView({ data }: { data: WebinarTable })`, `FullFunnelTable({ data }: { data: FullFunnel })`.
-  - `EditionTab` recebe `query`; `LeadFunnel` recebe `funnel: EditionFunnel | null` e `ticketApplies: boolean`.
+  - `EditionTab` recebe `query` e só mostra o funil depois do complemento (ou do erro dele); `LeadFunnel` recebe `funnel: EditionFunnel | null` e `ticketApplies: boolean`.
 
 - [ ] **Step 1: Testes (falhando)**
 
@@ -4785,11 +5140,11 @@ Criar `src/lib/marketing/breakdowns.test.ts`:
 ```ts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import type { CaptureRow, SaleRow } from './types.ts';
+import type { CaptureRow, OverviewCheck, SaleRow, SurveyRow } from './types.ts';
 import type { Application } from './applications.ts';
 import type { Deal } from './deals.ts';
 import type { LiveStats } from './live.ts';
-import { editionFunnel, webinarTable } from './breakdowns.ts';
+import { creativeExtras, editionFunnel, sortCreatives, webinarTable } from './breakdowns.ts';
 
 const app = (o: Partial<Application>): Application => ({
   name: '', email: '', at: null, product: '', qualif: '', qualified: false, complete: true, income: '', revenue: '', relation: '',
@@ -4797,7 +5152,8 @@ const app = (o: Partial<Application>): Application => ({
 });
 const deal = (o: Partial<Deal>): Deal => ({
   name: '', type: 'WB', closer: 'Ana', via: '', product: 'Power', scheduledAt: '2026-10-13', callDate: null, realized: false,
-  lostReason: '', status: 'agendada', alerts: [], income: '', value: 0, edition: 22, editionBy: 'planilha', creative: '', utmSource: '', ...o,
+  lostReason: '', status: 'agendada', alerts: [], income: '', value: 0, edition: 22, editionBy: 'planilha',
+  creative: '', utmContent: '', utmSource: '', ...o,
 });
 const sale = (o: Partial<SaleRow>): SaleRow => ({
   approved: true, refunded: false, status: 'Aprovada', product: 'Power', amount: 0, email: '', phone: '', name: '',
@@ -4810,45 +5166,80 @@ const lead = (edition: number): CaptureRow => ({
 const stats = (o: Partial<LiveStats>): LiveStats => ({
   people: 0, watched: 0, peak: 0, peakMinute: 0, mean: null, median: null, toPitch: 0, min30: 0, min60: 0, cta: 0, curve: [], histogram: [], pitchMinute: 66, ...o,
 });
+const check = (o: Partial<OverviewCheck>): OverviewCheck => ({
+  applications: null, scheduled: null, done: null, peak: null, attendance: null, metaSpend: null, investment: null, sales: null, revenue: null, ...o,
+});
 
 test('editionFunnel splits Power and Start; refunds and incomplete applications stay out', () => {
   const f = editionFunnel(
     [app({ qualif: 'Power', qualified: true }), app({ qualif: 'Start', qualified: true }), app({ qualif: 'Desafio' }), app({ complete: false })],
-    [deal({ product: 'Power', status: 'ganho', realized: true }), deal({ product: 'Power' }), deal({ product: 'Start', status: 'perdido', realized: true })],
+    [deal({ product: 'Power', status: 'ganho', realized: true }), deal({ product: 'Power' }), deal({ product: 'Start', status: 'perdido', realized: true }), deal({ product: '' })],
     [sale({ product: 'Power' }), sale({ product: 'Desafio' }), sale({ product: 'Power Start', approved: false, refunded: true })],
   );
   assert.deepEqual(f, {
-    applications: 3, qualified: 2,
+    applications: 3, qualified: 2, scheduled: 4, done: 2,
     power: { qualified: 1, scheduled: 2, done: 1, sales: 1 },
     start: { qualified: 1, scheduled: 1, done: 1, sales: 0 },
     desafioSales: 1,
   });
 });
 
-test('webinarTable: moment buckets, calls, live conversion from 20h to 6h', () => {
+test('webinarTable: moment buckets, via API, calls, attendance, live conversion from 20h to 6h', () => {
   const t = webinarTable(
     [{ number: 22, liveDate: '2026-10-13' }],
     [lead(22), lead(22), lead(21)],
-    [deal({ scheduledAt: '2026-10-12' }), deal({ status: 'realizada', realized: true }), deal({ scheduledAt: '2026-10-15' })],
+    [deal({ scheduledAt: '2026-10-12', utmContent: 'APIAI02' }), deal({ status: 'realizada', realized: true, utmContent: '197' }), deal({ scheduledAt: '2026-10-15', utmSource: 'API' })],
     [sale({ amount: 20040 })],
     [app({ at: '2026-10-13T21:00:00' }), app({ at: '2026-10-14T05:59:00' }), app({ at: '2026-10-14T06:01:00' }), app({ at: '2026-10-13T21:30:00', complete: false })],
     { 22: stats({ peak: 50, toPitch: 20 }) },
+    { 22: check({ peak: 52 }) },
   );
   const r = t.rows[0];
   assert.deepEqual(
-    [r.leads, r.scheduled, r.before, r.onDay, r.after, r.calls, r.sales, r.revenue, r.peak, r.toPitch, r.liveApps, r.liveConversion],
-    [2, 3, 1, 1, 1, 1, 1, 20040, 50, 20, 2, 0.1],
+    [r.leads, r.scheduled, r.before, r.onDay, r.after, r.viaApi, r.calls, r.sales, r.revenue, r.peak, r.sheetPeak, r.toPitch, r.applications, r.liveApps, r.liveConversion],
+    [2, 3, 1, 1, 1, 3, 1, 1, 20040, 50, 52, 20, 3, 2, 0.1],
   );
+  assert.deepEqual([r.attendance, r.attendanceFromSheet], [2500, false]); // sem Visão Geral: pico ÷ leads × 100
   assert.equal(t.total, null);
-  const two = webinarTable([{ number: 21, liveDate: '2026-10-06' }, { number: 22, liveDate: '2026-10-13' }], [lead(21), lead(22)], [], [], [], { 21: null, 22: stats({ toPitch: 10 }) });
-  assert.deepEqual([two.rows[0].peak, two.total?.leads, two.total?.toPitch, two.total?.peak], [null, 2, 10, null]);
+  const two = webinarTable(
+    [{ number: 21, liveDate: '2026-10-06' }, { number: 22, liveDate: '2026-10-13' }], [lead(21), lead(22)], [], [], [],
+    { 21: null, 22: stats({ toPitch: 10 }) }, { 21: check({ attendance: 12.5 }), 22: null },
+  );
+  assert.deepEqual([two.rows[0].peak, two.rows[0].attendance, two.rows[0].attendanceFromSheet], [null, 12.5, true]);
+  assert.deepEqual([two.total?.leads, two.total?.toPitch, two.total?.peak, two.total?.attendance], [2, 10, null, null]);
+});
+
+test('creativeExtras: leads, 5k+ rate, schedules and high-ticket sales per creative family', () => {
+  const lc = (utmContent: string, email: string): CaptureRow => ({ ...lead(22), utmContent, email });
+  const sv = (email: string, renda: string): SurveyRow => ({ email, at: null, tempo: '', servico: '', renda, fat: '', conhece: '', desafios: '' });
+  const x = creativeExtras(
+    [lc('webp_vendas_img_10', 'a@x'), lc('img_10', 'b@x'), lc('vid_2', 'c@x')],
+    { 'a@x': sv('a@x', '7a10k') },
+    [deal({ creative: 'Web3_coleta_img_10' })],
+    [sale({ utmContentCapture: 'img_10', product: 'Power Start' }), sale({ utmContentCapture: 'img_10', approved: false, refunded: true })],
+    {},
+  );
+  const img = x.filter(r => r.family === 'img_10')[0];
+  assert.deepEqual([img.leads, img.qualified, img.qualifiedRate, img.scheduled, img.sales, img.start, img.power], [2, 1, 0.5, 1, 1, 1, 0]);
+  assert.equal(x.filter(r => r.family === 'vid_2')[0].qualifiedRate, 0);
+});
+
+test('sortCreatives keeps the old tie-breaks', () => {
+  const ex = (family: string, leads: number, qualified: number, scheduled: number, sales: number) =>
+    ({ x: { family, leads, qualified, qualifiedRate: null, scheduled, sales, power: 0, start: 0, desafio: 0 } });
+  const rows = [ex('a', 10, 1, 2, 1), ex('b', 20, 1, 2, 1), ex('c', 5, 3, 0, 0), ex('d', 20, 0, 0, 2)];
+  const ids = (s: 'vendas' | 'agend' | 'qualif' | 'leads') => sortCreatives(rows, s).map(r => r.x.family).join('');
+  assert.equal(ids('vendas'), 'dbac');
+  assert.equal(ids('agend'), 'badc');
+  assert.equal(ids('qualif'), 'cbad');
+  assert.equal(ids('leads'), 'dbac');
 });
 ```
 
 - [ ] **Step 2: Rodar e ver falhar**
 
 Run: `npm test`
-Expected: FAIL — `Cannot find module './breakdowns.ts'`.
+Expected: FAIL — `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '…/breakdowns.ts'` (os 4 testes: funil, webinário a webinário, extras e ordenação dos criativos).
 
 - [ ] **Step 3: Implementar `breakdowns.ts`**
 
@@ -4856,15 +5247,21 @@ Criar `src/lib/marketing/breakdowns.ts`:
 
 ```ts
 // Agregados que cruzam aplicações, negócios, vendas e presença (Edição e Criativos).
-import type { CaptureRow, SaleRow } from './types.ts';
+import type { CaptureRow, OverviewCheck, SaleRow, SurveyRow } from './types.ts';
 import type { Application } from './applications.ts';
 import type { LiveStats } from './live.ts';
 import { dealDone, type Deal } from './deals.ts';
 import { normProd, saleValue, type Product } from './sales.ts';
 import { addDays } from './parse.ts';
+import { creativeFamily } from './creatives.ts';
+import { qualified5k } from './survey.ts';
 
 export type Stage4 = { qualified: number; scheduled: number; done: number; sales: number };
-export type EditionFunnel = { applications: number; qualified: number; power: Stage4; start: Stage4; desafioSales: number };
+export type EditionFunnel = {
+  applications: number; qualified: number;
+  scheduled: number; done: number;      // todos os negócios (qualquer produto)
+  power: Stage4; start: Stage4; desafioSales: number;
+};
 
 // Funil oficial: aplicações do Typeform → qualificada (Power/Start) → agendada → realizada → venda, por produto.
 export function editionFunnel(apps: Application[], deals: Deal[], sales: SaleRow[]): EditionFunnel {
@@ -4880,6 +5277,7 @@ export function editionFunnel(apps: Application[], deals: Deal[], sales: SaleRow
   };
   return {
     applications: complete.length, qualified: complete.filter(a => a.qualified).length,
+    scheduled: deals.length, done: deals.filter(dealDone).length,
     power: stage('Power', 'power'), start: stage('Start', 'powerStart'),
     desafioSales: ok.filter(s => normProd(s.product) === 'desafio').length,
   };
@@ -4887,27 +5285,38 @@ export function editionFunnel(apps: Application[], deals: Deal[], sales: SaleRow
 
 export type WebinarRow = {
   edition: number | null; // null = linha de total
-  leads: number; scheduled: number; before: number; onDay: number; after: number; calls: number;
-  sales: number; revenue: number; peak: number | null; toPitch: number | null; liveApps: number; liveConversion: number | null;
+  leads: number; scheduled: number; before: number; onDay: number; after: number; viaApi: number; calls: number;
+  sales: number; revenue: number;
+  peak: number | null;        // plataforma (oficial)
+  sheetPeak: number | null;   // Visão Geral, só referência
+  attendance: number | null;  // % 0–100: Visão Geral; sem ela, pico ÷ leads
+  attendanceFromSheet: boolean;
+  toPitch: number | null; applications: number; liveApps: number; liveConversion: number | null;
 };
 export type WebinarTable = { rows: WebinarRow[]; total: WebinarRow | null };
 
 const days = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
 const round2 = (n: number) => Math.round(n * 100) / 100;
+// Agendamento via API, como o dash antigo: utm_content do negócio começa com "api" ou é "197", ou utm_source = api.
+export const dealViaApi = (d: Deal) => /^api/i.test(d.utmContent) || d.utmContent === '197' || /^api$/i.test(d.utmSource);
 
 export function webinarTable(
   eds: { number: number; liveDate: string }[], leads: CaptureRow[], deals: Deal[], sales: SaleRow[],
-  apps: Application[], live: Record<number, LiveStats | null>,
+  apps: Application[], live: Record<number, LiveStats | null>, sheet: Record<number, OverviewCheck | null>,
 ): WebinarTable {
   const rows: WebinarRow[] = eds.map(e => {
     const n = e.number;
     const ds = deals.filter(d => d.edition === n);
     const ss = sales.filter(s => s.approved && s.edition === n);
+    const complete = apps.filter(a => a.complete && a.edition === n);
     // Conversão ao vivo: aplicações completas das 20h da live às 6h do dia seguinte ÷ pessoas no pitch.
     const from = `${e.liveDate}T20:00:00`, to = `${addDays(e.liveDate, 1)}T06:00:00`;
-    const liveApps = apps.filter(a => a.complete && a.edition === n && a.at !== null && a.at >= from && a.at <= to).length;
+    const liveApps = complete.filter(a => a.at !== null && a.at >= from && a.at <= to).length;
     const st = live[n] ?? null;
+    const ov = sheet[n] ?? null;
+    const nLeads = leads.filter(l => l.edition === n).length;
     const toPitch = st ? st.toPitch : null;
+    const sheetAttendance = ov ? ov.attendance : null;
     let before = 0, onDay = 0, after = 0;
     ds.forEach(d => {
       if (!d.scheduledAt) return;
@@ -4915,13 +5324,17 @@ export function webinarTable(
       if (off < 0) before++; else if (off === 0) onDay++; else after++;
     });
     return {
-      edition: n, leads: leads.filter(l => l.edition === n).length, scheduled: ds.length, before, onDay, after,
+      edition: n, leads: nLeads, scheduled: ds.length, before, onDay, after, viaApi: ds.filter(dealViaApi).length,
       calls: ds.filter(dealDone).length, sales: ss.length, revenue: round2(ss.reduce((t, s) => t + saleValue(s), 0)),
-      peak: st ? st.peak : null, toPitch, liveApps, liveConversion: toPitch ? liveApps / toPitch : null,
+      peak: st ? st.peak : null, sheetPeak: ov ? ov.peak : null,
+      attendance: sheetAttendance !== null ? sheetAttendance : st && nLeads ? Math.round((st.peak / nLeads) * 1000) / 10 : null,
+      attendanceFromSheet: sheetAttendance !== null,
+      toPitch, applications: complete.length, liveApps, liveConversion: toPitch ? liveApps / toPitch : null,
     };
   });
   if (rows.length < 2) return { rows, total: null };
-  const sum = (k: 'leads' | 'scheduled' | 'before' | 'onDay' | 'after' | 'calls' | 'sales' | 'revenue' | 'liveApps') => rows.reduce((t, r) => t + r[k], 0);
+  const sum = (k: 'leads' | 'scheduled' | 'before' | 'onDay' | 'after' | 'viaApi' | 'calls' | 'sales' | 'revenue' | 'applications' | 'liveApps') =>
+    rows.reduce((t, r) => t + r[k], 0);
   const withPitch = rows.filter(r => r.toPitch !== null);
   const toPitch = withPitch.length ? withPitch.reduce((t, r) => t + (r.toPitch as number), 0) : null;
   const liveApps = sum('liveApps');
@@ -4929,10 +5342,56 @@ export function webinarTable(
     rows,
     total: {
       edition: null, leads: sum('leads'), scheduled: sum('scheduled'), before: sum('before'), onDay: sum('onDay'), after: sum('after'),
-      calls: sum('calls'), sales: sum('sales'), revenue: round2(sum('revenue')), peak: null, toPitch, liveApps,
-      liveConversion: toPitch ? liveApps / toPitch : null,
+      viaApi: sum('viaApi'), calls: sum('calls'), sales: sum('sales'), revenue: round2(sum('revenue')),
+      peak: null, sheetPeak: null, attendance: null, attendanceFromSheet: false, // pico e comparecimento não somam entre lives
+      toPitch, applications: sum('applications'), liveApps, liveConversion: toPitch ? liveApps / toPitch : null,
     },
   };
+}
+
+export type CreativeExtra = {
+  family: string; leads: number; qualified: number; qualifiedRate: number | null; scheduled: number;
+  sales: number; power: number; start: number; desafio: number; // vendas high ticket (sales = todas, sem reembolso)
+};
+
+// Por família de criativo: leads da captação, % 5k+ na pesquisa, agendamentos e vendas high ticket por produto.
+export function creativeExtras(
+  leads: CaptureRow[], surveys: Record<string, SurveyRow>, deals: Deal[], sales: SaleRow[], aliases: Record<string, string>,
+): CreativeExtra[] {
+  const m: Record<string, CreativeExtra> = Object.create(null);
+  const list: CreativeExtra[] = [];
+  const get = (raw: string) => {
+    const f = creativeFamily(raw, aliases);
+    let x = m[f];
+    if (!x) { x = m[f] = { family: f, leads: 0, qualified: 0, qualifiedRate: null, scheduled: 0, sales: 0, power: 0, start: 0, desafio: 0 }; list.push(x); }
+    return x;
+  };
+  leads.forEach(l => {
+    const x = get(l.utmContent);
+    x.leads++;
+    const s = l.email ? surveys[l.email] : undefined;
+    if (s && qualified5k(s.renda)) x.qualified++;
+  });
+  deals.forEach(d => { get(d.creative).scheduled++; });
+  sales.filter(s => s.approved).forEach(s => {
+    const x = get(s.utmContentCapture);
+    x.sales++;
+    const p = normProd(s.product);
+    if (p === 'power') x.power++; else if (p === 'powerStart') x.start++; else if (p === 'desafio') x.desafio++;
+  });
+  list.forEach(x => { x.qualifiedRate = x.leads ? x.qualified / x.leads : null; });
+  return list;
+}
+
+// Ordenação do dash antigo: vendas → agendamentos → leads; agendamentos → leads; qualificação → leads; leads → vendas.
+export type CreativeSort = 'vendas' | 'agend' | 'qualif' | 'leads';
+export function sortCreatives<T extends { x: CreativeExtra | null }>(rows: T[], s: CreativeSort): T[] {
+  const v = (r: T, k: 'sales' | 'scheduled' | 'qualified' | 'leads') => (r.x ? r.x[k] : 0);
+  return rows.slice().sort((a, b) =>
+    s === 'qualif' ? v(b, 'qualified') - v(a, 'qualified') || v(b, 'leads') - v(a, 'leads')
+      : s === 'agend' ? v(b, 'scheduled') - v(a, 'scheduled') || v(b, 'leads') - v(a, 'leads')
+      : s === 'leads' ? v(b, 'leads') - v(a, 'leads') || v(b, 'sales') - v(a, 'sales')
+      : v(b, 'sales') - v(a, 'sales') || v(b, 'scheduled') - v(a, 'scheduled') || v(b, 'leads') - v(a, 'leads'));
 }
 ```
 
@@ -4943,17 +5402,73 @@ Expected: PASS.
 
 - [ ] **Step 5: `tabs.ts` — edicao**
 
-Em `src/lib/marketing/tabs.ts`:
+Em `src/lib/marketing/tabs.ts` (cada estado intermediário compila: o plano foi verificado aplicando as Tasks 12–18 em sequência):
 
-1. Trocar a linha de `./editions.ts` por `import { buildEditions, cycleStartAt, editionKind, indexCaptures } from './editions.ts';`, a de `./full-funnel.ts` por `import { filterAds, fullFunnel, type FullFunnel } from './full-funnel.ts';`, acrescentar `loadMetaWindows` ao import de `./store.ts` e acrescentar `import { editionFunnel, webinarTable, type EditionFunnel, type WebinarTable } from './breakdowns.ts';`.
-2. Antes de `export type TabData`, acrescentar:
+1. Substituir o bloco de imports do topo (todas as linhas `import`) por:
+
+```ts
+import type { CaptureRow, DateRange, EditionConfig, MetaAdDay, OverviewCheck, OverviewRow, SaleRow, SurveyRow } from './types.ts';
+import {
+  toApplicationRows, toCaptureRows, toOverviewRows, toSaleRows, toScheduleRows, toSurveyRows, type TabKey,
+} from './sheet-rows.ts';
+import { buildEditions, cycleStartAt, editionKind, indexCaptures } from './editions.ts';
+import { inRange } from './metrics.ts';
+import { latestSurveys, surveyTab, type SurveyTab } from './survey.ts';
+import { applicationsTab, buildApplications, type Application, type ApplicationsTab } from './applications.ts';
+import { liveStats, liveTotals, presenceFromEvents, type LiveStats, type LiveTab } from './live.ts';
+import { buildDeals, dealsTab, type Deal, type DealsTab } from './deals.ts';
+import { buyersTab, salesTab, type BuyersTab, type SalesTab } from './sales.ts';
+import { apiTab, type ApiTab } from './api-leads.ts';
+import { disparosTab, type DisparosTab } from './disparos.ts';
+import { filterAds, fullFunnel, type FullFunnel } from './full-funnel.ts';
+import {
+  editionFunnel, webinarTable, type EditionFunnel, type WebinarTable,
+} from './breakdowns.ts';
+import { getMarketingSettings } from './settings.ts';
+import { TAB_TITLES } from './sync.ts';
+import {
+  loadAdDays, loadDisparos, loadEditionOverrides, loadMetaWindows, loadSnapshotTimes, loadSnapshots,
+} from './store.ts';
+import { loadLive } from './sources/platform.ts';
+```
+
+2. Substituir a declaração de `PANEL_TABS` por:
+
+```ts
+export const PANEL_TABS = [
+  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores', 'api', 'disparos', 'edicao',
+] as const;
+```
+
+3. Logo antes de `export type TabData`, acrescentar:
 
 ```ts
 export type EdicaoTab = { ticketApplies: boolean; funnel: EditionFunnel; webinars: WebinarTable; fullFunnel: FullFunnel };
 ```
 
-3. `PANEL_TABS`: acrescentar `'edicao'` ao fim. `TabData`: `edicao: EdicaoTab;`. `NEEDS`: `edicao: ['applications', 'schedule', 'sales', 'survey'],`.
-4. Em `BUILDERS`:
+4. Dentro de `export type TabData = { … }`, acrescentar ao fim:
+
+```ts
+  edicao: EdicaoTab;
+```
+
+5. Dentro de `const NEEDS = { … }`, acrescentar ao fim:
+
+```ts
+  edicao: ['capture', 'applications', 'schedule', 'sales', 'survey'],
+```
+
+6. Logo antes de `type Builder<K extends PanelTab>`, acrescentar:
+
+```ts
+const sheetChecks = (c: Ctx) => {
+  const out: Record<number, OverviewCheck | null> = {};
+  c.eds.forEach(e => { const ov = c.overview.filter(o => o.edition === e.number)[0]; out[e.number] = ov ? ov.check : null; });
+  return out;
+};
+```
+
+7. Dentro de `const BUILDERS = { … }`, acrescentar ao fim (antes do `};`):
 
 ```ts
   // Complementos da Edição: edição inteira (o período não se aplica), como o bloco "Fundo".
@@ -4961,11 +5476,11 @@ export type EdicaoTab = { ticketApplies: boolean; funnel: EditionFunnel; webinar
     const [live, meta, windows] = await Promise.all([liveByEdition(c), adsOf(c), loadMetaWindows(c.selected)]);
     const apps = applications(c).filter(a => inSel(c, a.edition));
     const ds = deals(c).filter(d => inSel(c, d.edition));
-    const ss = toSaleRows(c.snap.sales ?? []).filter(s => s.approved && inSel(c, s.edition));
+    const ss = typed(c.snap.sales, toSaleRows).filter(s => s.approved && inSel(c, s.edition));
     return {
       ticketApplies: c.selected.some(n => editionKind(n) === 'pago'),
       funnel: editionFunnel(apps, ds, ss),
-      webinars: webinarTable(c.eds, c.captures.filter(x => inSel(c, x.edition)), ds, ss, apps, live),
+      webinars: webinarTable(c.eds, c.captures.filter(x => inSel(c, x.edition)), ds, ss, apps, live, sheetChecks(c)),
       fullFunnel: fullFunnel(c.eds, meta.ads, c.captures, windows, meta.filter, c.today),
     };
   },
@@ -4993,9 +5508,12 @@ export function WebinarTableView({ data }: { data: WebinarTable }) {
         <TableHeader><TableRow>
           <TableHead>Webinário</TableHead><TableHead className="text-right">Leads</TableHead><TableHead className="text-right">Agendamentos</TableHead>
           <TableHead className="text-center" title="dia do agendamento × dia da live">Antes · no dia · depois</TableHead>
+          <TableHead className="text-right" title="utm_content do negócio começa com api (ou 197) ou utm_source = api">Via API</TableHead>
           <TableHead className="text-right">Calls feitas</TableHead><TableHead className="text-right">Vendas</TableHead>
-          <TableHead className="text-right">Pico</TableHead><TableHead className="text-right">Até o pitch</TableHead>
+          <TableHead className="text-right" title="plataforma (oficial) · Visão Geral entre parênteses">Pico</TableHead>
+          <TableHead className="text-right">Comparecimento</TableHead><TableHead className="text-right">Até o pitch</TableHead>
           <TableHead className="text-right" title="aplicações completas entre 20h da live e 6h do dia seguinte ÷ pessoas no pitch">Conversão ao vivo</TableHead>
+          <TableHead className="text-right">Aplicações</TableHead>
         </TableRow></TableHeader>
         <TableBody>
           {rows.map(r => (
@@ -5004,13 +5522,18 @@ export function WebinarTableView({ data }: { data: WebinarTable }) {
               <TableCell className="text-right tabular-nums">{int(r.leads)}</TableCell>
               <TableCell className="text-right tabular-nums">{int(r.scheduled)} <span className="text-muted-foreground">{pct(ratio(r.scheduled, r.leads), 2)}</span></TableCell>
               <TableCell className="text-center tabular-nums"><span className="text-red-300">{r.before}</span> · <span className="text-amber-300">{r.onDay}</span> · <span className="text-emerald-300">{r.after}</span></TableCell>
+              <TableCell className="text-right tabular-nums text-amber-300">{int(r.viaApi)}</TableCell>
               <TableCell className="text-right tabular-nums">{int(r.calls)} <span className="text-muted-foreground">{pct(ratio(r.calls, r.scheduled))}</span></TableCell>
               <TableCell className="text-right tabular-nums">{int(r.sales)}{r.revenue > 0 && <span className="text-muted-foreground"> {brl(r.revenue)}</span>}</TableCell>
-              <TableCell className="text-right tabular-nums" title={r.peak === null ? (r.edition === null ? 'Pico não soma entre lives' : NO_LIVE) : undefined}>{int(r.peak)}</TableCell>
+              <TableCell className="text-right tabular-nums" title={r.peak === null ? (r.edition === null ? 'Pico não soma entre lives' : NO_LIVE) : undefined}>{int(r.peak)}{r.sheetPeak !== null && <span className="text-muted-foreground" title="Pico digitado na Visão Geral (referência)"> ({int(r.sheetPeak)})</span>}</TableCell>
+              <TableCell className="text-right tabular-nums" title={r.attendance === null ? (r.edition === null ? 'Comparecimento não soma entre lives' : 'Sem Visão Geral nem presença') : r.attendanceFromSheet ? 'Visão Geral' : 'pico ÷ leads (Visão Geral vazia)'}>
+                {r.attendance === null ? '—' : `${r.attendance.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`}
+              </TableCell>
               <TableCell className="text-right tabular-nums" title={r.toPitch === null ? NO_LIVE : undefined}>{int(r.toPitch)}</TableCell>
               <TableCell className="text-right tabular-nums" title={r.liveConversion === null ? 'Sem pessoas no pitch para dividir' : undefined}>
                 {r.liveConversion === null ? '—' : <>{pct(r.liveConversion)} <span className="text-muted-foreground">({r.liveApps})</span></>}
               </TableCell>
+              <TableCell className="text-right tabular-nums">{int(r.applications)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -5030,7 +5553,7 @@ export function FullFunnelTable({ data }: { data: FullFunnel }) {
     <div className="flex flex-col gap-2">
       <p className="text-[11px] text-muted-foreground">
         Campanhas com “{data.filter || 'qualquer nome'}” · coluna = edição inteira (inclui o dia da live)
-        {c && ` · variação ${ed(c.prev)}→${ed(c.cur)} nos mesmos ${c.cutDays} dias de captação (${dm(c.prevRange.from)}–${dm(c.prevRange.to)} × ${dm(c.curRange.from)}–${dm(c.curRange.to)})`}
+        {c && ` · variação ${ed(c.prev)}→${ed(c.cur)} nos mesmos ${c.cutDays} dias de captação (${dm(c.prevRange.from)}–${dm(c.prevRange.to)} × ${dm(c.curRange.from)}–${dm(c.curRange.to)}): ${ed(c.prev)} ${c.prevSales} · ${ed(c.cur)} ${c.curSales} vendas`}
       </p>
       <div className="overflow-x-auto">
         <Table>
@@ -5069,13 +5592,13 @@ export function FullFunnelTable({ data }: { data: FullFunnel }) {
 }
 ```
 
-- [ ] **Step 7: `LeadFunnel` — aplicação qualificada e divisão Power | Start**
+- [ ] **Step 7: `LeadFunnel` — aplicação qualificada, Pipedrive e divisão Power | Start**
 
 Em `src/components/marketing/LeadFunnel.tsx`:
 
 1. Acrescentar o import `import type { EditionFunnel } from '@/lib/marketing/breakdowns';`.
 2. Trocar a assinatura por `export default function LeadFunnel({ view, funnel, ticketApplies }: { view: MarketingView; funnel: EditionFunnel | null; ticketApplies: boolean }) {`.
-3. Substituir a declaração `const stages: Stage[] = [ ... ];` inteira por:
+3. Substituir a declaração `const stages: Stage[] = [ ... ];` inteira por (a etapa de vendas high ticket, com a lista de compradores, fica nos dois casos):
 
 ```tsx
   const top: Stage[] = [
@@ -5083,16 +5606,21 @@ Em `src/components/marketing/LeadFunnel.tsx`:
     { key: 'entered', label: 'Entraram na live', sub: 'compradores presentes', value: entered.length, cost: costOf(f.spend, entered.length), costLabel: 'por presente', people: entered },
     { key: 'pitch', label: 'Ficaram até o pitch', sub: 'compradores no pitch', value: pitch.length, cost: costOf(f.spend, pitch.length), costLabel: 'por pitch', people: pitch },
   ];
-  const typeformNote = 'Lista de pessoas na aba Leads → Aplicações.';
-  // Com o complemento carregado, o fundo vem das linhas (Typeform/Pipedrive/Vendas); antes disso, da Visão Geral.
+  const htStage: Stage = { key: 'ht', label: 'Vendas high ticket', sub: brl(b.highTicketRevenue), value: b.highTicketSales, cost: costOf(view.fullSpend, b.highTicketSales), costLabel: 'por venda', people: ht };
+  const rowsNote = 'Lista de pessoas nas abas Leads → Aplicações e Comercial → Agendamentos.';
+  // Com o complemento: fundo pelas linhas (Typeform/Pipedrive). Sem ele (só se o complemento falhar): Visão Geral.
+  // A etapa de vendas high ticket (com a lista de compradores) fica nos dois casos.
   const back: Stage[] = funnel ? [
-    { key: 'apps', label: 'Aplicações', sub: `${whole} · Typeform`, value: funnel.applications, cost: costOf(view.fullSpend, funnel.applications), costLabel: 'por aplicação', people: null, note: typeformNote },
-    { key: 'qualified', label: 'Aplicação qualificada', sub: 'Power ou Start', value: funnel.qualified, cost: costOf(view.fullSpend, funnel.qualified), costLabel: 'por qualificada', people: null, note: typeformNote },
+    { key: 'apps', label: 'Aplicações', sub: `${whole} · Typeform`, value: funnel.applications, cost: costOf(view.fullSpend, funnel.applications), costLabel: 'por aplicação', people: null, note: rowsNote },
+    { key: 'qualified', label: 'Aplicação qualificada', sub: 'Power ou Start', value: funnel.qualified, cost: costOf(view.fullSpend, funnel.qualified), costLabel: 'por qualificada', people: null, note: rowsNote },
+    { key: 'scheduled', label: 'Calls agendadas', sub: `${whole} · Pipedrive`, value: funnel.scheduled, cost: costOf(view.fullSpend, funnel.scheduled), costLabel: 'por agendada', people: null, note: rowsNote },
+    { key: 'done', label: 'Calls realizadas', sub: `${whole} · Pipedrive`, value: funnel.done, cost: costOf(view.fullSpend, funnel.done), costLabel: 'por realizada', people: null, note: rowsNote },
+    htStage,
   ] : [
     { key: 'apps', label: 'Aplicações', sub: whole, value: b.applications, cost: costOf(view.fullSpend, b.applications), costLabel: 'por aplicação', people: null, note: sheetNote },
     { key: 'scheduled', label: 'Calls agendadas', sub: whole, value: b.scheduled, cost: b.costPerScheduled, costLabel: 'por agendada', people: null, note: sheetNote },
     { key: 'done', label: 'Calls realizadas', sub: whole, value: b.done, cost: b.costPerDone, costLabel: 'por realizada', people: null, note: sheetNote },
-    { key: 'ht', label: 'Vendas high ticket', sub: brl(b.highTicketRevenue), value: b.highTicketSales, cost: costOf(view.fullSpend, b.highTicketSales), costLabel: 'por venda', people: ht },
+    htStage,
   ];
   // Edições NF10K não vendiam ingresso: o funil começa nas aplicações.
   const stages: Stage[] = (ticketApplies ? top : []).concat(back);
@@ -5149,7 +5677,15 @@ import { useTabData } from './useTabData';
   const pending = <p role={extraError ? 'alert' : undefined} className={`text-xs ${extraError ? 'text-red-400' : 'text-muted-foreground'}`}>{extraError || 'Carregando…'}</p>;
 ```
 
-3. Trocar `<LeadFunnel view={view} />` por `<LeadFunnel view={view} funnel={extra ? extra.funnel : null} ticketApplies={ticket} />`.
+3. Trocar `<LeadFunnel view={view} />` por (o funil espera o complemento para não trocar de etapas na frente da pessoa):
+
+```tsx
+      {/* O funil espera o complemento (linhas do Typeform/Pipedrive) para não trocar de etapas na frente da pessoa;
+          se o complemento falhar, cai para os totais da Visão Geral. */}
+      {extra || extraError
+        ? <LeadFunnel view={view} funnel={extra ? extra.funnel : null} ticketApplies={ticket} />
+        : <p className="py-6 text-center text-xs text-muted-foreground">Carregando funil…</p>}
+```
 4. Substituir o `<div className={grid}>` da seção "Frente — ingresso" por:
 
 ```tsx
@@ -5211,8 +5747,9 @@ Expected: PASS.
 
 Manual:
 - Seletor de edição: grupo "Pago" (#021+) e "Histórico NF10K" (#015–#020); edições abaixo de #015 não aparecem.
-- Edição com #022: funil com Aplicações → Aplicação qualificada e, abaixo, Power | Start (qualificada → agendada → realizada → venda); tabela "Webinário a webinário"; "Funil completo" com a coluna #022 e todos os valores do Meta.
-- Selecionar #021 e #022 depois da live de #022 (ou com o corte do dia): a nota mostra os mesmos N dias; **com os dados reais, o corte "dia seguinte à live anterior → véspera da live" dá 65 vendas em #021 e 41 em #022** (coluna "Vendas (UTM)" usa a edição inteira; conferir o corte pela nota e pela variação). Variação verde/vermelha; alcance "—" com explicação enquanto #022 não terminou.
+- Edição com #022: "Carregando funil…" e, em seguida, o funil já completo (sem trocar de etapas): ingressos → entraram → pitch → Aplicações → Aplicação qualificada → Calls agendadas → Calls realizadas → Vendas high ticket (clicar mostra os compradores) e, abaixo, Power | Start (qualificada → agendada → realizada → venda). Tabela "Webinário a webinário" com Via API, Pico (Visão Geral entre parênteses), Comparecimento (hover diz a fonte) e Aplicações. "Funil completo" com a coluna #022 e os valores do Meta.
+- Selecionar #021 e #022 depois da live de #022: a nota termina com **"#021 65 · #022 41 vendas"** nos mesmos 6 dias de captação (dia seguinte à live anterior → véspera da live; regra conferida em 13/10 com os dados reais). A coluna "Vendas (UTM)" de cada edição é a edição inteira (inclui o dia da live) e pode ser maior. Variação verde/vermelha; alcance "—" com explicação enquanto #022 não terminou.
+- Tempo: no DevTools, `?tab=edicao` com 3 ou mais edições selecionadas, pedida pela segunda vez (instância "warm", depois de trocar de aba e voltar após um Atualizar) leva menos de 3 s.
 - Selecionar só #018: blocos de ingresso mostram "não se aplica"; o funil começa em Aplicações; nada mostra 0 inventado.
 
 - [ ] **Step 11: Commit**
@@ -5227,138 +5764,107 @@ git commit -m "feat(marketing): Edição funnel split, webinar table, Meta+UTM f
 ### Task 18: Criativos (leads, qualificação, agendamentos, vendas por produto) e Validação (conferência entre fontes)
 
 **Files:**
-- Modify: `src/lib/marketing/breakdowns.ts`
-- Modify: `src/lib/marketing/breakdowns.test.ts`
 - Modify: `src/lib/marketing/tabs.ts`
 - Modify: `src/components/marketing/CreativesTab.tsx` (substituir)
 - Modify: `src/components/marketing/ValidationTab.tsx` (substituir)
 - Modify: `src/components/marketing/MarketingDashboard.tsx`
 
 **Interfaces:**
-- Consumes: `creativeFamily` (creatives.ts); `qualified5k` (Task 3); `normProd`, `saleValue` (Task 5); `dealDone` (Task 6); `reconcileEdition`, `ReconRow`, `OfficialNumbers` (Task 9); `loadAliases` (store); helpers `applications`, `liveByEdition`, `deals`, `adsOf`, `salesOf` (Tasks 13–15).
-- Produces: `type CreativeExtra = { family: string; leads: number; qualified: number; qualifiedRate: number | null; scheduled: number; power: number; start: number; desafio: number }`, `creativeExtras(leads: CaptureRow[], surveys: Record<string, SurveyRow>, deals: Deal[], sales: SaleRow[], aliases: Record<string, string>): CreativeExtra[]`; abas `criativos` (`CreativeExtra[]`) e `validacao` (`ReconRow[]`); `CreativesTab({ view, onSaved, query })`, `ValidationTab({ view, query })`.
+- Consumes: `creativeExtras`, `sortCreatives`, `CreativeExtra`, `CreativeSort` (Task 17); `saleValue` (Task 5); `dealDone` (Task 6); `reconcileEdition`, `ReconRow`, `OfficialNumbers` (Task 9); `loadAliases` (store); helpers `applications`, `liveByEdition`, `deals`, `adsOf`, `salesOf` (Tasks 13–15).
+- Produces: abas `criativos` (`CreativeExtra[]`, **todas** as edições selecionadas no período) e `validacao` (`ReconRow[]`); `CreativesTab({ view, onSaved, query })` com ordenação do HTML e nota dizendo de onde vem cada coluna; `ValidationTab({ view, query })`.
 
-- [ ] **Step 1: Teste (falhando)**
+- [ ] **Step 1: `tabs.ts` — criativos e validacao**
 
-Em `src/lib/marketing/breakdowns.test.ts`: trocar o import de `./breakdowns.ts` por `import { creativeExtras, editionFunnel, webinarTable } from './breakdowns.ts';`, acrescentar `SurveyRow` ao import de tipos e acrescentar ao fim:
+Em `src/lib/marketing/tabs.ts` (cada estado intermediário compila: o plano foi verificado aplicando as Tasks 12–18 em sequência):
+
+1. Substituir o bloco de imports do topo (todas as linhas `import`) por:
 
 ```ts
-test('creativeExtras: leads, 5k+ rate, schedules and high-ticket sales per creative family', () => {
-  const lc = (utmContent: string, email: string): CaptureRow => ({ ...lead(22), utmContent, email });
-  const sv = (email: string, renda: string): SurveyRow => ({ email, at: null, tempo: '', servico: '', renda, fat: '', conhece: '', desafios: '' });
-  const x = creativeExtras(
-    [lc('webp_vendas_img_10', 'a@x'), lc('img_10', 'b@x'), lc('vid_2', 'c@x')],
-    { 'a@x': sv('a@x', '7a10k') },
-    [deal({ creative: 'Web3_coleta_img_10' })],
-    [sale({ utmContentCapture: 'img_10', product: 'Power Start' }), sale({ utmContentCapture: 'img_10', approved: false, refunded: true })],
-    {},
-  );
-  const img = x.filter(r => r.family === 'img_10')[0];
-  assert.deepEqual([img.leads, img.qualified, img.qualifiedRate, img.scheduled, img.start, img.power], [2, 1, 0.5, 1, 1, 0]);
-  assert.equal(x.filter(r => r.family === 'vid_2')[0].qualifiedRate, 0);
-});
+import type { CaptureRow, DateRange, EditionConfig, MetaAdDay, OverviewCheck, OverviewRow, SaleRow, SurveyRow } from './types.ts';
+import {
+  toApplicationRows, toCaptureRows, toOverviewRows, toSaleRows, toScheduleRows, toSurveyRows, type TabKey,
+} from './sheet-rows.ts';
+import { buildEditions, cycleStartAt, editionKind, indexCaptures } from './editions.ts';
+import { inRange } from './metrics.ts';
+import { latestSurveys, surveyTab, type SurveyTab } from './survey.ts';
+import { applicationsTab, buildApplications, type Application, type ApplicationsTab } from './applications.ts';
+import { liveStats, liveTotals, presenceFromEvents, type LiveStats, type LiveTab } from './live.ts';
+import { buildDeals, dealDone, dealsTab, type Deal, type DealsTab } from './deals.ts';
+import { buyersTab, saleValue, salesTab, type BuyersTab, type SalesTab } from './sales.ts';
+import { apiTab, type ApiTab } from './api-leads.ts';
+import { disparosTab, type DisparosTab } from './disparos.ts';
+import { filterAds, fullFunnel, type FullFunnel } from './full-funnel.ts';
+import { reconcileEdition, type OfficialNumbers, type ReconRow } from './reconcile.ts';
+import {
+  creativeExtras, editionFunnel, webinarTable, type CreativeExtra, type EditionFunnel, type WebinarTable,
+} from './breakdowns.ts';
+import { getMarketingSettings } from './settings.ts';
+import { TAB_TITLES } from './sync.ts';
+import {
+  loadAdDays, loadAliases, loadDisparos, loadEditionOverrides, loadMetaWindows, loadSnapshotTimes, loadSnapshots,
+} from './store.ts';
+import { loadLive } from './sources/platform.ts';
 ```
 
-- [ ] **Step 2: Rodar e ver falhar**
-
-Run: `npm test`
-Expected: FAIL — `creativeExtras is not a function`.
-
-- [ ] **Step 3: Implementar `creativeExtras`**
-
-Em `src/lib/marketing/breakdowns.ts`: trocar o import de tipos por `import type { CaptureRow, SaleRow, SurveyRow } from './types.ts';`, acrescentar `import { creativeFamily } from './creatives.ts';` e `import { qualified5k } from './survey.ts';`, e acrescentar ao fim:
+2. Substituir a declaração de `PANEL_TABS` por:
 
 ```ts
-export type CreativeExtra = {
-  family: string; leads: number; qualified: number; qualifiedRate: number | null;
-  scheduled: number; power: number; start: number; desafio: number;
-};
-
-// Por família de criativo: leads da captação, % 5k+ na pesquisa, agendamentos e vendas high ticket por produto.
-export function creativeExtras(
-  leads: CaptureRow[], surveys: Record<string, SurveyRow>, deals: Deal[], sales: SaleRow[], aliases: Record<string, string>,
-): CreativeExtra[] {
-  const m: Record<string, CreativeExtra> = Object.create(null);
-  const list: CreativeExtra[] = [];
-  const get = (raw: string) => {
-    const f = creativeFamily(raw, aliases);
-    let x = m[f];
-    if (!x) { x = m[f] = { family: f, leads: 0, qualified: 0, qualifiedRate: null, scheduled: 0, power: 0, start: 0, desafio: 0 }; list.push(x); }
-    return x;
-  };
-  leads.forEach(l => {
-    const x = get(l.utmContent);
-    x.leads++;
-    const s = l.email ? surveys[l.email] : undefined;
-    if (s && qualified5k(s.renda)) x.qualified++;
-  });
-  deals.forEach(d => { get(d.creative).scheduled++; });
-  sales.filter(s => s.approved).forEach(s => {
-    const p = normProd(s.product);
-    if (p === 'outro') return;
-    const x = get(s.utmContentCapture);
-    if (p === 'power') x.power++; else if (p === 'powerStart') x.start++; else x.desafio++;
-  });
-  list.forEach(x => { x.qualifiedRate = x.leads ? x.qualified / x.leads : null; });
-  return list;
-}
+export const PANEL_TABS = [
+  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores', 'api', 'disparos', 'edicao', 'criativos', 'validacao',
+] as const;
 ```
 
-- [ ] **Step 4: Rodar os testes**
-
-Run: `npm test`
-Expected: PASS.
-
-- [ ] **Step 5: `tabs.ts` — criativos e validacao**
-
-Em `src/lib/marketing/tabs.ts`:
-
-1. Trocar o import de `./breakdowns.ts` por `import { creativeExtras, editionFunnel, webinarTable, type CreativeExtra, type EditionFunnel, type WebinarTable } from './breakdowns.ts';`; acrescentar `loadAliases` ao import de `./store.ts`; acrescentar `dealDone` ao import de `./deals.ts`; acrescentar `saleValue` ao import de `./sales.ts`; acrescentar `import { reconcileEdition, type OfficialNumbers, type ReconRow } from './reconcile.ts';`.
-2. `PANEL_TABS`: acrescentar `'criativos', 'validacao'` ao fim. `TabData`: `criativos: CreativeExtra[];` e `validacao: ReconRow[];`. `NEEDS`: `criativos: ['survey', 'schedule', 'sales'],` e `validacao: ['applications', 'schedule', 'sales', 'survey'],`.
-3. Em `BUILDERS`:
+3. Dentro de `export type TabData = { … }`, acrescentar ao fim:
 
 ```ts
-  // Mesma regra da tabela de criativos atual: só a primeira edição selecionada, no período.
-  criativos: async c => {
-    const first = c.eds[0];
-    if (!first) return [];
-    const n = first.number;
-    return creativeExtras(
-      c.leads.filter(l => l.edition === n), c.surveys, deals(c).filter(d => d.edition === n),
-      salesOf(c).filter(s => s.edition === n), await loadAliases(),
-    );
-  },
-  // Conferência por edição: oficial (plataforma, Meta, linhas) × números digitados na Visão Geral.
+  criativos: CreativeExtra[];
+  validacao: ReconRow[];
+```
+
+4. Dentro de `const NEEDS = { … }`, acrescentar ao fim:
+
+```ts
+  criativos: ['capture', 'survey', 'schedule', 'sales'],
+  validacao: ['capture', 'applications', 'schedule', 'sales', 'survey'],
+```
+
+5. Dentro de `const BUILDERS = { … }`, acrescentar ao fim (antes do `};`):
+
+```ts
+  // Todas as edições selecionadas, no período (como o dash antigo). As colunas do Meta seguem a 1ª edição.
+  criativos: async c => creativeExtras(
+    c.leads, c.surveys, deals(c).filter(d => inSel(c, d.edition) && inRange(d.scheduledAt, c.range)),
+    salesOf(c), await loadAliases(),
+  ),
+  // Conferência por edição: oficial (plataforma, Meta, linhas da planilha) × números digitados na Visão Geral.
   validacao: async c => {
     const [live, meta] = await Promise.all([liveByEdition(c), adsOf(c)]);
-    const apps = c.snap.applications ? applications(c) : null;
-    const ds = c.snap.schedule ? deals(c) : null;
-    const ss = c.snap.sales ? toSaleRows(c.snap.sales) : null;
+    const apps = applications(c), ds = deals(c), ss = typed(c.snap.sales, toSaleRows);
+    const checks = sheetChecks(c);
     const rows: ReconRow[] = [];
     c.eds.forEach(e => {
       const n = e.number, st = live[n] ?? null;
       const leadsN = c.captures.filter(x => x.edition === n).length;
       const win = meta.ads.filter(a => a.date >= e.windowStart && a.date <= e.windowEnd);
-      const myDeals = ds ? ds.filter(d => d.edition === n) : null;
-      const mySales = ss ? ss.filter(s => s.approved && s.edition === n) : null;
+      const myDeals = ds.filter(d => d.edition === n);
+      const mySales = ss.filter(s => s.approved && s.edition === n);
       const official: OfficialNumbers = {
         peak: st ? st.peak : null,
         attendance: st && leadsN ? (st.peak / leadsN) * 100 : null,
         metaSpend: win.length ? win.reduce((t, a) => t + a.spend, 0) : null,
-        applications: apps ? apps.filter(a => a.complete && a.edition === n).length : null,
-        scheduled: myDeals ? myDeals.length : null,
-        done: myDeals ? myDeals.filter(dealDone).length : null,
-        sales: mySales ? mySales.length : null,
-        revenue: mySales ? mySales.reduce((t, s) => t + saleValue(s), 0) : null,
+        applications: apps.filter(a => a.complete && a.edition === n).length,
+        scheduled: myDeals.length,
+        done: myDeals.filter(dealDone).length,
+        sales: mySales.length,
+        revenue: mySales.reduce((t, s) => t + saleValue(s), 0),
       };
-      const ov = c.overview.filter(o => o.edition === n)[0];
-      reconcileEdition(n, official, ov ? ov.check : null).forEach(r => rows.push(r));
+      reconcileEdition(n, official, checks[n]).forEach(r => rows.push(r));
     });
     return rows;
   },
 ```
 
-- [ ] **Step 6: Criativos**
+- [ ] **Step 2: Criativos**
 
 Substituir `src/components/marketing/CreativesTab.tsx` por:
 
@@ -5371,31 +5877,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { MarketingView } from '@/lib/marketing/view';
 import type { CreativeStats } from '@/lib/marketing/metrics';
-import type { CreativeExtra } from '@/lib/marketing/breakdowns';
+import { sortCreatives, type CreativeExtra, type CreativeSort } from '@/lib/marketing/breakdowns';
 import { useTabData } from './useTabData';
 
 const brl = (n: number | null) => (n === null ? '—' : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
 const pct = (n: number | null) => (n === null ? '—' : `${(n * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`);
 const BAND: Record<string, string> = { sonho: 'bg-emerald-500/20 text-emerald-300', bom: 'bg-lime-500/20 text-lime-300', limite: 'bg-amber-500/20 text-amber-300', acima: 'bg-red-500/20 text-red-300' };
-const SORTS: [Sort, string][] = [['vendas', 'Vendas'], ['agend', 'Agendamentos'], ['leads', 'Leads'], ['qualif', 'Qualificação']];
-type Sort = 'vendas' | 'agend' | 'leads' | 'qualif';
+// Ordem e desempates do dash antigo (vendas high ticket → agendamentos → leads etc.).
+const SORTS: [CreativeSort, string][] = [['vendas', 'Vendas HT'], ['agend', 'Agendamentos'], ['leads', 'Leads'], ['qualif', 'Qualificação']];
 type Row = { family: string; c: CreativeStats | null; x: CreativeExtra | null };
-const ht = (x: CreativeExtra | null) => (x ? x.power + x.start + x.desafio : 0);
-const NO_AD = 'Sem anúncio do Meta com este criativo na janela';
-
-function sortRows(rows: Row[], s: Sort): Row[] {
-  const v = (r: Row, k: 'leads' | 'scheduled' | 'qualified') => (r.x ? r.x[k] : 0);
-  return rows.slice().sort((a, b) =>
-    s === 'agend' ? v(b, 'scheduled') - v(a, 'scheduled') || v(b, 'leads') - v(a, 'leads')
-      : s === 'leads' ? v(b, 'leads') - v(a, 'leads')
-      : s === 'qualif' ? v(b, 'qualified') - v(a, 'qualified') || v(b, 'leads') - v(a, 'leads')
-      : (b.c?.sales ?? 0) - (a.c?.sales ?? 0) || ht(b.x) - ht(a.x) || (b.c?.spend ?? 0) - (a.c?.spend ?? 0));
-}
+const NO_AD = 'Sem anúncio do Meta com este criativo na janela da 1ª edição selecionada';
 
 export default function CreativesTab({ view, onSaved, query }: { view: MarketingView; onSaved: () => void; query: string }) {
   const [alias, setAlias] = useState({ raw: '', family: '' });
   const [saveError, setSaveError] = useState('');
-  const [sort, setSort] = useState<Sort>('vendas');
+  const [sort, setSort] = useState<CreativeSort>('vendas');
   const { data: extra } = useTabData<CreativeExtra[]>('criativos', query);
 
   const byFamily: Record<string, CreativeExtra> = {};
@@ -5415,6 +5911,8 @@ export default function CreativesTab({ view, onSaved, query }: { view: Marketing
         ))}
       </div>
 
+      <p className="-mt-3 text-[11px] text-muted-foreground">Vendas, gasto, CPA, IC e taxas: Meta + ingressos da 1ª edição selecionada. Leads, 5k+, agendamentos e vendas high ticket: todas as edições selecionadas.</p>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -5427,7 +5925,7 @@ export default function CreativesTab({ view, onSaved, query }: { view: Marketing
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortRows(rows, sort).map(({ family, c, x }) => (
+            {sortCreatives(rows, sort).map(({ family, c, x }) => (
               <TableRow key={family}>
                 <TableCell className="font-medium">{family}</TableCell>
                 <TableCell className="text-right tabular-nums">{c ? c.sales : dash(NO_AD)}</TableCell>
@@ -5495,7 +5993,7 @@ export default function CreativesTab({ view, onSaved, query }: { view: Marketing
 }
 ```
 
-- [ ] **Step 7: Validação**
+- [ ] **Step 3: Validação**
 
 Substituir `src/components/marketing/ValidationTab.tsx` por:
 
@@ -5616,23 +6114,23 @@ export default function ValidationTab({ view, query }: { view: MarketingView; qu
 }
 ```
 
-- [ ] **Step 8: Passar `query`**
+- [ ] **Step 4: Passar `query`**
 
 Em `MarketingDashboard.tsx`, trocar `<CreativesTab view={view} onSaved={() => load(selected, range)} />` por `<CreativesTab view={view} query={query} onSaved={() => load(selected, range)} />` e `<ValidationTab view={view} />` por `<ValidationTab view={view} query={query} />`.
 
-- [ ] **Step 9: Verificar**
+- [ ] **Step 5: Verificar**
 
 Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: PASS.
 
 Manual:
-- Resultado → Criativos: colunas novas Leads, 5k+, Agend., Pw · St · Des; os botões Vendas / Agendamentos / Leads / Qualificação reordenam; criativo só com leads aparece com "—" (hover explica) nas colunas do Meta.
+- Resultado → Criativos: colunas novas Leads, 5k+, Agend., Pw · St · Des; nota acima da tabela diz que Meta/ingressos são da 1ª edição e o resto soma todas as selecionadas; os botões Vendas HT / Agendamentos / Leads / Qualificação reordenam com os desempates do HTML; criativo só com leads aparece com "—" (hover explica) nas colunas do Meta. Selecionar #021 e #022: os leads de um criativo = soma das duas edições.
 - Resultado → Validação: tabela "Conferência entre fontes" por edição; números iguais com ✓, divergentes com ⚠ e diferença, vazios na Visão Geral como "só plataforma".
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/lib/marketing/breakdowns.ts src/lib/marketing/breakdowns.test.ts src/lib/marketing/tabs.ts src/components/marketing/CreativesTab.tsx src/components/marketing/ValidationTab.tsx src/components/marketing/MarketingDashboard.tsx
+git add src/lib/marketing/tabs.ts src/components/marketing/CreativesTab.tsx src/components/marketing/ValidationTab.tsx src/components/marketing/MarketingDashboard.tsx
 git commit -m "feat(marketing): creative leads/qualification/schedules/sales and source reconciliation"
 ```
 
@@ -5714,7 +6212,13 @@ Expected: `19 disparos importados (7 convites, 12 de recuperação).` (contagem 
 
 - [ ] **Step 4: Conferir no painel**
 
-Manual: Canais → Disparos sem período: blocos Convites / Recuperação / Total com os mesmos orçamento, agendamentos, vendas e ROAS do HTML antigo (aba Disparos); ranking dos convites com o template ao clicar nos "API AI 0N". Sem commit nesta task.
+Manual: Canais → Disparos sem período (valores do HTML v11.9, já somados):
+- **Convites** (7 disparos): orçamento R$ 616,11 · 15.375 contatos · 35 agendamentos (0,23%) · custo por agend. R$ 17,60 · 2 vendas · R$ 60.120,00 · ROAS 97,58x.
+- **Recuperação** (12 disparos): orçamento R$ 11,45 · 288 contatos · 4 agendamentos (1,39%) · custo por agend. R$ 2,86 · 0 vendas · ROAS 0x (sem faturamento).
+- **Total** (19): R$ 627,56 · 15.663 contatos · 39 agendamentos · custo por agend. R$ 16,09 · 2 vendas · ROAS 95,80x.
+- Ranking dos convites começa por "API AI 01" (13 agendamentos); clicar mostra o template (rótulo V2 + texto + mensagens 02 e 03).
+
+Sem commit nesta task.
 
 ---
 
@@ -5740,10 +6244,19 @@ Expected: `limpo`; `dash-exemplo.md` e `scratch/` não aparecem como arquivos a 
 
 - [ ] **Step 3: Checklist manual (Preview ou `npm run dev`, logado como admin)**
 
-- [ ] `/api/marketing/data` sem `tab` devolve o mesmo formato de antes; `?tab=xyz` → 400; deslogado → 401 em `data`, `disparos`, `settings`.
+- [ ] `/api/marketing/data` sem `tab` devolve o mesmo formato de antes; `?tab=xyz` → 400; deslogado → 401 em `data`, `disparos` (POST/PATCH/DELETE), `settings`.
 - [ ] Atualizar: sem aviso novo; se algum aparecer, a mensagem diz a aba e as colunas que faltam.
-- [ ] #018, #019, #020 (Histórico NF10K): Pesquisa (taxa de resposta, qualificados, qualidade), Aplicações (completas, qualificadas), Agendamentos (total, realizadas, perdas, ganhos), Vendas (aprovadas, faturamento), API (leads, qualificados) batem com o HTML antigo nas mesmas edições.
-- [ ] #021 e #022: Edição → Funil completo com o corte "dia seguinte à live anterior → véspera da live" e filtro `WB PG` dá **65** vendas em #021 e **41** em #022 (conferir com as duas edições selecionadas depois da live de #022: a nota mostra o corte e a variação de vendas é (41 − 65) ÷ 65 = −36,9%).
+- [ ] **Verificação do usuário** (o implementador não abre o HTML): #018, #019 e #020 (Histórico NF10K), considerando só registros com data até **06/10/2026** (véspera da live do #021), batem com o dash antigo em Pesquisa (taxa de resposta, qualificados, qualidade), Aplicações (completas, qualificadas), Agendamentos (total, realizadas, perdas, ganhos), Vendas (aprovadas, faturamento) e API (leads, qualificados). Diferenças **esperadas e documentadas** (não são bug):
+  - atribuição de edição: o painel usa o ciclo inteiro (#015 em diante); o HTML só olhava #015–#020, então o #020 do HTML absorvia aplicações/negócios posteriores sem par, que aqui vão para #021+;
+  - presença (pico, até o pitch, ao vivo) vem da plataforma, não dos CSVs do HTML;
+  - o funil da Edição usa as linhas (Typeform, Pipedrive, Detalhamento Vendas), não os totais digitados na Visão Geral (esses só aparecem em Validação);
+  - registros sem edição identificada aparecem como "sem edição" em vez de entrar em todas as seleções;
+  - palavras-chave dos desafios comparam stopwords sem acento (ranking pode mudar um pouco);
+  - Compradores excluem reembolsos;
+  - venda com STATUS vazio ou diferente de "Aprovada" que não seja reembolso conta como venda; Ticket "16.788" vale 16.788.
+- [ ] #021 e #022 selecionadas, depois da live de #022: a nota do Funil completo termina com **"#021 65 · #022 41 vendas"** (corte "dia seguinte à live anterior → véspera da live", filtro `WB PG`) e a variação de "Vendas (UTM)" é (41 − 65) ÷ 65 = **−36,9%**.
+- [ ] Tempo: no DevTools, `?tab=edicao` com 3 ou mais edições, segunda chamada na mesma instância ("warm"), abaixo de **3 s**; voltar a uma aba já aberta não gera chamada nova.
+- [ ] Fonte vazia: aba da planilha sem dados mostra "Fonte sem dados: … Clique em Atualizar.", nunca zeros.
 - [ ] Ingresso em edição NF10K mostra "não se aplica"; nenhum número vazio aparece como 0.
 - [ ] Listas de pessoas só aparecem ao abrir as seções recolhíveis (DevTools: chamadas com `lists=1` só nessa hora).
 - [ ] Configurações → Integrações: 6 gids, filtro de campanha editável; token nunca aparece inteiro.
