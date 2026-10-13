@@ -197,3 +197,17 @@ export function backSummary(
     roasTotal: div(front.revenue + htRevenue, front.spend),
   };
 }
+
+export type Count = { key: string; count: number };
+
+// Contagem por chave, maior primeiro (empate: ordem de aparição).
+export function countBy<T>(items: T[], key: (t: T) => string): Count[] {
+  const m: Record<string, number> = Object.create(null);
+  const order: string[] = [];
+  items.forEach(t => {
+    const k = key(t);
+    if (m[k] === undefined) { m[k] = 0; order.push(k); }
+    m[k]++;
+  });
+  return order.map(k => ({ key: k, count: m[k] })).sort((a, b) => b.count - a.count);
+}
