@@ -13,6 +13,13 @@ export async function saveSnapshot(tab: TabKey, rows: Record<string, string>[]) 
   check(error, `snapshot ${tab}`);
 }
 
+// Só a data de cada aba (barato): quem guarda as linhas em memória sabe se precisa reler.
+export async function loadSnapshotTimes(tabs: TabKey[]): Promise<{ tab: TabKey; fetchedAt: string }[]> {
+  const { data, error } = await supabase.from('mkt_sheet_snapshot').select('tab, fetched_at').in('tab', tabs);
+  check(error, 'snapshot times');
+  return (data ?? []).map(r => ({ tab: r.tab as TabKey, fetchedAt: String(r.fetched_at) }));
+}
+
 // Pesquisa e Typeform são grandes: cada leitor pede só as abas que usa.
 export async function loadSnapshots(tabs?: TabKey[]): Promise<Partial<Record<TabKey, Record<string, string>[]>>> {
   let q = supabase.from('mkt_sheet_snapshot').select('tab, rows');

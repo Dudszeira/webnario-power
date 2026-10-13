@@ -18,6 +18,7 @@ import type { MarketingView } from '@/lib/marketing/view';
 import EditionTab from './EditionTab';
 import CreativesTab from './CreativesTab';
 import ValidationTab from './ValidationTab';
+import SurveyTab from './SurveyTab';
 
 type Range = { from: string; to: string };
 const NO_RANGE: Range = { from: '', to: '' };
@@ -25,6 +26,12 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const todayBRT = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
 const ed = (n: number) => `#${String(n).padStart(3, '0')}`;
 const dm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+
+// Abas em dois níveis (tudo dentro de /admin/marketing, sem itens novos no menu).
+const GROUPS: { key: string; label: string; tabs: { key: string; label: string }[] }[] = [
+  { key: 'resultado', label: 'Resultado', tabs: [{ key: 'edicao', label: 'Edição' }, { key: 'criativos', label: 'Criativos' }, { key: 'validacao', label: 'Validação' }] },
+  { key: 'leads', label: 'Leads', tabs: [{ key: 'pesquisa', label: 'Pesquisa' }] },
+];
 
 // label: telas largas · short: notebook · mini: celular
 function quickRanges(): { key: string; label: string; short: string; mini: string; range: Range }[] {
@@ -56,6 +63,9 @@ export default function MarketingDashboard() {
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [query, setQuery] = useState(''); // filtros da última carga + versão: as abas refazem a busca quando muda
+  const [group, setGroup] = useState('resultado');
+  const [tab, setTab] = useState('edicao');
   const seq = useRef(0);
   const warned = useRef<Record<string, true>>({});
 
@@ -71,6 +81,7 @@ export default function MarketingDashboard() {
       if (id !== seq.current) return null;
       if (!res.ok) { toast.error(body.error ?? 'Erro ao carregar'); return null; }
       setView(body); setSelected(body.selected);
+      setQuery(`${q.toString()}&v=${id}`);
       return body as MarketingView;
     } catch {
       if (id === seq.current) toast.error('Não foi possível carregar os dados');
@@ -221,16 +232,25 @@ export default function MarketingDashboard() {
           )}
 
           {view && (
-            <Tabs defaultValue="edicao" aria-busy={loading} className={`transition-opacity ${loading ? 'opacity-60' : ''}`}>
-              <TabsList>
-                <TabsTrigger value="edicao">Edição</TabsTrigger>
-                <TabsTrigger value="criativos">Criativos</TabsTrigger>
-                <TabsTrigger value="validacao">Validação</TabsTrigger>
-              </TabsList>
-              <TabsContent value="edicao"><EditionTab key={view.selected[0]} view={view} onSaved={() => load(selected, range)} /></TabsContent>
-              <TabsContent value="criativos"><CreativesTab view={view} onSaved={() => load(selected, range)} /></TabsContent>
-              <TabsContent value="validacao"><ValidationTab view={view} /></TabsContent>
-            </Tabs>
+            <div aria-busy={loading} className={`flex flex-col gap-3 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+              <div role="group" aria-label="Grupo de abas" className="inline-flex h-9 max-w-full items-center overflow-x-auto rounded-lg border border-border bg-input/20 p-0.5">
+                {GROUPS.map(g => (
+                  <button key={g.key} type="button" aria-pressed={g.key === group} onClick={() => { setGroup(g.key); setTab(g.tabs[0].key); }}
+                    className={`h-8 shrink-0 rounded-md px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60 ${g.key === group ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+              <Tabs value={tab} onValueChange={v => setTab(String(v))}>
+                <TabsList variant="line">
+                  {GROUPS.filter(g => g.key === group)[0].tabs.map(t => <TabsTrigger key={t.key} value={t.key}>{t.label}</TabsTrigger>)}
+                </TabsList>
+                <TabsContent value="edicao"><EditionTab key={view.selected[0]} view={view} onSaved={() => load(selected, range)} /></TabsContent>
+                <TabsContent value="criativos"><CreativesTab view={view} onSaved={() => load(selected, range)} /></TabsContent>
+                <TabsContent value="validacao"><ValidationTab view={view} /></TabsContent>
+                <TabsContent value="pesquisa"><SurveyTab query={query} /></TabsContent>
+              </Tabs>
+            </div>
           )}
         </div>
       </SidebarInset>
