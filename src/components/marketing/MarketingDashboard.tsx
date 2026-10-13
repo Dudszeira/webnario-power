@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { addDays } from '@/lib/marketing/parse';
 import type { MarketingView } from '@/lib/marketing/view';
 import EditionTab from './EditionTab';
+import { editionKind } from '@/lib/marketing/editions';
 import CreativesTab from './CreativesTab';
 import ValidationTab from './ValidationTab';
 import SurveyTab from './SurveyTab';
@@ -175,14 +176,19 @@ export default function MarketingDashboard() {
                 <ChevronDown aria-hidden className="size-3.5 text-muted-foreground" />
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Edições · mais recentes primeiro</DropdownMenuLabel>
-                  {editionsDesc.map(e => (
-                    <DropdownMenuCheckboxItem key={e.number} checked={selected.indexOf(e.number) >= 0} onCheckedChange={() => toggle(e.number)} className="tabular-nums">
-                      {ed(e.number)} <span className="text-muted-foreground">· {dm(e.liveDate)}</span>
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuGroup>
+                {[
+                  { label: 'Pago · mais recentes primeiro', list: editionsDesc.filter(e => editionKind(e.number) === 'pago') },
+                  { label: 'Histórico NF10K', list: editionsDesc.filter(e => editionKind(e.number) === 'nf10k') },
+                ].filter(g => g.list.length).map(g => (
+                  <DropdownMenuGroup key={g.label}>
+                    <DropdownMenuLabel>{g.label}</DropdownMenuLabel>
+                    {g.list.map(e => (
+                      <DropdownMenuCheckboxItem key={e.number} checked={selected.indexOf(e.number) >= 0} onCheckedChange={() => toggle(e.number)} className="tabular-nums">
+                        {ed(e.number)} <span className="text-muted-foreground">· {dm(e.liveDate)}</span>
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuGroup>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -254,7 +260,7 @@ export default function MarketingDashboard() {
                 <TabsList variant="line">
                   {GROUPS.filter(g => g.key === group)[0].tabs.map(t => <TabsTrigger key={t.key} value={t.key}>{t.label}</TabsTrigger>)}
                 </TabsList>
-                <TabsContent value="edicao"><EditionTab key={view.selected[0]} view={view} onSaved={() => load(selected, range)} /></TabsContent>
+                <TabsContent value="edicao"><EditionTab key={view.selected[0]} view={view} query={query} onSaved={() => load(selected, range)} /></TabsContent>
                 <TabsContent value="criativos"><CreativesTab view={view} onSaved={() => load(selected, range)} /></TabsContent>
                 <TabsContent value="validacao"><ValidationTab view={view} /></TabsContent>
                 <TabsContent value="pesquisa"><SurveyTab query={query} /></TabsContent>

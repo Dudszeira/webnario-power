@@ -1,7 +1,9 @@
 // Dados de cada aba do painel (/api/marketing/data?tab=...). Só servidor: calcula só a aba pedida
 // e lê só as abas da planilha que ela usa (Visão Geral sempre, para montar as edições).
-import type { CaptureRow, DateRange, EditionConfig, MetaAdDay, OverviewRow, SaleRow, SurveyRow } from './types.ts';
-import { toApplicationRows, toCaptureRows, toOverviewRows, toSaleRows, toScheduleRows, toSurveyRows, type TabKey } from './sheet-rows.ts';
+import type { CaptureRow, DateRange, EditionConfig, MetaAdDay, OverviewCheck, OverviewRow, SaleRow, SurveyRow } from './types.ts';
+import {
+  toApplicationRows, toCaptureRows, toOverviewRows, toSaleRows, toScheduleRows, toSurveyRows, type TabKey,
+} from './sheet-rows.ts';
 import { buildEditions, cycleStartAt, editionKind, indexCaptures } from './editions.ts';
 import { inRange } from './metrics.ts';
 import { latestSurveys, surveyTab, type SurveyTab } from './survey.ts';
@@ -11,18 +13,25 @@ import { buildDeals, dealsTab, type Deal, type DealsTab } from './deals.ts';
 import { buyersTab, salesTab, type BuyersTab, type SalesTab } from './sales.ts';
 import { apiTab, type ApiTab } from './api-leads.ts';
 import { disparosTab, type DisparosTab } from './disparos.ts';
-import { filterAds } from './full-funnel.ts';
+import { filterAds, fullFunnel, type FullFunnel } from './full-funnel.ts';
+import {
+  editionFunnel, webinarTable, type EditionFunnel, type WebinarTable,
+} from './breakdowns.ts';
 import { getMarketingSettings } from './settings.ts';
 import { TAB_TITLES } from './sync.ts';
-import { loadAdDays, loadDisparos, loadEditionOverrides, loadSnapshotTimes, loadSnapshots } from './store.ts';
+import {
+  loadAdDays, loadDisparos, loadEditionOverrides, loadMetaWindows, loadSnapshotTimes, loadSnapshots,
+} from './store.ts';
 import { loadLive } from './sources/platform.ts';
 
 export const PANEL_TABS = [
-  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores', 'api', 'disparos',
+  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores', 'api', 'disparos', 'edicao',
 ] as const;
 export type PanelTab = typeof PANEL_TABS[number];
 export const isPanelTab = (t: string): t is PanelTab => (PANEL_TABS as readonly string[]).indexOf(t) >= 0;
 export type TabOptions = { lists: boolean; renda: string; produto: string };
+
+export type EdicaoTab = { ticketApplies: boolean; funnel: EditionFunnel; webinars: WebinarTable; fullFunnel: FullFunnel };
 
 export type TabData = {
   pesquisa: SurveyTab;
@@ -33,6 +42,7 @@ export type TabData = {
   compradores: BuyersTab;
   api: ApiTab;
   disparos: DisparosTab;
+  edicao: EdicaoTab;
 };
 // Aba da planilha sem dados: a tela diz qual fonte falta, em vez de mostrar zeros.
 export type MissingSources = { missing: string[] };
@@ -47,6 +57,7 @@ const NEEDS: Record<PanelTab, TabKey[]> = {
   compradores: ['capture', 'sales', 'survey'],
   api: ['capture', 'survey', 'sales'],
   disparos: [],
+  edicao: ['capture', 'applications', 'schedule', 'sales', 'survey'],
 };
 
 // Linhas da planilha em memória da instância, por aba, enquanto o `fetched_at` do snapshot não muda.
@@ -171,6 +182,12 @@ function salesOf(c: Ctx): SaleRow[] {
   return typed(c.snap.sales, toSaleRows).filter(s => inSel(c, s.edition) && inRange(day(s.at), c.range));
 }
 
+const sheetChecks = (c: Ctx) => {
+  const out: Record<number, OverviewCheck | null> = {};
+  c.eds.forEach(e => { const ov = c.overview.filter(o => o.edition === e.number)[0]; out[e.number] = ov ? ov.check : null; });
+  return out;
+};
+
 type Builder<K extends PanelTab> = (c: Ctx, o: TabOptions) => TabData[K] | Promise<TabData[K]>;
 const BUILDERS: { [K in PanelTab]: Builder<K> } = {
   pesquisa: (c, o) => surveyTab(c.leads, c.surveys, o.renda),
@@ -187,6 +204,19 @@ const BUILDERS: { [K in PanelTab]: Builder<K> } = {
   compradores: (c, o) => buyersTab(salesOf(c), c.surveys, o.produto, o.lists),
   api: c => apiTab(c.leads, c.surveys, salesOf(c)),
   disparos: async c => disparosTab(await loadDisparos(), c.range),
+  // Complementos da Edição: edição inteira (o período não se aplica), como o bloco "Fundo".
+  edicao: async c => {
+    const [live, meta, windows] = await Promise.all([liveByEdition(c), adsOf(c), loadMetaWindows(c.selected)]);
+    const apps = applications(c).filter(a => inSel(c, a.edition));
+    const ds = deals(c).filter(d => inSel(c, d.edition));
+    const ss = typed(c.snap.sales, toSaleRows).filter(s => s.approved && inSel(c, s.edition));
+    return {
+      ticketApplies: c.selected.some(n => editionKind(n) === 'pago'),
+      funnel: editionFunnel(apps, ds, ss),
+      webinars: webinarTable(c.eds, c.captures.filter(x => inSel(c, x.edition)), ds, ss, apps, live, sheetChecks(c)),
+      fullFunnel: fullFunnel(c.eds, meta.ads, c.captures, windows, meta.filter, c.today),
+    };
+  },
 };
 export async function buildTab(tab: PanelTab, selected: number[], range: DateRange | null, o: TabOptions): Promise<TabData[PanelTab] | MissingSources> {
   const c = await context(tab, selected, range);

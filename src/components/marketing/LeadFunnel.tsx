@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { MarketingView } from '@/lib/marketing/view';
 import type { BuyerMatch } from '@/lib/marketing/matching';
+import type { EditionFunnel } from '@/lib/marketing/breakdowns';
 
 const brl = (n: number | null) => (n === null ? '—' : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
 const int = (n: number) => n.toLocaleString('pt-BR');
@@ -62,7 +63,7 @@ function People({ stage }: { stage: Stage }) {
   );
 }
 
-export default function LeadFunnel({ view }: { view: MarketingView }) {
+export default function LeadFunnel({ view, funnel, ticketApplies }: { view: MarketingView; funnel: EditionFunnel | null; ticketApplies: boolean }) {
   const [open, setOpen] = useState<string | null>(null);
   const { front: f, back: b } = view;
   const tk = view.buyers.filter(x => x.product === 'Ingresso');
@@ -72,15 +73,29 @@ export default function LeadFunnel({ view }: { view: MarketingView }) {
   const whole = 'edição inteira';
   const sheetNote = 'A planilha traz só o total desta etapa, sem a lista de pessoas.';
 
-  const stages: Stage[] = [
+  const top: Stage[] = [
     { key: 'tickets', label: 'Ingressos vendidos', sub: view.range ? 'no período' : 'frente paga', value: f.sales, cost: costOf(f.spend, f.sales), costLabel: 'por ingresso', people: tk },
     { key: 'entered', label: 'Entraram na live', sub: 'compradores presentes', value: entered.length, cost: costOf(f.spend, entered.length), costLabel: 'por presente', people: entered },
     { key: 'pitch', label: 'Ficaram até o pitch', sub: 'compradores no pitch', value: pitch.length, cost: costOf(f.spend, pitch.length), costLabel: 'por pitch', people: pitch },
+  ];
+  const htStage: Stage = { key: 'ht', label: 'Vendas high ticket', sub: brl(b.highTicketRevenue), value: b.highTicketSales, cost: costOf(view.fullSpend, b.highTicketSales), costLabel: 'por venda', people: ht };
+  const rowsNote = 'Lista de pessoas nas abas Leads → Aplicações e Comercial → Agendamentos.';
+  // Com o complemento: fundo pelas linhas (Typeform/Pipedrive). Sem ele (só se o complemento falhar): Visão Geral.
+  // A etapa de vendas high ticket (com a lista de compradores) fica nos dois casos.
+  const back: Stage[] = funnel ? [
+    { key: 'apps', label: 'Aplicações', sub: `${whole} · Typeform`, value: funnel.applications, cost: costOf(view.fullSpend, funnel.applications), costLabel: 'por aplicação', people: null, note: rowsNote },
+    { key: 'qualified', label: 'Aplicação qualificada', sub: 'Power ou Start', value: funnel.qualified, cost: costOf(view.fullSpend, funnel.qualified), costLabel: 'por qualificada', people: null, note: rowsNote },
+    { key: 'scheduled', label: 'Calls agendadas', sub: `${whole} · Pipedrive`, value: funnel.scheduled, cost: costOf(view.fullSpend, funnel.scheduled), costLabel: 'por agendada', people: null, note: rowsNote },
+    { key: 'done', label: 'Calls realizadas', sub: `${whole} · Pipedrive`, value: funnel.done, cost: costOf(view.fullSpend, funnel.done), costLabel: 'por realizada', people: null, note: rowsNote },
+    htStage,
+  ] : [
     { key: 'apps', label: 'Aplicações', sub: whole, value: b.applications, cost: costOf(view.fullSpend, b.applications), costLabel: 'por aplicação', people: null, note: sheetNote },
     { key: 'scheduled', label: 'Calls agendadas', sub: whole, value: b.scheduled, cost: b.costPerScheduled, costLabel: 'por agendada', people: null, note: sheetNote },
     { key: 'done', label: 'Calls realizadas', sub: whole, value: b.done, cost: b.costPerDone, costLabel: 'por realizada', people: null, note: sheetNote },
-    { key: 'ht', label: 'Vendas high ticket', sub: brl(b.highTicketRevenue), value: b.highTicketSales, cost: costOf(view.fullSpend, b.highTicketSales), costLabel: 'por venda', people: ht },
+    htStage,
   ];
+  // Edições NF10K não vendiam ingresso: o funil começa nas aplicações.
+  const stages: Stage[] = (ticketApplies ? top : []).concat(back);
   const max = stages.reduce((m, s) => Math.max(m, s.value), 0);
   const width = (v: number) => (max > 0 ? Math.max(MIN_W, (v / max) * 100) : MIN_W);
   const active = stages.filter(s => s.key === open)[0];
@@ -102,7 +117,7 @@ export default function LeadFunnel({ view }: { view: MarketingView }) {
           const wb = next ? Math.min(wt, width(next.value)) : wt * 0.9;
           // Ingresso/presença seguem o período; aplicações em diante são da edição inteira.
           // Com período ativo, ou se a razão passar de 100%, as bases não se comparam: mostra "—".
-          const BACK = 3; // índice de "Aplicações"
+          const BACK = ticketApplies ? 3 : 0; // índice de "Aplicações"
           const mixed = !!view.range && i >= BACK && i - 1 < BACK;
           const raw = i ? ratio(s.value, stages[i - 1].value) : null;
           const pass = mixed || (raw !== null && raw > 1) ? null : raw;
@@ -145,6 +160,29 @@ export default function LeadFunnel({ view }: { view: MarketingView }) {
           );
         })}
       </ol>
+
+      {funnel && (
+        <div className="grid gap-4 border-t border-border p-3 sm:grid-cols-2">
+          {([['Power', funnel.power, 'bg-amber-400'], ['Start', funnel.start, 'bg-sky-400']] as [string, EditionFunnel['power'], string][]).map(([name, s, dot]) => {
+            const steps: [string, number][] = [['Qualificada', s.qualified], ['Agendada', s.scheduled], ['Realizada', s.done], ['Venda', s.sales]];
+            return (
+              <div key={name} className="flex flex-col gap-1.5">
+                <p className="flex items-center gap-1.5 text-xs font-semibold"><span aria-hidden className={`size-2 rounded-full ${dot}`} />{name}</p>
+                {steps.map(([label, v], i) => (
+                  <div key={label} className="grid grid-cols-[5.5rem_minmax(0,1fr)_4.5rem] items-center gap-2 text-xs">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span aria-hidden className="h-2 rounded-full bg-muted"><span className={`block h-full rounded-full ${dot}`} style={{ width: `${s.qualified ? Math.min(100, (v / s.qualified) * 100) : 0}%` }} /></span>
+                    <span className="text-right tabular-nums"><b>{v}</b> <span className="text-muted-foreground">{i ? pct(ratio(v, steps[i - 1][1])) : ''}</span></span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+          {funnel.desafioSales > 0 && (
+            <p className="text-[11px] text-muted-foreground sm:col-span-2">Desafio: {funnel.desafioSales} {funnel.desafioSales > 1 ? 'vendas' : 'venda'} (downsell, fora do funil de calls)</p>
+          )}
+        </div>
+      )}
 
       <div id="funnel-detail" role="region" aria-label="Detalhe da etapa" aria-live="polite">
         {active && (

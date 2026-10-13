@@ -5,6 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { MarketingView } from '@/lib/marketing/view';
 import LeadFunnel from './LeadFunnel';
+import type { EdicaoTab } from '@/lib/marketing/tabs';
+import { editionKind } from '@/lib/marketing/editions';
+import { FullFunnelTable, WebinarTableView } from './EditionExtras';
+import { useTabData } from './useTabData';
 
 const brl = (n: number | null) => (n === null ? '—' : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
 const dec = (n: number | null) => (n === null ? '—' : n.toLocaleString('pt-BR', { maximumFractionDigits: 2 }));
@@ -31,25 +35,34 @@ function CopyButton({ label, text }: { label: string; text: string }) {
   );
 }
 
-export default function EditionTab({ view, onSaved }: { view: MarketingView; onSaved: () => void }) {
+export default function EditionTab({ view, onSaved, query }: { view: MarketingView; onSaved: () => void; query: string }) {
   const { front: f, back: b } = view;
   const cfg = view.editions.find(e => e.number === view.selected[0]);
   const [saveError, setSaveError] = useState('');
   const [goals, setGoals] = useState({ cpaDream: cfg?.cpaDream ?? 25, cpaGood: cfg?.cpaGood ?? 35, cpaLimit: cfg?.cpaLimit ?? 45 });
+  const { data: extra, error: extraError } = useTabData<EdicaoTab>('edicao', query);
+  // Edições NF10K (#015–#020) não vendiam ingresso: métricas só do pago mostram "não se aplica".
+  const ticket = view.selected.some(n => editionKind(n) === 'pago');
+  const na = 'não se aplica';
+  const pending = <p role={extraError ? 'alert' : undefined} className={`text-xs ${extraError ? 'text-red-400' : 'text-muted-foreground'}`}>{extraError || 'Carregando…'}</p>;
 
   return (
     <div className="flex flex-col gap-6">
-      <LeadFunnel view={view} />
+      {/* O funil espera o complemento (linhas do Typeform/Pipedrive) para não trocar de etapas na frente da pessoa;
+          se o complemento falhar, cai para os totais da Visão Geral. */}
+      {extra || extraError
+        ? <LeadFunnel view={view} funnel={extra ? extra.funnel : null} ticketApplies={ticket} />
+        : <p className="py-6 text-center text-xs text-muted-foreground">Carregando funil…</p>}
 
       <section>
         <h2 className={sectionTitle}>Frente — ingresso</h2>
         <div className={grid}>
-          <Kpi label="Vendas" value={String(f.sales)} hint={brl(f.revenue)} />
+          <Kpi label="Vendas" value={ticket ? String(f.sales) : na} hint={ticket ? brl(f.revenue) : 'edições NF10K não vendiam ingresso'} />
           <Kpi label="Investimento" value={f.spendSource === 'nenhum' ? '—' : brl(f.spend)} hint={f.spendSource === 'meta' ? 'fonte: Meta' : f.spendSource === 'planilha' ? 'fonte: planilha (sem Meta)' : 'sem dados de investimento'} />
-          <Kpi label="ROAS" value={dec(f.roas)} />
-          <Kpi label="CPA da campanha" value={brl(f.cpa)} hint={`só anúncios que venderam: ${brl(f.cpaSellingAds)}`} />
-          <Kpi label="IC (pixel)" value={String(f.ic)} hint={`${brl(f.costPerIc)} cada — sinal, não é venda`} />
-          <Kpi label="Gasto sem venda" value={f.spendSource === 'meta' ? brl(f.spendNoSales) : '—'} hint={f.topNoSale ? `maior: ${f.topNoSale.family} (${brl(f.topNoSale.spend)})` : undefined} />
+          <Kpi label="ROAS" value={ticket ? dec(f.roas) : na} />
+          <Kpi label="CPA da campanha" value={ticket ? brl(f.cpa) : na} hint={ticket ? `só anúncios que venderam: ${brl(f.cpaSellingAds)}` : undefined} />
+          <Kpi label="IC (pixel)" value={ticket ? String(f.ic) : na} hint={ticket ? `${brl(f.costPerIc)} cada — sinal, não é venda` : undefined} />
+          <Kpi label="Gasto sem venda" value={!ticket ? na : f.spendSource === 'meta' ? brl(f.spendNoSales) : '—'} hint={ticket && f.topNoSale ? `maior: ${f.topNoSale.family} (${brl(f.topNoSale.spend)})` : undefined} />
         </div>
       </section>
 
@@ -62,6 +75,16 @@ export default function EditionTab({ view, onSaved }: { view: MarketingView; onS
           <Kpi label="Vendas high ticket" value={String(b.highTicketSales)} hint={brl(b.highTicketRevenue)} />
           <Kpi label="ROAS total" value={dec(b.roasTotal)} hint="ingresso + high ticket ÷ investimento" />
         </div>
+      </section>
+
+      <section>
+        <h2 className={sectionTitle}>Webinário a webinário <span className="font-normal normal-case tracking-normal">(edição inteira)</span></h2>
+        {extra ? <WebinarTableView data={extra.webinars} /> : pending}
+      </section>
+
+      <section>
+        <h2 className={sectionTitle}>Funil completo (Meta + planilha de UTMs)</h2>
+        {extra ? <FullFunnelTable data={extra.fullFunnel} /> : pending}
       </section>
 
       <section className="flex flex-wrap items-center gap-2">
