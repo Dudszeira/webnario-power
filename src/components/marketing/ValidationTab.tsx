@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { MarketingView } from '@/lib/marketing/view';
 import type { ReconRow } from '@/lib/marketing/reconcile';
 import { useTabData } from './useTabData';
+import { WarnNote, type Warned } from './ui';
 
 const MONEY = ['metaSpend', 'revenue'];
 function fmt(key: string, n: number | null): string {
@@ -24,7 +25,8 @@ function State({ r }: { r: ReconRow }) {
 }
 
 export default function ValidationTab({ view, query }: { view: MarketingView; query: string }) {
-  const { data: recon, error } = useTabData<ReconRow[]>('validacao', query);
+  const { data: payload, error } = useTabData<{ rows: ReconRow[] } & Warned>('validacao', query);
+  const recon = payload ? payload.rows : null;
   const ht = view.buyers.filter(b => b.product !== 'Ingresso');
   const tk = view.buyers.filter(b => b.product === 'Ingresso');
   const share = (list: typeof ht, pred: (b: (typeof ht)[number]) => boolean) =>
@@ -34,6 +36,7 @@ export default function ValidationTab({ view, query }: { view: MarketingView; qu
     <div className="flex flex-col gap-6">
       <section>
         <h2 className="mb-2 text-sm font-medium">Conferência entre fontes <span className="text-xs font-normal text-muted-foreground">· oficial (plataforma, Meta, linhas da planilha) × números digitados na Visão Geral</span></h2>
+        <WarnNote warn={payload?.warn} />
         {!recon ? (
           <p role={error ? 'alert' : undefined} className={`text-xs ${error ? 'text-red-400' : 'text-muted-foreground'}`}>{error || 'Carregando…'}</p>
         ) : !recon.length ? (

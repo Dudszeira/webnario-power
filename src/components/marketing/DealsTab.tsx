@@ -3,7 +3,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { STATUS_LABEL, type CatCounts, type CostRow, type DealStatus, type DealsTab as Data } from '@/lib/marketing/deals';
 import { useTabData } from './useTabData';
-import { BarList, Kpi, PeopleList, TabState, brl, dm, ed, int, kpiGrid, pct, ratio, sectionTitle } from './ui';
+import { BarList, Kpi, PeopleList, TabState, brl, dm, ed, int, kpiGrid, pct, ratio, sectionTitle, WarnNote, type Warned } from './ui';
 
 const CATS: [Exclude<keyof CatCounts, 'total'>, string, string][] = [
   ['perdSem', 'perd. sem call', 'text-red-300'], ['perdCall', 'perd. após call', 'text-red-300'],
@@ -38,12 +38,13 @@ function CostCells({ r }: { r: CostRow }) {
 }
 
 export default function DealsTab({ query }: { query: string }) {
-  const { data: d, loading, error } = useTabData<Data>('agendamentos', query);
+  const { data: d, loading, error } = useTabData<Data & Warned>('agendamentos', query);
   if (!d) return <TabState loading={loading} error={error} />;
   const momentTotal = (m: { before: CatCounts; onDay: CatCounts; after: CatCounts }) => m.before.total + m.onDay.total + m.after.total;
   const statusBars = d.status.map(s => ({ key: STATUS_LABEL[s.key as DealStatus] ?? s.key, count: s.count }));
   return (
     <div className={`flex flex-col gap-6 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+      <WarnNote warn={d.warn} />
       <section>
         <h2 className={sectionTitle}>Agendamentos (Pipedrive)</h2>
         <div className={kpiGrid}>

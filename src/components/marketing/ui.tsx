@@ -33,6 +33,13 @@ export function Kpi({ label, value, hint, why }: { label: string; value: string;
   );
 }
 
+// Fontes opcionais sem dados (`warn` vem do servidor): as colunas que dependem delas mostram "—".
+export type Warned = { warn?: string[] };
+export function WarnNote({ warn }: Warned) {
+  if (!warn || !warn.length) return null;
+  return <p role="status" className="text-[11px] text-amber-300">Sem dados de: {warn.join(', ')} — colunas dependentes mostram —</p>;
+}
+
 export function TabState({ loading, error }: { loading: boolean; error: string }) {
   return (
     <p role={error ? 'alert' : undefined} className={`py-12 text-center text-sm ${error ? 'text-red-400' : 'text-muted-foreground'}`}>

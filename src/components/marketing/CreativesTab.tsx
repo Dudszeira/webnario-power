@@ -8,6 +8,7 @@ import type { MarketingView } from '@/lib/marketing/view';
 import type { CreativeStats } from '@/lib/marketing/metrics';
 import { sortCreatives, type CreativeExtra, type CreativeSort } from '@/lib/marketing/breakdowns';
 import { useTabData } from './useTabData';
+import { WarnNote, type Warned } from './ui';
 
 const brl = (n: number | null) => (n === null ? '—' : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
 const pct = (n: number | null) => (n === null ? '—' : `${(n * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`);
@@ -21,7 +22,8 @@ export default function CreativesTab({ view, onSaved, query }: { view: Marketing
   const [alias, setAlias] = useState({ raw: '', family: '' });
   const [saveError, setSaveError] = useState('');
   const [sort, setSort] = useState<CreativeSort>('vendas');
-  const { data: extra, error: extraError } = useTabData<CreativeExtra[]>('criativos', query);
+  const { data: payload, error: extraError } = useTabData<{ rows: CreativeExtra[] } & Warned>('criativos', query);
+  const extra = payload ? payload.rows : null;
 
   const byFamily: Record<string, CreativeExtra> = {};
   (extra ?? []).forEach(x => { byFamily[x.family] = x; });
@@ -41,6 +43,7 @@ export default function CreativesTab({ view, onSaved, query }: { view: Marketing
       </div>
 
       <p className="-mt-3 text-[11px] text-muted-foreground">Vendas, gasto, CPA, IC e taxas: Meta + ingressos da 1ª edição selecionada. Leads, 5k+, agendamentos e vendas high ticket: todas as edições selecionadas.</p>
+      <WarnNote warn={payload?.warn} />
       {extraError && <p role="alert" className="-mt-3 text-xs text-red-400">{extraError}</p>}
 
       <div className="overflow-x-auto">

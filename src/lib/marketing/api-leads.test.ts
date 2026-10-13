@@ -29,3 +29,8 @@ test('apiTab aggregates API leads by base, version and shot', () => {
   assert.deepEqual(t.bestDay, { key: '2026-10-10', count: 2 });
   assert.deepEqual([t.sales, t.revenue], [1, 997]);
 });
+
+test('apiTab without survey source: qualified and responded are null, not 0', () => {
+  const t = apiTab([cap({ email: 'a@x' })], {}, [], false);
+  assert.deepEqual([t.leads, t.qualified, t.responded, t.bases[0].qualified, t.bases[0].responded, t.matrix['base-2024|v1'].qualified], [1, null, null, null, null, null]);
+});

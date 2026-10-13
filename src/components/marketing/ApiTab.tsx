@@ -4,22 +4,25 @@ import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { ApiAgg, ApiTab as Data } from '@/lib/marketing/api-leads';
 import { useTabData } from './useTabData';
-import { BarList, DistChart, Kpi, TabState, brl, dm, int, kpiGrid, pct, ratio, sectionTitle } from './ui';
+import { BarList, DistChart, Kpi, TabState, brl, dm, int, kpiGrid, pct, ratio, sectionTitle, WarnNote, type Warned } from './ui';
 
-const bars = (xs: ApiAgg[]) => xs.map(x => ({ key: x.key, count: x.leads, note: `${x.qualified} qualif. (${pct(ratio(x.qualified, x.leads), 0)})` }));
+const q = (n: number | null) => (n === null ? '—' : String(n)); // sem a pesquisa: "—", nunca 0
+const qr = (n: number | null, of: number, digits?: number) => (n === null ? '—' : pct(ratio(n, of), digits));
+const bars = (xs: ApiAgg[]) => xs.map(x => ({ key: x.key, count: x.leads, note: `${q(x.qualified)} qualif. (${qr(x.qualified, x.leads, 0)})` }));
 
 export default function ApiTab({ query }: { query: string }) {
-  const { data: d, loading, error } = useTabData<Data>('api', query);
+  const { data: d, loading, error } = useTabData<Data & Warned>('api', query);
   if (!d) return <TabState loading={loading} error={error} />;
   if (!d.leads) return <p className="py-12 text-center text-sm text-muted-foreground">Nenhum lead com utm_source = api nas edições selecionadas.</p>;
   const cell = (b: string, v: string) => d.matrix[`${b}|${v}`];
   return (
     <div className={`flex flex-col gap-6 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+      <WarnNote warn={d.warn} />
       <section>
         <h2 className={sectionTitle}>Leads via API (WhatsApp)</h2>
         <div className={kpiGrid}>
           <Kpi label="Leads via API" value={int(d.leads)} hint={`${pct(ratio(d.leads, d.totalLeads))} dos ${int(d.totalLeads)} leads${d.bestDay ? ` · melhor dia ${dm(d.bestDay.key)} (${d.bestDay.count})` : ''}`} />
-          <Kpi label="Qualificados 5k+" value={int(d.qualified)} hint={`${pct(ratio(d.qualified, d.leads))} · ${d.responded} responderam`} />
+          <Kpi label="Qualificados 5k+" value={int(d.qualified)} why="Fonte da pesquisa sem dados" hint={`${qr(d.qualified, d.leads)} · ${q(d.responded)} responderam`} />
           <Kpi label="Bases" value={int(d.bases.length)} hint={d.bases.slice(0, 3).map(b => `${b.key} ${b.leads}`).join(' · ')} />
           <Kpi label="Versões" value={int(d.versions.length)} hint={d.versions.map(v => `${v.key} ${v.leads}`).join(' · ')} />
           <Kpi label="Vendas" value={int(d.sales)} hint={d.sales ? brl(d.revenue) : 'nenhuma venda de lead da API'} />
@@ -47,15 +50,15 @@ export default function ApiTab({ query }: { query: string }) {
                   <TableCell className="font-medium">{b.key}</TableCell>
                   {d.versions.map(v => {
                     const c = cell(b.key, v.key);
-                    return <TableCell key={v.key} className="text-center tabular-nums">{c ? <>{c.leads} <span className="text-emerald-400">({c.qualified})</span></> : <span className="text-muted-foreground">·</span>}</TableCell>;
+                    return <TableCell key={v.key} className="text-center tabular-nums">{c ? <>{c.leads} <span className="text-emerald-400">({q(c.qualified)})</span></> : <span className="text-muted-foreground">·</span>}</TableCell>;
                   })}
-                  <TableCell className="text-center font-semibold tabular-nums">{b.leads} <span className="text-emerald-400">({b.qualified})</span></TableCell>
+                  <TableCell className="text-center font-semibold tabular-nums">{b.leads} <span className="text-emerald-400">({q(b.qualified)})</span></TableCell>
                 </TableRow>
               ))}
               <TableRow className="font-semibold">
                 <TableCell>Total</TableCell>
-                {d.versions.map(v => <TableCell key={v.key} className="text-center tabular-nums">{v.leads} <span className="text-emerald-400">({v.qualified})</span></TableCell>)}
-                <TableCell className="text-center tabular-nums">{d.leads} <span className="text-emerald-400">({d.qualified})</span></TableCell>
+                {d.versions.map(v => <TableCell key={v.key} className="text-center tabular-nums">{v.leads} <span className="text-emerald-400">({q(v.qualified)})</span></TableCell>)}
+                <TableCell className="text-center tabular-nums">{d.leads} <span className="text-emerald-400">({q(d.qualified)})</span></TableCell>
               </TableRow>
             </TableBody>
           </Table>

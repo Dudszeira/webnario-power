@@ -44,25 +44,33 @@ export type TabData = {
   api: ApiTab;
   disparos: DisparosTab;
   edicao: EdicaoTab;
-  criativos: CreativeExtra[];
-  validacao: ReconRow[];
+  criativos: { rows: CreativeExtra[] };
+  validacao: { rows: ReconRow[] };
 };
+// Fontes opcionais sem dados: `warn` lista os títulos; as métricas que dependem delas vêm null ("—").
+export type WithWarn<T> = T & { warn?: string[] };
 // Aba da planilha sem dados: a tela diz qual fonte falta, em vez de mostrar zeros.
 export type MissingSources = { missing: string[] };
 
 // Abas da planilha que cada aba do painel lê, além da Visão Geral. Ao vivo e Disparos não leem a Captação.
+// Obrigatória ausente = a aba inteira vira aviso da fonte; opcional ausente = a aba abre e a métrica fica "—".
 const NEEDS: Record<PanelTab, TabKey[]> = {
   pesquisa: ['capture', 'survey'],
   aplicacoes: ['capture', 'applications'],
   aovivo: [],
-  agendamentos: ['capture', 'schedule', 'sales', 'survey'],
+  agendamentos: ['capture', 'schedule', 'sales'],
   vendas: ['capture', 'sales'],
   compradores: ['capture', 'sales', 'survey'],
-  api: ['capture', 'survey', 'sales'],
+  api: ['capture', 'sales'],
   disparos: [],
-  edicao: ['capture', 'applications', 'schedule', 'sales', 'survey'],
-  criativos: ['capture', 'survey', 'schedule', 'sales'],
-  validacao: ['capture', 'applications', 'schedule', 'sales', 'survey'],
+  edicao: ['capture', 'applications', 'schedule', 'sales'],
+  criativos: ['capture', 'schedule', 'sales'],
+  validacao: ['capture', 'applications', 'schedule', 'sales'],
+};
+// A pesquisa só enriquece (renda, % qualificado) nestas abas.
+const OPTIONAL: Record<PanelTab, TabKey[]> = {
+  pesquisa: [], aplicacoes: [], aovivo: [], agendamentos: ['survey'], vendas: [], compradores: [], api: ['survey'],
+  disparos: [], edicao: ['survey'], criativos: ['survey'], validacao: ['survey'],
 };
 
 // Linhas da planilha em memória da instância, por aba, enquanto o `fetched_at` do snapshot não muda.
@@ -98,6 +106,8 @@ export type Ctx = {
   leads: CaptureRow[];      // Captação das edições selecionadas, no período
   overview: OverviewRow[];
   surveys: Record<string, SurveyRow>;
+  hasSurvey: boolean;       // false = fonte da pesquisa vazia (opcional nesta aba)
+  warn: string[];           // títulos das fontes opcionais sem dados
 };
 
 const todayBRT = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
@@ -106,10 +116,13 @@ const inSel = (c: Ctx, n: number | null) => n !== null && c.selected.indexOf(n) 
 
 async function context(tab: PanelTab, selectedIn: number[], range: DateRange | null): Promise<Ctx | MissingSources> {
   const today = todayBRT();
-  const need = (['overview'] as TabKey[]).concat(NEEDS[tab]);
+  const required = (['overview'] as TabKey[]).concat(NEEDS[tab]);
+  const need = required.concat(OPTIONAL[tab]);
   const [snap, overrides] = await Promise.all([snapshots(need), loadEditionOverrides()]);
-  const missing = need.filter(t => { const e = snap[t]; return !e || !e.recs.length; }).map(t => TAB_TITLES[t]);
+  const empty = (t: TabKey) => { const e = snap[t]; return !e || !e.recs.length; };
+  const missing = required.filter(empty).map(t => TAB_TITLES[t]);
   if (missing.length) return { missing };
+  const warn = OPTIONAL[tab].filter(empty).map(t => TAB_TITLES[t]);
   const captures = typed(snap.capture, toCaptureRows);
   const overview = typed(snap.overview, toOverviewRows);
   const editions = buildEditions(overview, overrides, today);
@@ -117,14 +130,14 @@ async function context(tab: PanelTab, selectedIn: number[], range: DateRange | n
   const selected = selectedIn.length ? selectedIn : editions.slice(-1).map(e => e.number);
   let surveys: Record<string, SurveyRow> = {};
   const sv = snap.survey, cap = snap.capture;
-  if (sv && cap) {
+  if (sv && cap && sv.recs.length) {
     const key = `${sv.at}|${cap.at}`;
     if (!surveyMemo || surveyMemo.key !== key) surveyMemo = { key, value: latestSurveys(typed(sv, toSurveyRows), cycleStartAt(captures)) };
     surveys = surveyMemo.value;
   }
   const ctx: Ctx = {
     today, range, editions, selected, eds: editions.filter(e => selected.indexOf(e.number) >= 0),
-    snap, captures, overview, leads: [], surveys,
+    snap, captures, overview, leads: [], surveys, hasSurvey: !empty('survey'), warn,
   };
   ctx.leads = captures.filter(c => inSel(ctx, c.edition) && inRange(day(c.at), range));
   return ctx;
@@ -136,6 +149,9 @@ function applications(c: Ctx): Application[] {
 
 // Presença de lives que já passaram não muda mais: fica na memória da instância.
 const liveMemo: Record<string, LiveStats | null> = {};
+// A live do dia segue acontecendo: memória curta (60 s) para não paginar a tabela de eventos a cada carga.
+const LIVE_TODAY_TTL_MS = 60_000;
+const liveTodayMemo: Record<string, { at: number; stats: LiveStats | null }> = {};
 
 // Presença oficial por edição (plataforma). Edição sem evento ou com erro = null ("—" na tela).
 async function liveByEdition(c: Ctx): Promise<Record<number, LiveStats | null>> {
@@ -143,11 +159,15 @@ async function liveByEdition(c: Ctx): Promise<Record<number, LiveStats | null>> 
   await Promise.all(c.eds.map(async e => {
     const past = e.liveDate < c.today;
     if (past && e.liveDate in liveMemo) { out[e.number] = liveMemo[e.liveDate]; return; }
+    const isToday = e.liveDate === c.today;
+    const hit = isToday ? liveTodayMemo[e.liveDate] : undefined;
+    if (hit && Date.now() - hit.at < LIVE_TODAY_TTL_MS) { out[e.number] = hit.stats; return; }
     try {
       const l = await loadLive(e.liveDate);
       const people = presenceFromEvents(l.events);
       out[e.number] = people.length ? liveStats(people, l.liveStartMs, l.pitchSeconds) : null;
       if (past) liveMemo[e.liveDate] = out[e.number];
+      else if (isToday) liveTodayMemo[e.liveDate] = { at: Date.now(), stats: out[e.number] };
     } catch {
       out[e.number] = null; // erro não vai para a memória: tenta de novo na próxima
     }
@@ -207,7 +227,7 @@ const BUILDERS: { [K in PanelTab]: Builder<K> } = {
   agendamentos: async (c, o) => dealsTab(deals(c), c.eds, spendByEdition(c, (await adsOf(c)).ads), c.range, o.lists),
   vendas: (c, o) => salesTab(c.leads, salesOf(c), o.lists),
   compradores: (c, o) => buyersTab(salesOf(c), c.surveys, o.produto, o.lists),
-  api: c => apiTab(c.leads, c.surveys, salesOf(c)),
+  api: c => apiTab(c.leads, c.surveys, salesOf(c), c.hasSurvey),
   disparos: async c => disparosTab(await loadDisparos(), c.range),
   // Complementos da Edição: edição inteira (o período não se aplica), como o bloco "Fundo".
   edicao: async c => {
@@ -223,10 +243,12 @@ const BUILDERS: { [K in PanelTab]: Builder<K> } = {
     };
   },
   // Todas as edições selecionadas, no período (como o dash antigo). As colunas do Meta seguem a 1ª edição.
-  criativos: async c => creativeExtras(
-    c.leads, c.surveys, deals(c).filter(d => inSel(c, d.edition) && inRange(d.scheduledAt, c.range)),
-    salesOf(c), await loadAliases(),
-  ),
+  criativos: async c => ({
+    rows: creativeExtras(
+      c.leads, c.surveys, deals(c).filter(d => inSel(c, d.edition) && inRange(d.scheduledAt, c.range)),
+      salesOf(c), await loadAliases(), c.hasSurvey,
+    ),
+  }),
   // Conferência por edição: oficial (plataforma, Meta, linhas da planilha) × números digitados na Visão Geral.
   validacao: async c => {
     const [live, meta] = await Promise.all([liveByEdition(c), adsOf(c)]);
@@ -237,12 +259,13 @@ const BUILDERS: { [K in PanelTab]: Builder<K> } = {
       const n = e.number, st = live[n] ?? null;
       const leadsN = c.captures.filter(x => x.edition === n).length;
       const win = meta.ads.filter(a => a.date >= e.windowStart && a.date <= e.windowEnd);
+      const metaSum = win.reduce((t, a) => t + a.spend, 0);
       const myDeals = ds.filter(d => d.edition === n);
       const mySales = ss.filter(s => s.approved && s.edition === n);
       const official: OfficialNumbers = {
         peak: st ? st.peak : null,
         attendance: st && leadsN ? (st.peak / leadsN) * 100 : null,
-        metaSpend: win.length ? win.reduce((t, a) => t + a.spend, 0) : null,
+        metaSpend: metaSum > 0 ? metaSum : null, // mesma regra de spendByEdition: sem gasto positivo = null
         applications: apps.filter(a => a.complete && a.edition === n).length,
         scheduled: myDeals.length,
         done: myDeals.filter(dealDone).length,
@@ -251,11 +274,12 @@ const BUILDERS: { [K in PanelTab]: Builder<K> } = {
       };
       reconcileEdition(n, official, checks[n]).forEach(r => rows.push(r));
     });
-    return rows;
+    return { rows };
   },
 };
-export async function buildTab(tab: PanelTab, selected: number[], range: DateRange | null, o: TabOptions): Promise<TabData[PanelTab] | MissingSources> {
+export async function buildTab(tab: PanelTab, selected: number[], range: DateRange | null, o: TabOptions): Promise<WithWarn<TabData[PanelTab]> | MissingSources> {
   const c = await context(tab, selected, range);
   if ('missing' in c) return c;
-  return BUILDERS[tab](c, o);
+  const data = await BUILDERS[tab](c, o);
+  return c.warn.length ? { ...data, warn: c.warn } : data;
 }

@@ -102,13 +102,13 @@ export function webinarTable(
 }
 
 export type CreativeExtra = {
-  family: string; leads: number; qualified: number; qualifiedRate: number | null; scheduled: number;
+  family: string; leads: number; qualified: number | null; qualifiedRate: number | null; scheduled: number;
   sales: number; power: number; start: number; desafio: number; // vendas high ticket (sales = todas, sem reembolso)
 };
 
 // Por família de criativo: leads da captação, % 5k+ na pesquisa, agendamentos e vendas high ticket por produto.
 export function creativeExtras(
-  leads: CaptureRow[], surveys: Record<string, SurveyRow>, deals: Deal[], sales: SaleRow[], aliases: Record<string, string>,
+  leads: CaptureRow[], surveys: Record<string, SurveyRow>, deals: Deal[], sales: SaleRow[], aliases: Record<string, string>, hasSurvey = true,
 ): CreativeExtra[] {
   const m: Record<string, CreativeExtra> = Object.create(null);
   const list: CreativeExtra[] = [];
@@ -122,7 +122,7 @@ export function creativeExtras(
     const x = get(l.utmContent);
     x.leads++;
     const s = l.email ? surveys[l.email] : undefined;
-    if (s && qualified5k(s.renda)) x.qualified++;
+    if (s && qualified5k(s.renda)) (x.qualified as number)++;
   });
   deals.forEach(d => { get(d.creative).scheduled++; });
   sales.filter(s => s.approved).forEach(s => {
@@ -131,14 +131,17 @@ export function creativeExtras(
     const p = normProd(s.product);
     if (p === 'power') x.power++; else if (p === 'powerStart') x.start++; else if (p === 'desafio') x.desafio++;
   });
-  list.forEach(x => { x.qualifiedRate = x.leads ? x.qualified / x.leads : null; });
+  // Sem a fonte da pesquisa, qualificação é desconhecida (null), não 0.
+  list.forEach(x => {
+    if (!hasSurvey) { x.qualified = null; x.qualifiedRate = null; } else x.qualifiedRate = x.leads ? (x.qualified as number) / x.leads : null;
+  });
   return list;
 }
 
 // Ordenação do dash antigo: vendas → agendamentos → leads; agendamentos → leads; qualificação → leads; leads → vendas.
 export type CreativeSort = 'vendas' | 'agend' | 'qualif' | 'leads';
 export function sortCreatives<T extends { x: CreativeExtra | null }>(rows: T[], s: CreativeSort): T[] {
-  const v = (r: T, k: 'sales' | 'scheduled' | 'qualified' | 'leads') => (r.x ? r.x[k] : 0);
+  const v = (r: T, k: 'sales' | 'scheduled' | 'qualified' | 'leads') => (r.x ? r.x[k] ?? 0 : 0);
   return rows.slice().sort((a, b) =>
     s === 'qualif' ? v(b, 'qualified') - v(a, 'qualified') || v(b, 'leads') - v(a, 'leads')
       : s === 'agend' ? v(b, 'scheduled') - v(a, 'scheduled') || v(b, 'leads') - v(a, 'leads')

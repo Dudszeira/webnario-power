@@ -9,6 +9,7 @@ import type { EdicaoTab } from '@/lib/marketing/tabs';
 import { editionKind } from '@/lib/marketing/editions';
 import { FullFunnelTable, WebinarTableView } from './EditionExtras';
 import { useTabData } from './useTabData';
+import { WarnNote, type Warned } from './ui';
 
 const brl = (n: number | null) => (n === null ? '—' : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
 const dec = (n: number | null) => (n === null ? '—' : n.toLocaleString('pt-BR', { maximumFractionDigits: 2 }));
@@ -40,7 +41,7 @@ export default function EditionTab({ view, onSaved, query }: { view: MarketingVi
   const cfg = view.editions.find(e => e.number === view.selected[0]);
   const [saveError, setSaveError] = useState('');
   const [goals, setGoals] = useState({ cpaDream: cfg?.cpaDream ?? 25, cpaGood: cfg?.cpaGood ?? 35, cpaLimit: cfg?.cpaLimit ?? 45 });
-  const { data: extra, error: extraError } = useTabData<EdicaoTab>('edicao', query);
+  const { data: extra, error: extraError } = useTabData<EdicaoTab & Warned>('edicao', query);
   // Edições NF10K (#015–#020) não vendiam ingresso: métricas só do pago mostram "não se aplica".
   const ticket = view.selected.some(n => editionKind(n) === 'pago');
   const na = 'não se aplica';
@@ -48,6 +49,7 @@ export default function EditionTab({ view, onSaved, query }: { view: MarketingVi
 
   return (
     <div className="flex flex-col gap-6">
+      <WarnNote warn={extra?.warn} />
       {/* O funil espera o complemento (linhas do Typeform/Pipedrive) para não trocar de etapas na frente da pessoa;
           se o complemento falhar, cai para os totais da Visão Geral. */}
       {extra || extraError

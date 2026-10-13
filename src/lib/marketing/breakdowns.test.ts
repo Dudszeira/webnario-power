@@ -94,3 +94,8 @@ test('sortCreatives keeps the old tie-breaks', () => {
   assert.equal(ids('qualif'), 'cbad');
   assert.equal(ids('leads'), 'dbac');
 });
+
+test('creativeExtras without survey source: qualified and rate are null, not 0', () => {
+  const x = creativeExtras([{ ...lead(22), utmContent: 'img_10', email: 'a@x' }], {}, [], [], {}, false);
+  assert.deepEqual([x[0].leads, x[0].qualified, x[0].qualifiedRate], [1, null, null]);
+});
