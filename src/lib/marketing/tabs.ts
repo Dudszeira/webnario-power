@@ -1,6 +1,6 @@
 // Dados de cada aba do painel (/api/marketing/data?tab=...). Só servidor: calcula só a aba pedida
 // e lê só as abas da planilha que ela usa (Visão Geral sempre, para montar as edições).
-import type { CaptureRow, DateRange, EditionConfig, MetaAdDay, OverviewRow, SurveyRow } from './types.ts';
+import type { CaptureRow, DateRange, EditionConfig, MetaAdDay, OverviewRow, SaleRow, SurveyRow } from './types.ts';
 import { toApplicationRows, toCaptureRows, toOverviewRows, toSaleRows, toScheduleRows, toSurveyRows, type TabKey } from './sheet-rows.ts';
 import { buildEditions, cycleStartAt, editionKind, indexCaptures } from './editions.ts';
 import { inRange } from './metrics.ts';
@@ -8,6 +8,7 @@ import { latestSurveys, surveyTab, type SurveyTab } from './survey.ts';
 import { applicationsTab, buildApplications, type Application, type ApplicationsTab } from './applications.ts';
 import { liveStats, liveTotals, presenceFromEvents, type LiveStats, type LiveTab } from './live.ts';
 import { buildDeals, dealsTab, type Deal, type DealsTab } from './deals.ts';
+import { buyersTab, salesTab, type BuyersTab, type SalesTab } from './sales.ts';
 import { filterAds } from './full-funnel.ts';
 import { getMarketingSettings } from './settings.ts';
 import { TAB_TITLES } from './sync.ts';
@@ -15,7 +16,7 @@ import { loadAdDays, loadEditionOverrides, loadSnapshotTimes, loadSnapshots } fr
 import { loadLive } from './sources/platform.ts';
 
 export const PANEL_TABS = [
-  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos',
+  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores',
 ] as const;
 export type PanelTab = typeof PANEL_TABS[number];
 export const isPanelTab = (t: string): t is PanelTab => (PANEL_TABS as readonly string[]).indexOf(t) >= 0;
@@ -26,6 +27,8 @@ export type TabData = {
   aplicacoes: ApplicationsTab;
   aovivo: LiveTab;
   agendamentos: DealsTab;
+  vendas: SalesTab;
+  compradores: BuyersTab;
 };
 // Aba da planilha sem dados: a tela diz qual fonte falta, em vez de mostrar zeros.
 export type MissingSources = { missing: string[] };
@@ -36,6 +39,8 @@ const NEEDS: Record<PanelTab, TabKey[]> = {
   aplicacoes: ['capture', 'applications'],
   aovivo: [],
   agendamentos: ['capture', 'schedule', 'sales', 'survey'],
+  vendas: ['capture', 'sales'],
+  compradores: ['capture', 'sales', 'survey'],
 };
 
 // Linhas da planilha em memória da instância, por aba, enquanto o `fetched_at` do snapshot não muda.
@@ -155,6 +160,11 @@ function spendByEdition(c: Ctx, ads: MetaAdDay[]): Record<number, number | null>
   return out;
 }
 
+// Vendas high ticket das edições selecionadas; com período, só as datadas dentro dele.
+function salesOf(c: Ctx): SaleRow[] {
+  return typed(c.snap.sales, toSaleRows).filter(s => inSel(c, s.edition) && inRange(day(s.at), c.range));
+}
+
 type Builder<K extends PanelTab> = (c: Ctx, o: TabOptions) => TabData[K] | Promise<TabData[K]>;
 const BUILDERS: { [K in PanelTab]: Builder<K> } = {
   pesquisa: (c, o) => surveyTab(c.leads, c.surveys, o.renda),
@@ -167,6 +177,8 @@ const BUILDERS: { [K in PanelTab]: Builder<K> } = {
     return { editions, totals: liveTotals(stats) };
   },
   agendamentos: async (c, o) => dealsTab(deals(c), c.eds, spendByEdition(c, (await adsOf(c)).ads), c.range, o.lists),
+  vendas: (c, o) => salesTab(c.leads, salesOf(c), o.lists),
+  compradores: (c, o) => buyersTab(salesOf(c), c.surveys, o.produto, o.lists),
 };
 export async function buildTab(tab: PanelTab, selected: number[], range: DateRange | null, o: TabOptions): Promise<TabData[PanelTab] | MissingSources> {
   const c = await context(tab, selected, range);
