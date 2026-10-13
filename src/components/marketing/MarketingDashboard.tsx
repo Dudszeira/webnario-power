@@ -21,6 +21,7 @@ import ValidationTab from './ValidationTab';
 import SurveyTab from './SurveyTab';
 import ApplicationsTab from './ApplicationsTab';
 import LiveTab from './LiveTab';
+import DealsTab from './DealsTab';
 
 type Range = { from: string; to: string };
 const NO_RANGE: Range = { from: '', to: '' };
@@ -33,6 +34,7 @@ const dm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 const GROUPS: { key: string; label: string; tabs: { key: string; label: string }[] }[] = [
   { key: 'resultado', label: 'Resultado', tabs: [{ key: 'edicao', label: 'Edição' }, { key: 'criativos', label: 'Criativos' }, { key: 'validacao', label: 'Validação' }] },
   { key: 'leads', label: 'Leads', tabs: [{ key: 'pesquisa', label: 'Pesquisa' }, { key: 'aplicacoes', label: 'Aplicações' }, { key: 'aovivo', label: 'Ao vivo' }] },
+  { key: 'comercial', label: 'Comercial', tabs: [{ key: 'agendamentos', label: 'Agendamentos' }] },
 ];
 
 // label: telas largas · short: notebook · mini: celular
@@ -253,6 +255,7 @@ export default function MarketingDashboard() {
                 <TabsContent value="pesquisa"><SurveyTab query={query} /></TabsContent>
                 <TabsContent value="aplicacoes"><ApplicationsTab query={query} /></TabsContent>
                 <TabsContent value="aovivo"><LiveTab query={query} /></TabsContent>
+                <TabsContent value="agendamentos"><DealsTab query={query} /></TabsContent>
               </Tabs>
             </div>
           )}
