@@ -100,7 +100,14 @@ export default function LeadFunnel({ view }: { view: MarketingView }) {
           const wt = width(s.value);
           const next = stages[i + 1];
           const wb = next ? Math.min(wt, width(next.value)) : wt * 0.9;
-          const pass = i ? ratio(s.value, stages[i - 1].value) : null;
+          // Ingresso/presença seguem o período; aplicações em diante são da edição inteira.
+          // Com período ativo, ou se a razão passar de 100%, as bases não se comparam: mostra "—".
+          const BACK = 3; // índice de "Aplicações"
+          const mixed = !!view.range && i >= BACK && i - 1 < BACK;
+          const raw = i ? ratio(s.value, stages[i - 1].value) : null;
+          const pass = mixed || (raw !== null && raw > 1) ? null : raw;
+          const passTitle = i === 0 ? undefined : (mixed || (raw !== null && raw > 1))
+            ? 'bases diferentes (período × edição inteira)' : `${s.label} ÷ ${stages[i - 1].label}`;
           const isOpen = open === s.key;
           return (
             <li key={s.key}>
@@ -128,7 +135,7 @@ export default function LeadFunnel({ view }: { view: MarketingView }) {
                   <span className="hidden min-w-0 truncate rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px] text-muted-foreground sm:inline-block">
                     {s.cost === null ? '—' : `${brl(s.cost)} ${s.costLabel}`}
                   </span>
-                  <span className="w-12 shrink-0 text-right text-xs font-medium tabular-nums text-foreground/90" title={i ? `${s.label} ÷ ${stages[i - 1].label}` : undefined}>
+                  <span className="w-12 shrink-0 text-right text-xs font-medium tabular-nums text-foreground/90" title={passTitle}>
                     {i ? pct(pass) : 'topo'}
                   </span>
                   <ChevronDown aria-hidden className={`hidden size-3.5 shrink-0 text-muted-foreground transition-transform sm:block ${isOpen ? 'rotate-180' : ''}`} />

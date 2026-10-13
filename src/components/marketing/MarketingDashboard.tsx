@@ -114,8 +114,12 @@ export default function MarketingDashboard() {
   const toggle = (n: number) => {
     const next = selected.indexOf(n) >= 0 ? selected.filter(x => x !== n) : selected.concat(n).sort((a, b) => a - b);
     if (!next.length) return; // sempre ao menos uma edição
+    const prev = selected;
     setSelected(next);
-    load(next, range);
+    const p = load(next, range);
+    const id = seq.current; // load() já incrementou: esta é a requisição desta troca
+    // Falhou (e não foi superada por outra troca): volta a seleção para bater com os dados na tela.
+    p.then(v => { if (!v && id === seq.current) setSelected(prev); });
   };
 
   const applyRange = (r: Range) => {
