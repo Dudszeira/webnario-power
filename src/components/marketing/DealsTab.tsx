@@ -95,7 +95,7 @@ export default function DealsTab({ query }: { query: string }) {
       </section>
 
       <section>
-        <h2 className={sectionTitle}>Custo por call por webinário</h2>
+        <h2 className={sectionTitle} title="Gasto e calls da edição inteira; o filtro de período não se aplica a esta tabela.">Custo por call por webinário <span className="font-normal normal-case tracking-normal text-muted-foreground">· edição inteira</span></h2>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader><TableRow>

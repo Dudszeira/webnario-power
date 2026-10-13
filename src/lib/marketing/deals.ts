@@ -190,9 +190,10 @@ export function dealsTab(
     })
     .sort((a, b) => b.rate - a.rate || b.lost - a.lost);
 
-  // Custo por call: gasto oficial da edição ÷ negócios; edição sem gasto fica "n/d" e fora do total.
+  // Custo por call: gasto oficial da edição inteira ÷ negócios da edição inteira (o período não entra:
+  // o gasto não é fatiado por período); edição sem gasto fica "n/d" e fora do total.
   const rows: CostRow[] = eds.map(e => {
-    const ds = deals.filter(d => d.edition === e.number);
+    const ds = all.filter(d => d.edition === e.number);
     const power = ds.filter(d => normProd(d.product) === 'power').length;
     const start = ds.filter(d => normProd(d.product) === 'powerStart').length;
     const s = spend[e.number] ?? null;

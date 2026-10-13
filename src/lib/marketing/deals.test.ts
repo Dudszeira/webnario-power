@@ -93,3 +93,16 @@ test('dealsTab: KPIs, moment buckets, losing creatives (n ≥ 3), cost per call'
   assert.equal(t.list, null);
   assert.equal(dealsTab(deals, [{ number: 22, liveDate: '2026-10-13' }], { 22: null }, null, true).costPerCall.rows[0].cost, null);
 });
+
+test('dealsTab: with a period set, cost per call still uses all deals of the edition', () => {
+  const mk = (scheduledAt: string): Deal => ({
+    name: 'x', type: 'WB', closer: 'Ana', via: 'Automático', product: 'Power', scheduledAt, callDate: null,
+    realized: false, lostReason: '', status: 'agendada', alerts: [], income: '', value: 0, edition: 22, editionBy: 'planilha',
+    creative: 'vid_1', utmContent: '', utmSource: '',
+  });
+  const deals = [mk('2026-10-10'), mk('2026-10-11'), mk('2026-10-14'), mk('2026-10-15')];
+  const t = dealsTab(deals, [{ number: 22, liveDate: '2026-10-13' }], { 22: 400 }, { from: '2026-10-14', to: '2026-10-15' }, false);
+  assert.equal(t.total, 2);
+  assert.deepEqual([t.costPerCall.rows[0].n, t.costPerCall.rows[0].cost], [4, 100]);
+}
+);
