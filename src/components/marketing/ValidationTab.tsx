@@ -3,8 +3,28 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import type { MarketingView } from '@/lib/marketing/view';
+import type { ReconRow } from '@/lib/marketing/reconcile';
+import { useTabData } from './useTabData';
 
-export default function ValidationTab({ view }: { view: MarketingView }) {
+const MONEY = ['metaSpend', 'revenue'];
+function fmt(key: string, n: number | null): string {
+  if (n === null) return '—';
+  if (MONEY.indexOf(key) >= 0) return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  if (key === 'attendance') return `${n.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+  return n.toLocaleString('pt-BR');
+}
+
+function State({ r }: { r: ReconRow }) {
+  if (r.state === 'ok') return <span className="font-medium text-emerald-400">✓ igual</span>;
+  if (r.state === 'so_planilha') return <span className="text-muted-foreground" title="A plataforma não tem este número para a edição">só planilha</span>;
+  if (r.state === 'so_plataforma') return <span className="text-muted-foreground" title="A Visão Geral está vazia para esta métrica">só plataforma</span>;
+  const sign = (r.diff ?? 0) > 0 ? '+' : '';
+  const pctTxt = r.diffPct === null ? '' : ` (${sign}${(r.diffPct * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%)`;
+  return <span className="font-medium text-amber-400">⚠ {sign}{fmt(r.key, r.diff)}{pctTxt}</span>;
+}
+
+export default function ValidationTab({ view, query }: { view: MarketingView; query: string }) {
+  const { data: recon, error } = useTabData<ReconRow[]>('validacao', query);
   const ht = view.buyers.filter(b => b.product !== 'Ingresso');
   const tk = view.buyers.filter(b => b.product === 'Ingresso');
   const share = (list: typeof ht, pred: (b: (typeof ht)[number]) => boolean) =>
@@ -12,6 +32,34 @@ export default function ValidationTab({ view }: { view: MarketingView }) {
 
   return (
     <div className="flex flex-col gap-6">
+      <section>
+        <h2 className="mb-2 text-sm font-medium">Conferência entre fontes <span className="text-xs font-normal text-muted-foreground">· oficial (plataforma, Meta, linhas da planilha) × números digitados na Visão Geral</span></h2>
+        {!recon ? (
+          <p role={error ? 'alert' : undefined} className={`text-xs ${error ? 'text-red-400' : 'text-muted-foreground'}`}>{error || 'Carregando…'}</p>
+        ) : !recon.length ? (
+          <p className="text-xs text-muted-foreground">Sem números para conferir nas edições selecionadas.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Edição</TableHead><TableHead>Métrica</TableHead><TableHead className="text-right">Oficial</TableHead>
+                <TableHead className="text-right">Visão Geral</TableHead><TableHead>Conferência</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {recon.map(r => (
+                  <TableRow key={`${r.edition}-${r.key}`}>
+                    <TableCell>#{String(r.edition).padStart(3, '0')}</TableCell><TableCell>{r.label}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmt(r.key, r.official)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmt(r.key, r.sheet)}</TableCell>
+                    <TableCell><State r={r} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           ['Compradores high ticket que entraram na live', share(ht, b => b.entered)],

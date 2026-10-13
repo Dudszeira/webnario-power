@@ -261,8 +261,8 @@ export default function MarketingDashboard() {
                   {GROUPS.filter(g => g.key === group)[0].tabs.map(t => <TabsTrigger key={t.key} value={t.key}>{t.label}</TabsTrigger>)}
                 </TabsList>
                 <TabsContent value="edicao"><EditionTab key={view.selected[0]} view={view} query={query} onSaved={() => load(selected, range)} /></TabsContent>
-                <TabsContent value="criativos"><CreativesTab view={view} onSaved={() => load(selected, range)} /></TabsContent>
-                <TabsContent value="validacao"><ValidationTab view={view} /></TabsContent>
+                <TabsContent value="criativos"><CreativesTab view={view} query={query} onSaved={() => load(selected, range)} /></TabsContent>
+                <TabsContent value="validacao"><ValidationTab view={view} query={query} /></TabsContent>
                 <TabsContent value="pesquisa"><SurveyTab query={query} /></TabsContent>
                 <TabsContent value="aplicacoes"><ApplicationsTab query={query} /></TabsContent>
                 <TabsContent value="aovivo"><LiveTab query={query} /></TabsContent>

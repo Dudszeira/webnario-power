@@ -9,23 +9,24 @@ import { inRange } from './metrics.ts';
 import { latestSurveys, surveyTab, type SurveyTab } from './survey.ts';
 import { applicationsTab, buildApplications, type Application, type ApplicationsTab } from './applications.ts';
 import { liveStats, liveTotals, presenceFromEvents, type LiveStats, type LiveTab } from './live.ts';
-import { buildDeals, dealsTab, type Deal, type DealsTab } from './deals.ts';
-import { buyersTab, salesTab, type BuyersTab, type SalesTab } from './sales.ts';
+import { buildDeals, dealDone, dealsTab, type Deal, type DealsTab } from './deals.ts';
+import { buyersTab, saleValue, salesTab, type BuyersTab, type SalesTab } from './sales.ts';
 import { apiTab, type ApiTab } from './api-leads.ts';
 import { disparosTab, type DisparosTab } from './disparos.ts';
 import { filterAds, fullFunnel, type FullFunnel } from './full-funnel.ts';
+import { reconcileEdition, type OfficialNumbers, type ReconRow } from './reconcile.ts';
 import {
-  editionFunnel, webinarTable, type EditionFunnel, type WebinarTable,
+  creativeExtras, editionFunnel, webinarTable, type CreativeExtra, type EditionFunnel, type WebinarTable,
 } from './breakdowns.ts';
 import { getMarketingSettings } from './settings.ts';
 import { TAB_TITLES } from './sync.ts';
 import {
-  loadAdDays, loadDisparos, loadEditionOverrides, loadMetaWindows, loadSnapshotTimes, loadSnapshots,
+  loadAdDays, loadAliases, loadDisparos, loadEditionOverrides, loadMetaWindows, loadSnapshotTimes, loadSnapshots,
 } from './store.ts';
 import { loadLive } from './sources/platform.ts';
 
 export const PANEL_TABS = [
-  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores', 'api', 'disparos', 'edicao',
+  'pesquisa', 'aplicacoes', 'aovivo', 'agendamentos', 'vendas', 'compradores', 'api', 'disparos', 'edicao', 'criativos', 'validacao',
 ] as const;
 export type PanelTab = typeof PANEL_TABS[number];
 export const isPanelTab = (t: string): t is PanelTab => (PANEL_TABS as readonly string[]).indexOf(t) >= 0;
@@ -43,6 +44,8 @@ export type TabData = {
   api: ApiTab;
   disparos: DisparosTab;
   edicao: EdicaoTab;
+  criativos: CreativeExtra[];
+  validacao: ReconRow[];
 };
 // Aba da planilha sem dados: a tela diz qual fonte falta, em vez de mostrar zeros.
 export type MissingSources = { missing: string[] };
@@ -58,6 +61,8 @@ const NEEDS: Record<PanelTab, TabKey[]> = {
   api: ['capture', 'survey', 'sales'],
   disparos: [],
   edicao: ['capture', 'applications', 'schedule', 'sales', 'survey'],
+  criativos: ['capture', 'survey', 'schedule', 'sales'],
+  validacao: ['capture', 'applications', 'schedule', 'sales', 'survey'],
 };
 
 // Linhas da planilha em memória da instância, por aba, enquanto o `fetched_at` do snapshot não muda.
@@ -216,6 +221,37 @@ const BUILDERS: { [K in PanelTab]: Builder<K> } = {
       webinars: webinarTable(c.eds, c.captures.filter(x => inSel(c, x.edition)), ds, ss, apps, live, sheetChecks(c)),
       fullFunnel: fullFunnel(c.eds, meta.ads, c.captures, windows, meta.filter, c.today),
     };
+  },
+  // Todas as edições selecionadas, no período (como o dash antigo). As colunas do Meta seguem a 1ª edição.
+  criativos: async c => creativeExtras(
+    c.leads, c.surveys, deals(c).filter(d => inSel(c, d.edition) && inRange(d.scheduledAt, c.range)),
+    salesOf(c), await loadAliases(),
+  ),
+  // Conferência por edição: oficial (plataforma, Meta, linhas da planilha) × números digitados na Visão Geral.
+  validacao: async c => {
+    const [live, meta] = await Promise.all([liveByEdition(c), adsOf(c)]);
+    const apps = applications(c), ds = deals(c), ss = typed(c.snap.sales, toSaleRows);
+    const checks = sheetChecks(c);
+    const rows: ReconRow[] = [];
+    c.eds.forEach(e => {
+      const n = e.number, st = live[n] ?? null;
+      const leadsN = c.captures.filter(x => x.edition === n).length;
+      const win = meta.ads.filter(a => a.date >= e.windowStart && a.date <= e.windowEnd);
+      const myDeals = ds.filter(d => d.edition === n);
+      const mySales = ss.filter(s => s.approved && s.edition === n);
+      const official: OfficialNumbers = {
+        peak: st ? st.peak : null,
+        attendance: st && leadsN ? (st.peak / leadsN) * 100 : null,
+        metaSpend: win.length ? win.reduce((t, a) => t + a.spend, 0) : null,
+        applications: apps.filter(a => a.complete && a.edition === n).length,
+        scheduled: myDeals.length,
+        done: myDeals.filter(dealDone).length,
+        sales: mySales.length,
+        revenue: mySales.reduce((t, s) => t + saleValue(s), 0),
+      };
+      reconcileEdition(n, official, checks[n]).forEach(r => rows.push(r));
+    });
+    return rows;
   },
 };
 export async function buildTab(tab: PanelTab, selected: number[], range: DateRange | null, o: TabOptions): Promise<TabData[PanelTab] | MissingSources> {
