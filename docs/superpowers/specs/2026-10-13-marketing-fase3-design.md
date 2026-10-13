@@ -98,8 +98,8 @@ create table if not exists mkt_meta_window (
 alter table mkt_meta_window enable row level security;
 ```
 
-O sync do Meta passa a pedir também `reach`, `frequency` e a ação `landing_page_view`
-(o insight diário por anúncio já traz impressões, cliques no link, gasto e IC).
+O sync do Meta passa a pedir também `reach` e `frequency` por janela de edição (o insight
+diário por anúncio já traz impressões, cliques no link, visualizações da página, gasto e IC).
 
 `mkt_settings` ganha a chave `meta_campaign_filter` (linha nova, sem alterar a tabela).
 
