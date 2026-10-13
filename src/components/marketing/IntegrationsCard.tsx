@@ -16,6 +16,7 @@ type Settings = {
   gids: Record<Tab, string>;
   metaAdAccount: string;
   metaApiVersion: string;
+  metaCampaignFilter: string;
   metaToken: { configured: boolean; last4: string | null; source: Source };
   source: { sheetId: Source; metaAdAccount: Source };
 };
@@ -41,7 +42,7 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
 
 export default function IntegrationsCard() {
   const [saved, setSaved] = useState<Settings | null>(null);
-  const [form, setForm] = useState({ sheetId: '', metaAdAccount: '', metaApiVersion: '', gids: {} as Record<Tab, string> });
+  const [form, setForm] = useState({ sheetId: '', metaAdAccount: '', metaApiVersion: '', metaCampaignFilter: '', gids: {} as Record<Tab, string> });
   const [token, setToken] = useState('');
   const [replacing, setReplacing] = useState(false);
   const [advanced, setAdvanced] = useState(false);
@@ -53,7 +54,7 @@ export default function IntegrationsCard() {
 
   function apply(s: Settings) {
     setSaved(s);
-    setForm({ sheetId: s.sheetId, metaAdAccount: s.metaAdAccount, metaApiVersion: s.metaApiVersion, gids: { ...s.gids } });
+    setForm({ sheetId: s.sheetId, metaAdAccount: s.metaAdAccount, metaApiVersion: s.metaApiVersion, metaCampaignFilter: s.metaCampaignFilter, gids: { ...s.gids } });
     setToken(''); setReplacing(false);
   }
 
@@ -70,6 +71,7 @@ export default function IntegrationsCard() {
     if (form.sheetId.trim() !== saved.sheetId) body.sheetId = form.sheetId;
     if (form.metaAdAccount.trim() !== saved.metaAdAccount) body.metaAdAccount = form.metaAdAccount;
     if (form.metaApiVersion.trim() !== saved.metaApiVersion) body.metaApiVersion = form.metaApiVersion;
+    if (form.metaCampaignFilter.trim() !== saved.metaCampaignFilter) body.metaCampaignFilter = form.metaCampaignFilter;
     if (token.trim()) body.metaToken = token;
     const gids: Partial<Record<Tab, string>> = {};
     TABS.forEach(([t]) => { if ((form.gids[t] ?? '').trim() !== saved.gids[t]) gids[t] = form.gids[t]; });
@@ -105,7 +107,7 @@ export default function IntegrationsCard() {
     }
   }
 
-  const set = (k: 'sheetId' | 'metaAdAccount' | 'metaApiVersion', v: string) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: 'sheetId' | 'metaAdAccount' | 'metaApiVersion' | 'metaCampaignFilter', v: string) => setForm(f => ({ ...f, [k]: v }));
   const setGid = (t: Tab, v: string) => setForm(f => ({ ...f, gids: { ...f.gids, [t]: v } }));
 
   return (
@@ -156,6 +158,10 @@ export default function IntegrationsCard() {
 
             <Field id="mkt-ad-account" label="ID da conta de anúncios" hint={saved.source.metaAdAccount ? `origem: ${sourceLabel(saved.source.metaAdAccount)}` : undefined}>
               <Input id="mkt-ad-account" value={form.metaAdAccount} onChange={e => set('metaAdAccount', e.target.value)} placeholder="act_123456789" autoComplete="off" />
+            </Field>
+            <Field id="mkt-campaign-filter" label="Filtro de campanha do Meta"
+              hint="Só entra gasto de campanhas cujo nome contém este texto. Vazio = todas as campanhas. Nada é apagado.">
+              <Input id="mkt-campaign-filter" value={form.metaCampaignFilter} onChange={e => set('metaCampaignFilter', e.target.value)} placeholder="WB PG" autoComplete="off" />
             </Field>
 
             <button type="button" onClick={() => setAdvanced(a => !a)} aria-expanded={advanced} aria-controls="mkt-advanced"

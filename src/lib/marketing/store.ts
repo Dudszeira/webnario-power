@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/db';
-import type { MetaAdDay } from './types.ts';
+import type { MetaAdDay, MetaWindow } from './types.ts';
+import type { Disparo, DisparoInput, DisparoKind } from './disparos.ts';
 import type { TabKey } from './sheet-rows.ts';
 import type { EditionOverride } from './editions.ts';
 
@@ -118,4 +119,53 @@ export async function lastRuns() {
     .order('id', { ascending: false }).limit(20);
   const seen = new Set<string>();
   return (data ?? []).filter(r => (seen.has(r.source) ? false : (seen.add(r.source), true)));
+}
+
+const numOrNull = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+const toDisparo = (r: Record<string, unknown>): Disparo => ({
+  id: String(r.id), kind: r.kind as DisparoKind, ciclo: (r.ciclo as string | null) ?? null, nome: String(r.nome),
+  data: (r.data as string | null) ?? null, contatos: numOrNull(r.contatos), agendamentos: numOrNull(r.agendamentos),
+  vendas: numOrNull(r.vendas), faturamento: numOrNull(r.faturamento), custo: numOrNull(r.custo),
+  template: (r.template as string | null) ?? null,
+});
+
+export async function loadDisparos(): Promise<Disparo[]> {
+  const { data, error } = await supabase.from('mkt_disparos').select('*').order('data', { ascending: true });
+  check(error, 'disparos');
+  return (data ?? []).map(toDisparo);
+}
+
+export async function insertDisparo(d: DisparoInput): Promise<Disparo> {
+  const { data, error } = await supabase.from('mkt_disparos').insert(d).select().single();
+  check(error, 'novo disparo');
+  return toDisparo(data);
+}
+
+export async function updateDisparo(id: string, patch: Partial<DisparoInput>) {
+  const { error } = await supabase.from('mkt_disparos').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+  check(error, 'editar disparo');
+}
+
+// Único DELETE do painel: uma linha de mkt_disparos por id.
+export async function deleteDisparo(id: string) {
+  const { error } = await supabase.from('mkt_disparos').delete().eq('id', id);
+  check(error, 'remover disparo');
+}
+
+export async function upsertMetaWindows(rows: MetaWindow[]) {
+  if (!rows.length) return;
+  const now = new Date().toISOString();
+  const { error } = await supabase.from('mkt_meta_window').upsert(rows.map(r => ({
+    edition: r.edition, since: r.since, until: r.until, reach: r.reach, frequency: r.frequency, updated_at: now,
+  })));
+  check(error, 'alcance por janela');
+}
+
+export async function loadMetaWindows(editions: number[]): Promise<MetaWindow[]> {
+  if (!editions.length) return [];
+  const { data, error } = await supabase.from('mkt_meta_window').select('*').in('edition', editions);
+  check(error, 'load alcance');
+  return (data ?? []).map(r => ({
+    edition: r.edition, since: r.since, until: r.until, reach: numOrNull(r.reach), frequency: numOrNull(r.frequency),
+  }));
 }

@@ -69,3 +69,20 @@ create table if not exists mkt_settings (
   updated_at timestamptz not null default now()
 );
 alter table mkt_settings enable row level security;
+
+-- Fase 3 (2026-10-13): disparos de WhatsApp e alcance por janela de edição. Só tabelas novas.
+create table if not exists mkt_disparos (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('convite','recuperacao')),
+  ciclo text, nome text not null, data date,
+  contatos int, agendamentos int, vendas int,
+  faturamento numeric, custo numeric, template text,
+  created_at timestamptz default now(), updated_at timestamptz default now()
+);
+alter table mkt_disparos enable row level security;
+
+create table if not exists mkt_meta_window (
+  edition int primary key, since date not null, until date not null,
+  reach bigint, frequency numeric, updated_at timestamptz default now()
+);
+alter table mkt_meta_window enable row level security;

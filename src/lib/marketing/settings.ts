@@ -2,10 +2,12 @@
 // Só servidor. Sem cache global: cada chamada lê o banco (o runSync lê uma vez e repassa).
 import { supabase } from '@/lib/db';
 import type { TabKey } from './sheet-rows.ts';
+import { campaignFilterOf } from './full-funnel.ts';
 
 export const SETTING_KEYS = [
   'sheet_id', 'gid_capture', 'gid_overview', 'gid_sales', 'gid_schedule', 'gid_survey', 'gid_applications',
   'meta_token', 'meta_ad_account', 'meta_api_version',
+  'meta_campaign_filter',
 ] as const;
 export type SettingKey = typeof SETTING_KEYS[number];
 export type SettingSource = 'plataforma' | 'vercel' | null;
@@ -26,6 +28,7 @@ export type MarketingSettings = {
   metaToken: string;
   metaAdAccount: string;
   metaApiVersion: string;
+  metaCampaignFilter: string;
   sources: { sheetId: SettingSource; metaToken: SettingSource; metaAdAccount: SettingSource };
 };
 
@@ -34,7 +37,7 @@ async function loadRows(): Promise<Partial<Record<SettingKey, string>>> {
     const { data, error } = await supabase.from('mkt_settings').select('key, value');
     if (error) return {};
     const out: Partial<Record<SettingKey, string>> = {};
-    (data ?? []).forEach(r => { if (r.value?.trim()) out[r.key as SettingKey] = r.value.trim(); });
+    (data ?? []).forEach(r => { if (typeof r.value === 'string') out[r.key as SettingKey] = r.value.trim(); });
     return out;
   } catch {
     return {}; // ponytail: banco fora do ar não derruba o sync; cai no env.
@@ -51,6 +54,7 @@ export async function getMarketingSettings(): Promise<MarketingSettings> {
   return {
     sheetId, metaToken, metaAdAccount,
     metaApiVersion: pick('meta_api_version', process.env.META_API_VERSION)[0] || 'v23.0',
+    metaCampaignFilter: campaignFilterOf(db.meta_campaign_filter),
     gids: {
       capture: db.gid_capture || DEFAULT_GIDS.capture,
       overview: db.gid_overview || DEFAULT_GIDS.overview,
@@ -76,4 +80,11 @@ export async function saveMarketingSettings(patch: Partial<Record<SettingKey, st
   if (!rows.length) return;
   const { error } = await supabase.from('mkt_settings').upsert(rows);
   if (error) throw new Error(`salvar integrações: ${error.message}`);
+}
+
+// O filtro de campanha aceita vazio (= todas); o save genérico ignora vazios, então tem o seu.
+export async function saveCampaignFilter(value: string) {
+  const { error } = await supabase.from('mkt_settings')
+    .upsert({ key: 'meta_campaign_filter', value: value.trim(), updated_at: new Date().toISOString() });
+  if (error) throw new Error(`salvar filtro de campanha: ${error.message}`);
 }
