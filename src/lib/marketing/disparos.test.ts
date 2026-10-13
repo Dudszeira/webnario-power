@@ -46,3 +46,20 @@ test('editor numbers round-trip without losing decimals', () => {
   assert.equal(formatNumberInput(null), '');
   assert.equal(parseNumberInput(formatNumberInput(158.68)), 158.68); // editar sem mudar mantém o valor
 });
+
+test('parseNumberInput: dot with exactly 3 digits after is thousands', () => {
+  assert.equal(parseNumberInput('1.234'), 1234);
+  assert.equal(parseNumberInput('1.500'), 1500);
+  assert.equal(parseNumberInput('12.345.678'), 12345678);
+  assert.equal(parseNumberInput('16.8'), 16.8);
+});
+
+test('disparoBlock: nulls are not zeros; cost per agend only over rows with both values', () => {
+  const none = disparoBlock([d({ contatos: null, agendamentos: null, vendas: null, faturamento: null, custo: null })]);
+  assert.deepEqual([none.contatos, none.custo, none.agendamentos, none.vendas, none.faturamento, none.costPerAgend, none.roas], [null, null, null, null, null, null, null]);
+  const b = disparoBlock([d({ custo: 40, agendamentos: 10 }), d({ custo: 500, agendamentos: null }), d({ custo: null, agendamentos: 90 })]);
+  assert.equal(b.costPerAgend, 4);
+  assert.equal(b.custo, 540);
+  assert.equal(b.agendamentos, 100);
+  assert.equal(disparoBlock([]).custo, null);
+});

@@ -10,21 +10,30 @@ export type Disparo = {
 export type DisparoInput = Omit<Disparo, 'id'>;
 
 export type DisparoBlock = {
-  count: number; contatos: number; custo: number; agendamentos: number; agendRate: number | null;
-  costPerAgend: number | null; vendas: number; faturamento: number; roas: number | null;
+  count: number; contatos: number | null; custo: number | null; agendamentos: number | null; agendRate: number | null;
+  costPerAgend: number | null; vendas: number | null; faturamento: number | null; roas: number | null;
 };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function disparoBlock(rows: Disparo[]): DisparoBlock {
-  const sum = (k: 'contatos' | 'custo' | 'agendamentos' | 'vendas' | 'faturamento') => rows.reduce((t, r) => t + (r[k] ?? 0), 0);
-  const contatos = sum('contatos'), custo = round2(sum('custo')), agendamentos = sum('agendamentos'), faturamento = round2(sum('faturamento'));
+  // Sem nenhuma linha com o valor = null ("—"), nunca 0.
+  type K = 'contatos' | 'custo' | 'agendamentos' | 'vendas' | 'faturamento';
+  const sum = (k: K, rs: Disparo[] = rows) => {
+    const vs = rs.map(r => r[k]).filter((v): v is number => v !== null);
+    return vs.length ? vs.reduce((t, v) => t + v, 0) : null;
+  };
+  const money = (v: number | null) => (v === null ? null : round2(v));
+  const contatos = sum('contatos'), custo = money(sum('custo')), agendamentos = sum('agendamentos'), faturamento = money(sum('faturamento'));
+  // Custo por agendamento: só linhas com custo E agendamentos preenchidos (senão um lado infla o outro).
+  const both = rows.filter(r => r.custo !== null && r.agendamentos !== null);
+  const bc = sum('custo', both), ba = sum('agendamentos', both);
   return {
     count: rows.length, contatos, custo, agendamentos,
-    agendRate: contatos ? agendamentos / contatos : null,
-    costPerAgend: agendamentos && custo ? custo / agendamentos : null,
+    agendRate: contatos && agendamentos !== null ? agendamentos / contatos : null,
+    costPerAgend: bc && ba ? bc / ba : null,
     vendas: sum('vendas'), faturamento,
-    roas: custo ? faturamento / custo : null,
+    roas: custo && faturamento !== null ? faturamento / custo : null,
   };
 }
 
@@ -92,9 +101,10 @@ export const formatNumberInput = (n: number | null) =>
   (n === null ? '' : n.toLocaleString('pt-BR', { useGrouping: false, maximumFractionDigits: 2 }));
 
 // Vazio = null. Com vírgula, ponto é milhar ("1.234,56"); sem vírgula, ponto é decimal ("16.8").
-// Texto inválido vira NaN e a API recusa com mensagem.
+// Sem vírgula, "1.234" / "12.345.678" (grupos de 3) é milhar. Texto inválido vira NaN e o editor bloqueia o salvamento.
 export function parseNumberInput(s: string): number | null {
   const t = (s ?? '').trim();
   if (!t) return null;
+  if (/^\d{1,3}(\.\d{3})+$/.test(t)) return Number(t.replace(/\./g, ''));
   return Number(t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t);
 }
