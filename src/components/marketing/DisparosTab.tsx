@@ -17,7 +17,7 @@ const toForm = (r: Disparo): Form => ({
   kind: r.kind, ciclo: r.ciclo ?? '', nome: r.nome, data: r.data ?? '', contatos: s(r.contatos), agendamentos: s(r.agendamentos),
   vendas: s(r.vendas), faturamento: s(r.faturamento), custo: s(r.custo), template: r.template ?? '',
 });
-// Vazio = null; com vírgula o ponto é milhar, sem vírgula é decimal; texto inválido vira NaN e a API recusa.
+// Vazio = null; com vírgula o ponto é milhar, sem vírgula é decimal; texto inválido vira NaN e save() recusa antes de enviar (NaN virar null no JSON apagaria o valor salvo).
 const toBody = (f: Form) => ({
   kind: f.kind, ciclo: f.ciclo, nome: f.nome, data: f.data || null, contatos: n(f.contatos), agendamentos: n(f.agendamentos),
   vendas: n(f.vendas), faturamento: n(f.faturamento), custo: n(f.custo), template: f.template,
@@ -55,11 +55,15 @@ export default function DisparosTab({ query }: { query: string }) {
   const field = (k: keyof Form) => (e: { target: { value: string } }) => setForm(f => ({ ...f, [k]: e.target.value }));
 
   async function save() {
+    const body = toBody(form);
+    const NUMS: [keyof typeof body, string][] = [['contatos', 'Contatos'], ['agendamentos', 'Agendamentos'], ['vendas', 'Vendas'], ['faturamento', 'Faturamento'], ['custo', 'Custo']];
+    const badField = NUMS.filter(([k]) => Number.isNaN(body[k]))[0];
+    if (badField) { setMsg(`${badField[1]} inválido`); return; }
     setSaving(true); setMsg('');
     try {
       const isNew = editing === 'new';
       const res = await fetch(isNew ? '/api/marketing/disparos' : `/api/marketing/disparos?id=${editing}`, {
-        method: isNew ? 'POST' : 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(toBody(form)),
+        method: isNew ? 'POST' : 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
       const b = await res.json().catch(() => ({}));
       if (!res.ok) { setMsg(b.error || 'Não foi possível salvar'); return; }
