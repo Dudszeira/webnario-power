@@ -33,7 +33,7 @@ export function useTabData<T>(tab: string, query: string, extra = '', enabled = 
         return body as T;
       })
       .then(data => { if (id === seq.current) setState({ data, loading: false, error: '' }); })
-      .catch(e => { if (id === seq.current) setState(s => ({ data: s.data, loading: false, error: (e as Error).message || 'Erro ao carregar' })); });
+      .catch(e => { if (id === seq.current) setState({ data: null, loading: false, error: (e as Error).message || 'Erro ao carregar' }); });
   }, [url, enabled]);
   return state;
 }
