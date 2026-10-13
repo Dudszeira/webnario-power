@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import type { OverviewRow } from './types.ts';
 import { buildEditions } from './editions.ts';
 
-const ov = (edition: number, dayMonth: string) =>
-  ({ edition, dayMonth, applications: 0, scheduled: 0, done: 0, investment: 0 });
+const noCheck = { applications: null, scheduled: null, done: null, peak: null, attendance: null, metaSpend: null, investment: null, sales: null, revenue: null };
+const ov = (edition: number, dayMonth: string): OverviewRow =>
+  ({ edition, dayMonth, applications: 0, scheduled: 0, done: 0, investment: 0, check: noCheck });
 
 test('default windows chain from the previous live', () => {
   const eds = buildEditions([ov(22, '13/10'), ov(21, '06/10')], [], '2026-10-10');

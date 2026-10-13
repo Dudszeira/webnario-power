@@ -12,6 +12,8 @@ export const TAB_TITLES: Record<TabKey, string> = {
   overview: 'Visão Geral',
   sales: 'Detalhamento Vendas',
   schedule: 'Detalhamento Agendamentos',
+  survey: 'Pesquisa [novo]',
+  applications: 'Análise Individual (Typeform)',
 };
 
 export async function runSync(opts: { metaDays: number }) {

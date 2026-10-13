@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import type { CaptureRow, EditionConfig, MetaAdDay } from './types.ts';
+import type { CaptureRow, EditionConfig, MetaAdDay, OverviewRow, SaleRow, ScheduleRow } from './types.ts';
 import { div, ticketSales, frontSummary, creativeTable, windows137, backSummary } from './metrics.ts';
 
 const cfg: EditionConfig = {
@@ -8,7 +8,7 @@ const cfg: EditionConfig = {
   ticketPrice: 9.9, cpaDream: 25, cpaGood: 35, cpaLimit: 45,
 };
 const sale = (content: string, at: string): CaptureRow => ({
-  email: `${content}${at}@x.com`, phone: '', utmSource: 'fb', utmMedium: '', utmCampaign: '',
+  email: `${content}${at}@x.com`, phone: '', name: '', utmTerm: '', utmSource: 'fb', utmMedium: '', utmCampaign: '',
   utmContent: `webp_vendas_${content}`, at: `${at}T10:00:00`, edition: 22, funnel: 'WB03 - PAGO',
 });
 const ad = (adName: string, date: string, spend: number, ic = 0, impressions = 1000, linkClicks = 10): MetaAdDay => ({
@@ -94,13 +94,13 @@ test('windows137 labels match the report rules', () => {
 test('backSummary: cost per call uses front spend; Pipedrive rows win over overview', () => {
   const front = frontSummary([], [ad('img_10', '2026-10-07', 300)], [cfg], {}, 0);
   const b = backSummary(
-    [{ edition: 22, dayMonth: '13/10', applications: 10, scheduled: 99, done: 99, investment: 0 }],
+    [{ edition: 22, dayMonth: '13/10', applications: 10, scheduled: 99, done: 99, investment: 0 } as OverviewRow],
     [
       { lostReason: '', closer: '', utmContent: '', scheduledAt: '2026-10-14', callDate: '2026-10-15', wonAt: null, done: true, email: 'a@x', edition: 22 },
       { lostReason: '', closer: '', utmContent: '', scheduledAt: '2026-10-14', callDate: '2026-10-16', wonAt: null, done: false, email: 'b@x', edition: 22 },
-    ],
+    ] as ScheduleRow[],
     [{ approved: true, product: 'Power', amount: 16788, email: 'a@x', phone: '', utmContentCapture: '', utmContentSale: '', at: null, edition: 22 },
-     { approved: false, product: 'Power', amount: 16788, email: 'c@x', phone: '', utmContentCapture: '', utmContentSale: '', at: null, edition: 22 }],
+     { approved: false, product: 'Power', amount: 16788, email: 'c@x', phone: '', utmContentCapture: '', utmContentSale: '', at: null, edition: 22 }] as SaleRow[],
     [22], front,
   );
   assert.equal(b.scheduled, 2);
