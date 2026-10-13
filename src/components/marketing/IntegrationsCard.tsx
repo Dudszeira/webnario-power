@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Check, ChevronRight, ExternalLink, Loader2, X } from 'lucide-react';
 
-type Tab = 'capture' | 'overview' | 'sales' | 'schedule';
+type Tab = 'capture' | 'overview' | 'sales' | 'schedule' | 'survey' | 'applications';
 type Source = 'plataforma' | 'vercel' | null;
 type Settings = {
   sheetId: string;
@@ -24,6 +24,7 @@ type TestResult = { source: string; ok: boolean; message: string };
 const TABS: [Tab, string][] = [
   ['capture', 'Captação'], ['overview', 'Visão Geral'],
   ['sales', 'Detalhamento Vendas'], ['schedule', 'Detalhamento Agendamentos'],
+  ['survey', 'Pesquisa [novo]'], ['applications', 'Análise Individual (Typeform)'],
 ];
 const sourceLabel = (s: Source) => (s === 'vercel' ? 'Vercel' : s ?? '');
 

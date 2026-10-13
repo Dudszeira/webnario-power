@@ -12,8 +12,11 @@ export async function saveSnapshot(tab: TabKey, rows: Record<string, string>[]) 
   check(error, `snapshot ${tab}`);
 }
 
-export async function loadSnapshots(): Promise<Partial<Record<TabKey, Record<string, string>[]>>> {
-  const { data, error } = await supabase.from('mkt_sheet_snapshot').select('tab, rows');
+// Pesquisa e Typeform são grandes: cada leitor pede só as abas que usa.
+export async function loadSnapshots(tabs?: TabKey[]): Promise<Partial<Record<TabKey, Record<string, string>[]>>> {
+  let q = supabase.from('mkt_sheet_snapshot').select('tab, rows');
+  if (tabs) q = q.in('tab', tabs);
+  const { data, error } = await q;
   check(error, 'snapshots');
   return Object.fromEntries((data ?? []).map(r => [r.tab, r.rows]));
 }

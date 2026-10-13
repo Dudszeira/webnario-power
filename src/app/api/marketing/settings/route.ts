@@ -4,11 +4,11 @@ import { getMarketingSettings, saveMarketingSettings, metaConfigured, type Marke
 import { fetchTab } from '@/lib/marketing/sources/sheet';
 import { fetchAdAccountName } from '@/lib/marketing/sources/meta';
 import { TAB_TITLES } from '@/lib/marketing/sync';
-import type { TabKey } from '@/lib/marketing/sheet-rows';
+import { TAB_KEYS } from '@/lib/marketing/sheet-rows';
 
 export const dynamic = 'force-dynamic';
 
-const TABS: TabKey[] = ['capture', 'overview', 'sales', 'schedule'];
+const TABS = TAB_KEYS;
 
 // Nunca devolve o token do Meta inteiro.
 function view(s: MarketingSettings) {

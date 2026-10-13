@@ -1,7 +1,7 @@
 import { fetchTab } from './sources/sheet.ts';
 import { fetchMetaAdDays, fetchPermalinks } from './sources/meta.ts';
 import { getMarketingSettings, metaConfigured } from './settings.ts';
-import { toOverviewRows, type TabKey } from './sheet-rows.ts';
+import { TAB_KEYS, toOverviewRows, type TabKey } from './sheet-rows.ts';
 import { addDays, inferLiveDate } from './parse.ts';
 import { hasAdDays, logRun, saveSnapshot, seedEditions, upsertAdDays, upsertPermalinks } from './store.ts';
 
@@ -20,7 +20,7 @@ export async function runSync(opts: { metaDays: number }) {
   const results: { source: string; ok: boolean; message: string }[] = [];
   const settings = await getMarketingSettings();
 
-  for (const tab of ['capture', 'overview', 'sales', 'schedule'] as TabKey[]) {
+  for (const tab of TAB_KEYS) {
     try {
       const rows = await fetchTab(tab, settings);
       await saveSnapshot(tab, rows);

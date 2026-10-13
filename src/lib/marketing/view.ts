@@ -32,7 +32,7 @@ export async function buildView(selectedIn: number[], range: DateRange | null): 
   const today = todayBRT();
   const yesterday = addDays(today, -1);
   const [snap, overrides, aliases, adPermalinks, sources] = await Promise.all([
-    loadSnapshots(), loadEditionOverrides(), loadAliases(), loadPermalinks(), lastRuns(),
+    loadSnapshots(['capture', 'overview', 'sales', 'schedule']), loadEditionOverrides(), loadAliases(), loadPermalinks(), lastRuns(),
   ]);
   const captures = toCaptureRows(snap.capture ?? []);
   const overview = toOverviewRows(snap.overview ?? []);
