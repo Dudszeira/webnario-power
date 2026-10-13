@@ -1,15 +1,18 @@
 // Dados de cada aba do painel (/api/marketing/data?tab=...). Só servidor: calcula só a aba pedida
 // e lê só as abas da planilha que ela usa (Visão Geral sempre, para montar as edições).
 import type { CaptureRow, DateRange, EditionConfig, OverviewRow, SurveyRow } from './types.ts';
-import { toCaptureRows, toOverviewRows, toSurveyRows, type TabKey } from './sheet-rows.ts';
-import { buildEditions, cycleStartAt } from './editions.ts';
+import { toApplicationRows, toCaptureRows, toOverviewRows, toSurveyRows, type TabKey } from './sheet-rows.ts';
+import { buildEditions, cycleStartAt, indexCaptures } from './editions.ts';
 import { inRange } from './metrics.ts';
 import { latestSurveys, surveyTab, type SurveyTab } from './survey.ts';
+import { applicationsTab, buildApplications, type Application, type ApplicationsTab } from './applications.ts';
+import { liveStats, liveTotals, presenceFromEvents, type LiveStats, type LiveTab } from './live.ts';
 import { TAB_TITLES } from './sync.ts';
 import { loadEditionOverrides, loadSnapshotTimes, loadSnapshots } from './store.ts';
+import { loadLive } from './sources/platform.ts';
 
 export const PANEL_TABS = [
-  'pesquisa',
+  'pesquisa', 'aplicacoes', 'aovivo',
 ] as const;
 export type PanelTab = typeof PANEL_TABS[number];
 export const isPanelTab = (t: string): t is PanelTab => (PANEL_TABS as readonly string[]).indexOf(t) >= 0;
@@ -17,6 +20,8 @@ export type TabOptions = { lists: boolean; renda: string; produto: string };
 
 export type TabData = {
   pesquisa: SurveyTab;
+  aplicacoes: ApplicationsTab;
+  aovivo: LiveTab;
 };
 // Aba da planilha sem dados: a tela diz qual fonte falta, em vez de mostrar zeros.
 export type MissingSources = { missing: string[] };
@@ -24,6 +29,8 @@ export type MissingSources = { missing: string[] };
 // Abas da planilha que cada aba do painel lê, além da Visão Geral. Ao vivo e Disparos não leem a Captação.
 const NEEDS: Record<PanelTab, TabKey[]> = {
   pesquisa: ['capture', 'survey'],
+  aplicacoes: ['capture', 'applications'],
+  aovivo: [],
 };
 
 // Linhas da planilha em memória da instância, por aba, enquanto o `fetched_at` do snapshot não muda.
@@ -91,9 +98,42 @@ async function context(tab: PanelTab, selectedIn: number[], range: DateRange | n
   return ctx;
 }
 
+function applications(c: Ctx): Application[] {
+  return buildApplications(typed(c.snap.applications, toApplicationRows), indexCaptures(c.captures), c.editions);
+}
+
+// Presença de lives que já passaram não muda mais: fica na memória da instância.
+const liveMemo: Record<string, LiveStats | null> = {};
+
+// Presença oficial por edição (plataforma). Edição sem evento ou com erro = null ("—" na tela).
+async function liveByEdition(c: Ctx): Promise<Record<number, LiveStats | null>> {
+  const out: Record<number, LiveStats | null> = {};
+  await Promise.all(c.eds.map(async e => {
+    const past = e.liveDate < c.today;
+    if (past && e.liveDate in liveMemo) { out[e.number] = liveMemo[e.liveDate]; return; }
+    try {
+      const l = await loadLive(e.liveDate);
+      const people = presenceFromEvents(l.events);
+      out[e.number] = people.length ? liveStats(people, l.liveStartMs, l.pitchSeconds) : null;
+      if (past) liveMemo[e.liveDate] = out[e.number];
+    } catch {
+      out[e.number] = null; // erro não vai para a memória: tenta de novo na próxima
+    }
+  }));
+  return out;
+}
+
 type Builder<K extends PanelTab> = (c: Ctx, o: TabOptions) => TabData[K] | Promise<TabData[K]>;
 const BUILDERS: { [K in PanelTab]: Builder<K> } = {
   pesquisa: (c, o) => surveyTab(c.leads, c.surveys, o.renda),
+  aplicacoes: (c, o) => applicationsTab(applications(c), c.selected, c.range, o.lists),
+  aovivo: async c => {
+    const live = await liveByEdition(c);
+    const editions = c.eds.map(e => ({ edition: e.number, liveDate: e.liveDate, stats: live[e.number] ?? null }));
+    const stats: LiveStats[] = [];
+    editions.forEach(e => { if (e.stats) stats.push(e.stats); });
+    return { editions, totals: liveTotals(stats) };
+  },
 };
 export async function buildTab(tab: PanelTab, selected: number[], range: DateRange | null, o: TabOptions): Promise<TabData[PanelTab] | MissingSources> {
   const c = await context(tab, selected, range);

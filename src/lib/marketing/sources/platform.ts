@@ -2,6 +2,7 @@ import { supabase, getLiveEventsForEdition, getEdition } from '@/lib/db';
 import { getLiveStartMs } from '@/lib/edition';
 import { buildAttendance } from '../matching.ts';
 import type { Attendance } from '../types.ts';
+import type { LiveEvent } from '../live.ts';
 
 const DEFAULT_PITCH_SECONDS = 66 * 60 + 10; // 1:06:10, igual ao dash atual
 
@@ -25,4 +26,25 @@ export async function loadAttendance(liveDate: string): Promise<Attendance[]> {
     getEdition(liveDate),
   ]);
   return buildAttendance(regs, events, getLiveStartMs(liveDate), edition?.pitch_marker_seconds ?? DEFAULT_PITCH_SECONDS);
+}
+
+// Eventos de presença da live, paginados e só leitura. Ao contrário de getLiveEventsForEdition (db.ts),
+// um erro aqui lança: melhor "—" na tela do que uma curva calculada com metade dos eventos.
+async function loadLiveEvents(liveDate: string): Promise<LiveEvent[]> {
+  const out: LiveEvent[] = [];
+  for (let start = 0; ; start += 1000) {
+    const { data, error } = await supabase.from('events').select('registration_id, type, created_at')
+      .eq('edition_id', liveDate).in('type', ['enter_live', 'cta_click', 'heartbeat'])
+      .order('created_at', { ascending: true }).range(start, start + 999);
+    if (error) throw new Error(`events: ${error.message}`);
+    (data ?? []).forEach(e => out.push(e));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
+// Presença da live (só leitura) + início e marcador do pitch.
+export async function loadLive(liveDate: string): Promise<{ events: LiveEvent[]; liveStartMs: number; pitchSeconds: number }> {
+  const [events, edition] = await Promise.all([loadLiveEvents(liveDate), getEdition(liveDate)]);
+  return { events, liveStartMs: getLiveStartMs(liveDate), pitchSeconds: edition?.pitch_marker_seconds ?? DEFAULT_PITCH_SECONDS };
 }
