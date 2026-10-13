@@ -4,21 +4,23 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { MarketingView } from '@/lib/marketing/view';
+import LeadFunnel from './LeadFunnel';
 
 const brl = (n: number | null) => (n === null ? '—' : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
 const dec = (n: number | null) => (n === null ? '—' : n.toLocaleString('pt-BR', { maximumFractionDigits: 2 }));
 
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <Card>
-      <CardContent className="p-4">
-        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
-        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-      </CardContent>
+    <Card size="sm" className="h-full gap-1 px-3">
+      <p className="truncate text-[10px] font-bold uppercase tracking-widest text-muted-foreground" title={label}>{label}</p>
+      <p className="text-xl font-semibold leading-tight tabular-nums">{value}</p>
+      <p className="truncate text-[11px] text-muted-foreground" title={hint}>{hint ?? ' '}</p>
     </Card>
   );
 }
+
+const sectionTitle = 'mb-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground';
+const grid = 'grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6';
 
 function CopyButton({ label, text }: { label: string; text: string }) {
   const [done, setDone] = useState(false);
@@ -37,9 +39,11 @@ export default function EditionTab({ view, onSaved }: { view: MarketingView; onS
 
   return (
     <div className="flex flex-col gap-6">
+      <LeadFunnel view={view} />
+
       <section>
-        <h2 className="mb-2 text-sm font-medium">Frente — ingresso</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <h2 className={sectionTitle}>Frente — ingresso</h2>
+        <div className={grid}>
           <Kpi label="Vendas" value={String(f.sales)} hint={brl(f.revenue)} />
           <Kpi label="Investimento" value={f.spendSource === 'nenhum' ? '—' : brl(f.spend)} hint={f.spendSource === 'meta' ? 'fonte: Meta' : f.spendSource === 'planilha' ? 'fonte: planilha (sem Meta)' : 'sem dados de investimento'} />
           <Kpi label="ROAS" value={dec(f.roas)} />
@@ -50,8 +54,8 @@ export default function EditionTab({ view, onSaved }: { view: MarketingView; onS
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-medium">Fundo — high ticket <span className="font-normal text-muted-foreground">(edição inteira)</span></h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <h2 className={sectionTitle}>Fundo — high ticket <span className="font-normal normal-case tracking-normal">(edição inteira)</span></h2>
+        <div className={grid}>
           <Kpi label="Aplicações" value={String(b.applications)} />
           <Kpi label="Calls agendadas" value={String(b.scheduled)} hint={`custo: ${brl(b.costPerScheduled)}`} />
           <Kpi label="Calls realizadas" value={String(b.done)} hint={`custo: ${brl(b.costPerDone)}`} />
@@ -61,7 +65,7 @@ export default function EditionTab({ view, onSaved }: { view: MarketingView; onS
       </section>
 
       <section className="flex flex-wrap items-center gap-2">
-        <h2 className="mr-2 text-sm font-medium">Copiar report</h2>
+        <h2 className="mr-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Copiar report</h2>
         <CopyButton label="Report da edição" text={view.reports.edition} />
         <CopyButton label="Fechamento de ontem" text={view.reports.daily} />
         <CopyButton label="Análise 1-3-7" text={view.reports.w137} />

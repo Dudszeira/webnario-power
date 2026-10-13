@@ -14,7 +14,9 @@ import { loadAttendance } from './sources/platform.ts';
 
 export type MarketingView = {
   editions: EditionConfig[]; selected: number[]; range: DateRange | null;
-  front: FrontSummary; back: BackSummary; creatives: CreativeStats[]; windows: Window137[];
+  front: FrontSummary; back: BackSummary;
+  fullSpend: number; // investimento da edição inteira: base dos custos do fundo
+  creatives: CreativeStats[]; windows: Window137[];
   buyers: BuyerMatch[]; icVsSales: { day: string; ic: number; sales: number }[];
   unmatched: { utmContents: string[]; adNames: string[] };
   permalinks: Record<string, string>;
@@ -106,5 +108,5 @@ export async function buildView(selectedIn: number[], range: DateRange | null): 
   const capRun = sources.find(s => s.source === 'planilha:capture' && s.ok);
   const stale = !capRun || Date.now() - Date.parse(capRun.finished_at) > 30 * 60_000;
 
-  return { editions, selected, range, front, back, creatives, windows, buyers, icVsSales, unmatched, permalinks, reports, sources, stale };
+  return { editions, selected, range, front, back, fullSpend: frontFull.spend, creatives, windows, buyers, icVsSales, unmatched, permalinks, reports, sources, stale };
 }
