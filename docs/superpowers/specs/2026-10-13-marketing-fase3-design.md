@@ -206,7 +206,8 @@ Mesma identidade visual (cards, KPIs compactos, recharts, cores das metas). Núm
   alcance, frequência, atualizado em). Vendas = linhas da captação da edição cuja
   `utm_campaign` passa no filtro de campanha. Conferido em 13/10 contra o funil manual:
   #021 = 65 e #022 = 41 vendas com janela do dia seguinte à live anterior até a véspera da
-  live.
+  live. Regra adotada: o total da edição inclui o dia da live; a comparação entre edições
+  usa o mesmo número de dias de captação (a edição em andamento define o corte).
 - **Validação:** + "Conferência entre fontes" por edição (✓ / ⚠ com diferença / só planilha /
   só plataforma).
 - **Pesquisa:** filtro de renda; KPIs taxa de resposta, qualificados 5k+, qualidade;
