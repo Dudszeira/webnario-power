@@ -90,6 +90,17 @@ create table if not exists mkt_disparos (
 alter table mkt_disparos enable row level security;
 ```
 
+```sql
+create table if not exists mkt_meta_window (
+  edition int primary key, since date not null, until date not null,
+  reach bigint, frequency numeric, updated_at timestamptz default now()
+);
+alter table mkt_meta_window enable row level security;
+```
+
+O sync do Meta passa a pedir também `reach`, `frequency` e a ação `landing_page_view`
+(o insight diário por anúncio já traz impressões, cliques no link, gasto e IC).
+
 `mkt_settings` ganha a chave `meta_campaign_filter` (linha nova, sem alterar a tabela).
 
 Import único dos disparos que estão no HTML antigo (convites e recuperação), **sem** a lista
@@ -185,6 +196,17 @@ Mesma identidade visual (cards, KPIs compactos, recharts, cores das metas). Núm
   aplicações completas das 20h às 6h ÷ pessoas no pitch).
 - **Criativos:** + leads, % qualificados 5k+, agendamentos, vendas por produto; ordenar por
   vendas / agendamentos / leads / qualificação.
+- **Edição — "Funil completo (Meta + planilha de UTMs)":** tabela com uma coluna por edição
+  selecionada e a variação entre as duas últimas (verde = melhorou, vermelho = piorou):
+  impressões, alcance, frequência, CPM, CTR do link, cliques no link, custo por clique,
+  visualizações da página, página carregada (visualizações ÷ cliques), custo por
+  visualização, IC, custo por IC, página para venda (vendas ÷ visualizações). Alcance não
+  soma entre dias/anúncios: vem de uma chamada própria ao Meta por janela da edição
+  (nível conta, filtro de campanha), guardada em `mkt_meta_window` (edição, início, fim,
+  alcance, frequência, atualizado em). Vendas = linhas da captação da edição cuja
+  `utm_campaign` passa no filtro de campanha. Conferido em 13/10 contra o funil manual:
+  #021 = 65 e #022 = 41 vendas com janela do dia seguinte à live anterior até a véspera da
+  live.
 - **Validação:** + "Conferência entre fontes" por edição (✓ / ⚠ com diferença / só planilha /
   só plataforma).
 - **Pesquisa:** filtro de renda; KPIs taxa de resposta, qualificados 5k+, qualidade;
