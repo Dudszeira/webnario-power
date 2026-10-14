@@ -31,15 +31,15 @@ function Thumb({ family, src, permalink }: { family: string; src: string; permal
         <img src={src} alt={family} loading="lazy" onError={() => setFailed(true)} className="size-10 rounded-md object-cover" />
       </button>
       <dialog ref={ref} onClick={e => { if (e.target === e.currentTarget) ref.current?.close(); }}
-        className="m-auto max-h-[95vh] max-w-[95vw] rounded-lg border border-border bg-zinc-950 p-3 text-foreground backdrop:bg-black/70">
+        className="m-auto max-h-[95dvh] max-w-[95vw] overflow-auto rounded-lg border border-border bg-zinc-950 p-3 text-foreground backdrop:bg-black/70">
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-4">
-            <span className="text-sm font-medium">{family}</span>
+            <span className="min-w-0 break-all text-sm font-medium">{family}</span>
             <button type="button" aria-label="Fechar" onClick={() => ref.current?.close()}
               className="rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"><X className="size-4" /></button>
           </div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} alt={family} className="max-h-[85vh] max-w-[90vw] rounded-md object-contain" />
+          <img src={src} alt={family} className="max-h-[80dvh] max-w-full rounded-md object-contain" />
           {permalink && <a className="text-xs underline" href={permalink} target="_blank" rel="noopener noreferrer">Ver post no Instagram</a>}
         </div>
       </dialog>
@@ -64,10 +64,10 @@ export default function CreativesTab({ view, onSaved, query }: { view: Marketing
 
   return (
     <div className="flex flex-col gap-6">
-      <div role="group" aria-label="Ordenar criativos" className="inline-flex h-8 w-fit items-center rounded-lg border border-border bg-input/20 p-0.5">
+      <div role="group" aria-label="Ordenar criativos" className="inline-flex h-8 w-fit max-w-full items-center overflow-x-auto rounded-lg border border-border bg-input/20 p-0.5">
         {SORTS.map(([k, l]) => (
           <button key={k} type="button" aria-pressed={sort === k} onClick={() => setSort(k)}
-            className={`h-7 rounded-md px-2.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60 ${sort === k ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>{l}</button>
+            className={`h-7 shrink-0 rounded-md px-2.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60 ${sort === k ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>{l}</button>
         ))}
       </div>
 
@@ -139,12 +139,12 @@ export default function CreativesTab({ view, onSaved, query }: { view: Marketing
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">Sem correspondência</h2>
-        <p className="text-xs text-muted-foreground">
+        <p className="break-words text-xs text-muted-foreground">
           UTMs de venda sem anúncio: {view.unmatched.utmContents.join(', ') || 'nenhuma'} · Anúncios com gasto sem venda nem lead: {view.unmatched.adNames.join(', ') || 'nenhum'}
         </p>
         <div className="flex flex-wrap items-end gap-2">
-          <input aria-label="UTM ou nome do anúncio" placeholder="utm_content ou nome do anúncio" className="h-8 rounded-md border border-border bg-transparent px-2 text-sm" value={alias.raw} onChange={e => setAlias({ ...alias, raw: e.target.value })} />
-          <input aria-label="Criativo" placeholder="criativo (ex.: img_01)" className="h-8 rounded-md border border-border bg-transparent px-2 text-sm" value={alias.family} onChange={e => setAlias({ ...alias, family: e.target.value })} />
+          <input aria-label="UTM ou nome do anúncio" placeholder="utm_content ou nome do anúncio" className="h-8 min-w-0 flex-1 basis-48 rounded-md border border-border bg-transparent px-2 text-sm" value={alias.raw} onChange={e => setAlias({ ...alias, raw: e.target.value })} />
+          <input aria-label="Criativo" placeholder="criativo (ex.: img_01)" className="h-8 min-w-0 flex-1 basis-40 rounded-md border border-border bg-transparent px-2 text-sm" value={alias.family} onChange={e => setAlias({ ...alias, family: e.target.value })} />
           <Button size="sm" disabled={!alias.raw.trim() || !alias.family.trim()} onClick={async () => {
             setSaveError('');
             try {

@@ -16,10 +16,10 @@ export default function BuyersTab({ query }: { query: string }) {
   if (!d) return <TabState loading={loading} error={error} />;
   return (
     <div className={`flex flex-col gap-6 transition-opacity ${loading ? 'opacity-60' : ''}`}>
-      <div role="group" aria-label="Produto" className="inline-flex h-8 w-fit items-center rounded-lg border border-border bg-input/20 p-0.5">
+      <div role="group" aria-label="Produto" className="inline-flex h-8 w-fit max-w-full items-center overflow-x-auto rounded-lg border border-border bg-input/20 p-0.5">
         {FILTERS.map(([k, l]) => (
           <button key={k} type="button" aria-pressed={produto === k} onClick={() => setProduto(k)}
-            className={`h-7 rounded-md px-2.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60 ${produto === k ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>{l}</button>
+            className={`h-7 shrink-0 rounded-md px-2.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60 ${produto === k ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>{l}</button>
         ))}
       </div>
 
@@ -33,7 +33,7 @@ export default function BuyersTab({ query }: { query: string }) {
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="grid gap-6 [&>*]:min-w-0 lg:grid-cols-2">
         {([['Renda familiar', d.profile.renda], ['Faturamento com fotografia', d.profile.fat], ['Tempo de fotografia', d.profile.tempo], ['Serviço carro-chefe', d.profile.servico]] as [string, { key: string; count: number }[]][]).map(([t, xs]) => (
           <div key={t}><h2 className={sectionTitle}>{t}</h2><BarList items={xs} total={d.responded} empty="Nenhum comprador respondeu." /></div>
         ))}

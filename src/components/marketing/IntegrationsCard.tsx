@@ -203,7 +203,7 @@ export default function IntegrationsCard() {
               </ul>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <Button type="button" variant="outline" onClick={test} disabled={testing || saving}>
                 {testing ? <><Loader2 className="size-4 animate-spin" /> Testando...</> : 'Testar conexão'}
               </Button>

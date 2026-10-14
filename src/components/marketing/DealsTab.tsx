@@ -84,11 +84,11 @@ export default function DealsTab({ query }: { query: string }) {
         {d.losingCreatives.length ? (
           <ul className="flex flex-col gap-2">
             {d.losingCreatives.map(c => (
-              <li key={c.creative} className="grid grid-cols-[minmax(0,1fr)_3rem] items-center gap-2 text-xs sm:grid-cols-[14rem_3rem_minmax(0,1fr)_12rem]">
+              <li key={c.creative} className="grid grid-cols-[minmax(0,1fr)_3rem] items-center gap-2 text-xs sm:grid-cols-[minmax(0,14rem)_3rem_minmax(0,1fr)_minmax(0,12rem)]">
                 <span className="truncate font-medium" title={c.creative}>{c.creative} <span className="font-normal text-muted-foreground">· {c.n} agend. · {c.calls} calls{c.won ? ` · ${c.won} ganhos` : ''}</span></span>
                 <span className="text-right font-semibold tabular-nums">{pct(c.rate, 0)}</span>
                 <span aria-hidden className="hidden h-2.5 rounded-full bg-muted sm:block"><span className={`block h-full rounded-full ${TONE[c.tone]}`} style={{ width: `${c.rate * 100}%` }} /></span>
-                <span className="hidden text-right text-muted-foreground sm:inline">{c.noShow} no-show · {c.noInterest} sem int. · {c.cancelled} canc.</span>
+                <span className="hidden truncate text-right text-muted-foreground sm:inline">{c.noShow} no-show · {c.noInterest} sem int. · {c.cancelled} canc.</span>
               </li>
             ))}
           </ul>
@@ -112,7 +112,7 @@ export default function DealsTab({ query }: { query: string }) {
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-6 [&>*]:min-w-0 lg:grid-cols-2 xl:grid-cols-4">
         {([['Webinário de origem', d.byEdition], ['Como agendou', d.via], ['Closer', d.closer], ['Status', statusBars]] as [string, { key: string; count: number }[]][]).map(([t, xs]) => (
           <div key={t}><h2 className={sectionTitle}>{t}</h2><BarList items={xs} total={d.total} /></div>
         ))}
