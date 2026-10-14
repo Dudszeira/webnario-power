@@ -158,7 +158,8 @@ export default function MarketingDashboard() {
   return (
     <SidebarProvider>
       <AdminSidebar />
-      <SidebarInset>
+      {/* min-w-0: sem ele o flex item cresce até a tabela/toolbar mais larga e a página rola de lado. */}
+      <SidebarInset className="min-w-0">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border">
           <div className="flex w-full items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
@@ -167,8 +168,8 @@ export default function MarketingDashboard() {
           </div>
         </header>
 
-        <div role="toolbar" aria-label="Filtros do painel" className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-border bg-background px-4 py-2.5 lg:px-6">
-          <div className="order-1 flex items-center gap-2">
+        <div role="toolbar" aria-label="Filtros do painel" className="sticky top-0 z-20 flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-border bg-background px-3 py-2.5 sm:px-4 lg:px-6">
+          <div className="flex items-center gap-2">
             <span className={label}>Edição</span>
             <DropdownMenu>
               <DropdownMenuTrigger disabled={!view} aria-label={`Edição: ${triggerLabel}`} className={buttonVariants({ variant: 'outline', className: 'min-w-[5.5rem] justify-between tabular-nums' })}>
@@ -193,10 +194,10 @@ export default function MarketingDashboard() {
             </DropdownMenu>
           </div>
 
-          <Separator orientation="vertical" className="order-1 hidden h-5 data-vertical:self-auto sm:block" />
+          <Separator orientation="vertical" className="hidden h-5 data-vertical:self-auto sm:block" />
 
-          {/* No celular as datas descem para a 2ª linha; os atalhos ficam na 1ª, ao lado da edição. */}
-          <div className="order-4 flex w-full items-center gap-2 sm:order-2 sm:w-auto">
+          {/* Celular: edição + datas na 1ª linha (datas dividem o resto); atalhos + status + Atualizar na 2ª. */}
+          <div className="flex min-w-0 flex-1 basis-40 items-center gap-2 sm:flex-none sm:basis-auto">
             <span className={label}>Período</span>
             <Input type="date" aria-label="Data inicial" aria-invalid={invalid || undefined} value={range.from} max={range.to || undefined}
               onChange={e => applyRange({ from: e.target.value, to: range.to })} className="h-8 min-w-0 flex-1 px-2 text-xs md:text-xs [color-scheme:dark] sm:w-[8.25rem] sm:flex-none" />
@@ -205,7 +206,7 @@ export default function MarketingDashboard() {
               onChange={e => applyRange({ from: range.from, to: e.target.value })} className="h-8 min-w-0 flex-1 px-2 text-xs md:text-xs [color-scheme:dark] sm:w-[8.25rem] sm:flex-none" />
           </div>
 
-          <div role="group" aria-label="Atalhos de período" className="order-2 inline-flex h-8 items-center rounded-lg border border-border bg-input/20 p-0.5 sm:order-3">
+          <div role="group" aria-label="Atalhos de período" className="inline-flex h-8 items-center rounded-lg border border-border bg-input/20 p-0.5">
             {quick.map(q => {
               const on = q.range.from === range.from && q.range.to === range.to;
               return (
@@ -217,7 +218,7 @@ export default function MarketingDashboard() {
             })}
           </div>
 
-          <div className="order-3 ml-auto flex shrink-0 items-center gap-2 sm:order-4">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             {view && (failing.length ? (
               <Button variant="outline" onClick={() => failing.forEach(warn)} aria-label={`${failing.length} ${failing.length > 1 ? 'fontes' : 'fonte'} com aviso — ver detalhes`}
                 className="border-amber-500/30 text-amber-400 hover:text-amber-300">
@@ -248,7 +249,7 @@ export default function MarketingDashboard() {
 
           {view && (
             <div aria-busy={loading} className={`flex flex-col gap-3 transition-opacity ${loading ? 'opacity-60' : ''}`}>
-              <div role="group" aria-label="Grupo de abas" className="inline-flex h-9 max-w-full items-center overflow-x-auto rounded-lg border border-border bg-input/20 p-0.5">
+              <div role="group" aria-label="Grupo de abas" className="inline-flex h-9 w-fit max-w-full items-center overflow-x-auto rounded-lg border border-border bg-input/20 p-0.5">
                 {GROUPS.map(g => (
                   <button key={g.key} type="button" aria-pressed={g.key === group} onClick={() => { setGroup(g.key); setTab(g.tabs[0].key); }}
                     className={`h-8 shrink-0 rounded-md px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60 ${g.key === group ? 'bg-muted text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
@@ -257,7 +258,7 @@ export default function MarketingDashboard() {
                 ))}
               </div>
               <Tabs value={tab} onValueChange={v => setTab(String(v))}>
-                <TabsList variant="line">
+                <TabsList variant="line" className="max-w-full justify-start overflow-x-auto">
                   {GROUPS.filter(g => g.key === group)[0].tabs.map(t => <TabsTrigger key={t.key} value={t.key}>{t.label}</TabsTrigger>)}
                 </TabsList>
                 <TabsContent value="edicao"><EditionTab key={view.selected[0]} view={view} query={query} onSaved={() => load(selected, range)} /></TabsContent>
