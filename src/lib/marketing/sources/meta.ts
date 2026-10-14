@@ -37,8 +37,15 @@ export async function fetchMetaAdDays(since: string, until: string, settings?: M
     limit: '500',
     access_token: s.metaToken,
   });
+  // A conta roda muitas campanhas além do webinário: sem filtrar na API, o Meta estoura o tempo
+  // ("An unknown error occurred"). ponytail: trocar o filtro depois só vale para os dias sincronizados dali em diante.
+  campaignFilter(params, s.metaCampaignFilter);
   const rows = await getAll<MetaInsightRow>(`${base(s)}/act_${accountId(s)}/insights?${params}`);
   return rows.map(mapInsightRow);
+}
+
+function campaignFilter(params: URLSearchParams, filter: string) {
+  if (filter.trim()) params.set('filtering', JSON.stringify([{ field: 'campaign.name', operator: 'CONTAIN', value: filter.trim() }]));
 }
 
 export async function fetchPermalinks(adIds: string[], settings?: MarketingSettings): Promise<Record<string, string>> {
@@ -66,7 +73,7 @@ export async function fetchMetaWindow(since: string, until: string, filter: stri
     time_range: JSON.stringify({ since, until }),
     access_token: s.metaToken,
   });
-  if (filter.trim()) params.set('filtering', JSON.stringify([{ field: 'campaign.name', operator: 'CONTAIN', value: filter.trim() }]));
+  campaignFilter(params, filter);
   const rows = await getAll<{ reach?: string; frequency?: string }>(`${base(s)}/act_${accountId(s)}/insights?${params}`);
   const r = rows[0];
   return { reach: r?.reach ? Number(r.reach) : null, frequency: r?.frequency ? Number(r.frequency) : null };
