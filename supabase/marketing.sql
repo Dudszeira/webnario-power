@@ -86,3 +86,6 @@ create table if not exists mkt_meta_window (
   reach bigint, frequency numeric, updated_at timestamptz default now()
 );
 alter table mkt_meta_window enable row level security;
+
+-- 2026-10-14: miniatura do criativo (URL assinada do Meta, renovada a cada sync).
+alter table mkt_meta_ad add column if not exists thumbnail text;
