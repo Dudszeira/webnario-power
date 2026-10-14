@@ -22,6 +22,7 @@ export type MarketingView = {
   buyers: BuyerMatch[]; icVsSales: { day: string; ic: number; sales: number }[];
   unmatched: { utmContents: string[]; adNames: string[] };
   permalinks: Record<string, string>;
+  thumbnails?: Record<string, string>;
   reports: { edition: string; daily: string; w137: string };
   sources: { source: string; ok: boolean; message: string; finished_at: string }[];
   stale: boolean;
@@ -33,7 +34,7 @@ const dm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 export async function buildView(selectedIn: number[], range: DateRange | null): Promise<MarketingView> {
   const today = todayBRT();
   const yesterday = addDays(today, -1);
-  const [snap, overrides, aliases, adPermalinks, sources, settings] = await Promise.all([
+  const [snap, overrides, aliases, adLinks, sources, settings] = await Promise.all([
     loadSnapshots(['capture', 'overview', 'sales', 'schedule']), loadEditionOverrides(), loadAliases(), loadPermalinks(), lastRuns(), getMarketingSettings(),
   ]);
   const captures = toCaptureRows(snap.capture ?? []);
@@ -87,9 +88,11 @@ export async function buildView(selectedIn: number[], range: DateRange | null): 
   const icVsSales = Object.keys(byDay).sort().map(day => ({ day, ...byDay[day] }));
 
   const permalinks: Record<string, string> = {};
+  const thumbnails: Record<string, string> = {};
   for (const a of ads) {
     const f = creativeFamily(a.adName, aliases);
-    if (!permalinks[f] && adPermalinks[a.adId]) permalinks[f] = adPermalinks[a.adId];
+    if (!permalinks[f] && adLinks.permalinks[a.adId]) permalinks[f] = adLinks.permalinks[a.adId];
+    if (!thumbnails[f] && adLinks.thumbnails[a.adId]) thumbnails[f] = adLinks.thumbnails[a.adId];
   }
   const toSet = (xs: string[]) => { const o: Record<string, true> = {}; xs.forEach(x => { o[x] = true; }); return o; };
   const adFamilies = toSet(ads.map(a => creativeFamily(a.adName, aliases)));
@@ -111,5 +114,5 @@ export async function buildView(selectedIn: number[], range: DateRange | null): 
   const capRun = sources.find(s => s.source === 'planilha:capture' && s.ok);
   const stale = !capRun || Date.now() - Date.parse(capRun.finished_at) > 30 * 60_000;
 
-  return { editions, selected, range, front, back, fullSpend: frontFull.spend, creatives, windows, buyers, icVsSales, unmatched, permalinks, reports, sources, stale };
+  return { editions, selected, range, front, back, fullSpend: frontFull.spend, creatives, windows, buyers, icVsSales, unmatched, permalinks, thumbnails, reports, sources, stale };
 }

@@ -61,7 +61,7 @@ export async function runSync(opts: { metaDays: number }) {
       try {
         const links = await fetchPermalinks(ids, settings);
         await upsertPermalinks(links);
-        results.push({ source: 'meta:permalinks', ok: true, message: `${Object.keys(links).length} permalinks` });
+        results.push({ source: 'meta:permalinks', ok: true, message: `${Object.keys(links).length} permalinks/miniaturas` });
       } catch (e) {
         results.push({ source: 'meta:permalinks', ok: false, message: (e as Error).message });
       }

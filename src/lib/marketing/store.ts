@@ -63,17 +63,20 @@ export async function hasAdDays(): Promise<boolean> {
   return !!data?.length;
 }
 
-export async function upsertPermalinks(map: Record<string, string>) {
-  const rows = Object.entries(map).map(([ad_id, permalink]) => ({ ad_id, permalink, updated_at: new Date().toISOString() }));
+// A URL da miniatura é assinada e expira: cada sync a renova.
+export async function upsertPermalinks(map: Record<string, { permalink?: string; thumbnail?: string }>) {
+  const rows = Object.entries(map).map(([ad_id, v]) => ({ ad_id, permalink: v.permalink ?? null, thumbnail: v.thumbnail ?? null, updated_at: new Date().toISOString() }));
   if (!rows.length) return;
   const { error } = await supabase.from('mkt_meta_ad').upsert(rows);
   check(error, 'permalinks');
 }
 
-export async function loadPermalinks(): Promise<Record<string, string>> {
-  const { data, error } = await supabase.from('mkt_meta_ad').select('ad_id, permalink');
+export async function loadPermalinks(): Promise<{ permalinks: Record<string, string>; thumbnails: Record<string, string> }> {
+  const { data, error } = await supabase.from('mkt_meta_ad').select('ad_id, permalink, thumbnail');
   check(error, 'load permalinks');
-  return Object.fromEntries((data ?? []).filter(r => r.permalink).map(r => [r.ad_id, r.permalink]));
+  const rows = data ?? [];
+  const pick = (k: 'permalink' | 'thumbnail') => Object.fromEntries(rows.filter(r => r[k]).map(r => [r.ad_id, r[k] as string]));
+  return { permalinks: pick('permalink'), thumbnails: pick('thumbnail') };
 }
 
 export async function seedEditions(list: { number: number; liveDate: string }[]) {

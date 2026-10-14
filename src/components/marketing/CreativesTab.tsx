@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,34 @@ const BAND: Record<string, string> = { sonho: 'bg-emerald-500/20 text-emerald-30
 const SORTS: [CreativeSort, string][] = [['vendas', 'Vendas HT'], ['agend', 'Agendamentos'], ['leads', 'Leads'], ['qualif', 'Qualificação']];
 type Row = { family: string; c: CreativeStats | null; x: CreativeExtra | null };
 const NO_AD = 'Sem anúncio do Meta com este criativo na janela da 1ª edição selecionada';
+
+function Thumb({ family, src, permalink }: { family: string; src: string; permalink?: string }) {
+  const [failed, setFailed] = useState(false);
+  const ref = useRef<HTMLDialogElement>(null);
+  if (failed) return null;
+  return (
+    <>
+      <button type="button" aria-label={`Ampliar ${family}`} onClick={() => ref.current?.showModal()}
+        className="shrink-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={family} loading="lazy" onError={() => setFailed(true)} className="size-10 rounded-md object-cover" />
+      </button>
+      <dialog ref={ref} onClick={e => { if (e.target === e.currentTarget) ref.current?.close(); }}
+        className="m-auto max-h-[95vh] max-w-[95vw] rounded-lg border border-border bg-zinc-950 p-3 text-foreground backdrop:bg-black/70">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-sm font-medium">{family}</span>
+            <button type="button" aria-label="Fechar" onClick={() => ref.current?.close()}
+              className="rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"><X className="size-4" /></button>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={src} alt={family} className="max-h-[85vh] max-w-[90vw] rounded-md object-contain" />
+          {permalink && <a className="text-xs underline" href={permalink} target="_blank" rel="noopener noreferrer">Ver post no Instagram</a>}
+        </div>
+      </dialog>
+    </>
+  );
+}
 
 export default function CreativesTab({ view, onSaved, query }: { view: MarketingView; onSaved: () => void; query: string }) {
   const [alias, setAlias] = useState({ raw: '', family: '' });
@@ -60,7 +89,12 @@ export default function CreativesTab({ view, onSaved, query }: { view: Marketing
           <TableBody>
             {sortCreatives(rows, sort).map(({ family, c, x }) => (
               <TableRow key={family}>
-                <TableCell className="font-medium">{family}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {view.thumbnails?.[family] && <Thumb family={family} src={view.thumbnails[family]} permalink={view.permalinks[family]} />}
+                    <span>{family}</span>
+                  </div>
+                </TableCell>
                 <TableCell className="text-right tabular-nums">{c ? c.sales : dash(NO_AD)}</TableCell>
                 <TableCell className="text-right tabular-nums">{c ? brl(c.spend) : dash(NO_AD)}</TableCell>
                 <TableCell className="text-right tabular-nums">

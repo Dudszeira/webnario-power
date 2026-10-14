@@ -48,18 +48,19 @@ function campaignFilter(params: URLSearchParams, filter: string) {
   if (filter.trim()) params.set('filtering', JSON.stringify([{ field: 'campaign.name', operator: 'CONTAIN', value: filter.trim() }]));
 }
 
-export async function fetchPermalinks(adIds: string[], settings?: MarketingSettings): Promise<Record<string, string>> {
+export async function fetchPermalinks(adIds: string[], settings?: MarketingSettings): Promise<Record<string, { permalink?: string; thumbnail?: string }>> {
   const s = settings ?? await getMarketingSettings();
-  const out: Record<string, string> = {};
+  const out: Record<string, { permalink?: string; thumbnail?: string }> = {};
   for (let i = 0; i < adIds.length; i += 50) {
     const ids = adIds.slice(i, i + 50).join(',');
-    const params = new URLSearchParams({ ids, fields: 'creative{instagram_permalink_url}', access_token: s.metaToken });
+    const params = new URLSearchParams({ ids, fields: 'creative.thumbnail_width(600).thumbnail_height(600){instagram_permalink_url,thumbnail_url}', access_token: s.metaToken });
     const res = await fetch(`${base(s)}/?${params}`, { cache: 'no-store' });
     const body = await res.json();
     if (!res.ok || body.error) throw new Error(`Meta: ${body.error?.message ?? `HTTP ${res.status}`}`);
-    for (const [id, ad] of Object.entries(body as Record<string, { creative?: { instagram_permalink_url?: string } }>)) {
-      const url = ad.creative?.instagram_permalink_url;
-      if (url) out[id] = url;
+    for (const [id, ad] of Object.entries(body as Record<string, { creative?: { instagram_permalink_url?: string; thumbnail_url?: string } }>)) {
+      const permalink = ad.creative?.instagram_permalink_url;
+      const thumbnail = ad.creative?.thumbnail_url;
+      if (permalink || thumbnail) out[id] = { permalink, thumbnail };
     }
   }
   return out;
