@@ -9,23 +9,10 @@ import type { EdicaoTab } from '@/lib/marketing/tabs';
 import { editionKind } from '@/lib/marketing/editions';
 import { FullFunnelTable, WebinarTableView } from './EditionExtras';
 import { useTabData } from './useTabData';
-import { WarnNote, type Warned } from './ui';
+import { Kpi, WarnNote, kpiGrid as grid, sectionTitle, type Warned } from './ui';
 
 const brl = (n: number | null) => (n === null ? '—' : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
 const dec = (n: number | null) => (n === null ? '—' : n.toLocaleString('pt-BR', { maximumFractionDigits: 2 }));
-
-function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <Card size="sm" className="h-full gap-1 px-3">
-      <p className="truncate text-[10px] font-bold uppercase tracking-widest text-muted-foreground" title={label}>{label}</p>
-      <p className="text-xl font-semibold leading-tight tabular-nums">{value}</p>
-      <p className="truncate text-[11px] text-muted-foreground" title={hint}>{hint ?? ' '}</p>
-    </Card>
-  );
-}
-
-const sectionTitle = 'mb-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground';
-const grid = 'grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6';
 
 function CopyButton({ label, text }: { label: string; text: string }) {
   const [done, setDone] = useState(false);

@@ -63,7 +63,7 @@ export default function ValidationTab({ view, query }: { view: MarketingView; qu
         )}
       </section>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
         {[
           ['Compradores high ticket que entraram na live', share(ht, b => b.entered)],
           ['… que ficaram até o pitch', share(ht, b => b.stayedToPitch)],
@@ -72,7 +72,7 @@ export default function ValidationTab({ view, query }: { view: MarketingView; qu
         ].map(([label, value]) => (
           <Card key={label}><CardContent className="p-4">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+            <p className="mt-1 truncate text-2xl font-semibold tabular-nums" title={value}>{value}</p>
           </CardContent></Card>
         ))}
       </div>

@@ -20,14 +20,15 @@ export function mins(n: number | null): string {
   return m >= 60 ? `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}min` : `${m} min`;
 }
 export const sectionTitle = 'mb-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground';
-export const kpiGrid = 'grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6';
+// 1 coluna no celular, 2 no tablet, 3 no notebook, 6 em tela larga.
+export const kpiGrid = 'grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6';
 
 export function Kpi({ label, value, hint, why }: { label: string; value: string; hint?: string; why?: string }) {
   const missing = value === '—';
   return (
-    <Card size="sm" className="h-full gap-1 px-3">
+    <Card size="sm" className="h-full min-w-0 gap-1 px-3">
       <p className="truncate text-[10px] font-bold uppercase tracking-widest text-muted-foreground" title={label}>{label}</p>
-      <p className="text-xl font-semibold leading-tight tabular-nums" title={missing ? why ?? 'Sem dado na fonte para esta seleção' : undefined}>{value}</p>
+      <p className="truncate text-xl font-semibold leading-tight tabular-nums" title={missing ? why ?? 'Sem dado na fonte para esta seleção' : value}>{value}</p>
       <p className="truncate text-[11px] text-muted-foreground" title={hint}>{hint ?? ' '}</p>
     </Card>
   );
@@ -54,13 +55,13 @@ export function BarList({ items, total, empty = 'Sem dados.' }: { items: { key: 
   return (
     <ul className="flex flex-col gap-1.5">
       {items.map(x => (
-        <li key={x.key} className="grid grid-cols-[minmax(0,1fr)_5rem] items-center gap-2 text-xs sm:grid-cols-[12rem_minmax(0,1fr)_5rem_7rem]">
+        <li key={x.key} className="grid grid-cols-[minmax(0,1fr)_5rem] items-center gap-2 text-xs sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_5rem_minmax(0,7rem)]">
           <span className="truncate" title={x.key}>{x.key}</span>
           <span aria-hidden className="hidden h-2.5 rounded-full bg-muted sm:block">
             <span className="block h-full rounded-full bg-primary/70" style={{ width: `${(x.count / max) * 100}%` }} />
           </span>
           <span className="text-right tabular-nums"><b>{int(x.count)}</b> <span className="text-muted-foreground">{pct(ratio(x.count, total))}</span></span>
-          <span className="hidden truncate text-muted-foreground sm:inline">{x.note ?? ''}</span>
+          <span className="hidden truncate text-muted-foreground sm:inline" title={x.note}>{x.note ?? ''}</span>
         </li>
       ))}
     </ul>

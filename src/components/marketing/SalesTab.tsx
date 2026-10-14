@@ -23,7 +23,7 @@ export default function SalesTab({ query }: { query: string }) {
 
       <section>
         <h2 className={sectionTitle}>Por público <span className="font-normal normal-case tracking-normal">· UTM de captação (passe o mouse para a regra)</span></h2>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 [&>*]:min-w-0 sm:grid-cols-2 xl:grid-cols-3">
           {d.audiences.map(a => (
             <Card key={a.key} size="sm" className="gap-2 px-4" title={`Regra: ${a.rule}\n\nTop campanhas:\n${a.topCampaigns.map(c => `${c.count}× ${c.key}`).join('\n')}`}>
               <p className="text-xs font-semibold">{a.label}</p>
@@ -39,7 +39,7 @@ export default function SalesTab({ query }: { query: string }) {
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="grid gap-6 [&>*]:min-w-0 lg:grid-cols-2">
         <div><h2 className={sectionTitle}>Por produto</h2><BarList items={d.byProduct} total={d.sales} /></div>
         <Card className="p-4"><h2 className={sectionTitle}>Vendas por dia</h2><DistChart data={d.byDay.map(x => ({ label: dm(x.key), count: x.count }))} label="Vendas" /></Card>
         <div><h2 className={sectionTitle}>Origem do lead (captação)</h2><BarList items={d.leadOrigin} total={d.sales} /></div>

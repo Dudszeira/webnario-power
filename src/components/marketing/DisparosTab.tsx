@@ -26,12 +26,12 @@ const firstLine = (t: string | null) => (t ? t.split('\n')[0] : '—');
 
 function Block({ title, b, tone }: { title: string; b: DisparoBlock; tone: string }) {
   const stat = (label: string, value: string, sub: string) => (
-    <div><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p><p className="text-xl font-semibold tabular-nums">{value}</p><p className="text-[11px] text-muted-foreground">{sub}</p></div>
+    <div><p className="truncate text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p><p className="truncate text-xl font-semibold tabular-nums" title={value}>{value}</p><p className="truncate text-[11px] text-muted-foreground" title={sub}>{sub}</p></div>
   );
   return (
     <Card className={`gap-3 border-l-4 p-4 ${tone}`}>
       <p className="text-xs font-bold uppercase tracking-widest">{title}</p>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 [&>*]:min-w-0">
         {stat('Orçamento', brl(b.custo), `${int(b.contatos)} contatos · ${b.count} disparos`)}
         {stat('Agendamentos', int(b.agendamentos), b.agendRate === null ? '—' : `${pct(b.agendRate, 2)} dos contatos`)}
         {stat('Custo por agend.', brl(b.costPerAgend), `${brl(b.custo)} ÷ ${int(b.agendamentos)}`)}
@@ -104,7 +104,7 @@ export default function DisparosTab({ query }: { query: string }) {
                 </span>
                 <span className="text-right"><b className="text-base tabular-nums text-emerald-400">{int(r.agendamentos)}</b><br /><span className="text-muted-foreground">{pct(r.contatos ? (r.agendamentos ?? 0) / r.contatos : null, 2)}</span></span>
               </summary>
-              <pre className="whitespace-pre-wrap border-t border-border px-3 py-2 font-sans text-xs">{r.template || 'Sem template registrado.'}</pre>
+              <pre className="whitespace-pre-wrap break-words border-t border-border px-3 py-2 font-sans text-xs">{r.template || 'Sem template registrado.'}</pre>
             </details>
           ))}
           {!d.ranking.length && <p className="text-xs text-muted-foreground">Nenhum convite no período.</p>}
@@ -118,7 +118,7 @@ export default function DisparosTab({ query }: { query: string }) {
         </div>
         {editing && (
           <Card className="mb-3 gap-3 p-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 [&>*]:min-w-0">
               <label className={label}>Tipo
                 <select value={form.kind} onChange={field('kind')} className="h-8 rounded-md border border-border bg-background px-2 text-sm normal-case tracking-normal text-foreground">
                   <option value="convite">Convite</option><option value="recuperacao">Recuperação</option>

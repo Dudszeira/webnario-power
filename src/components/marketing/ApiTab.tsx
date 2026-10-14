@@ -29,7 +29,7 @@ export default function ApiTab({ query }: { query: string }) {
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-3">
+      <section className="grid gap-6 [&>*]:min-w-0 lg:grid-cols-3">
         <div><h2 className={sectionTitle}>Por base</h2><BarList items={bars(d.bases)} total={d.leads} /></div>
         <div><h2 className={sectionTitle}>Por versão</h2><BarList items={bars(d.versions)} total={d.leads} /></div>
         <div><h2 className={sectionTitle}>Por disparo</h2><BarList items={bars(d.shots)} total={d.leads} /></div>

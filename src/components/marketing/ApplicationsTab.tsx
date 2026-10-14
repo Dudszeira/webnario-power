@@ -62,7 +62,7 @@ export default function ApplicationsTab({ query }: { query: string }) {
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-3">
+      <section className="grid gap-6 [&>*]:min-w-0 lg:grid-cols-3">
         {([['Renda mensal', d.profile.income], ['Faturamento com fotografia', d.profile.revenue], ['Relação com a fotografia', d.profile.relation]] as [string, AppAgg[]][]).map(([t, xs]) => (
           <div key={t}><h2 className={sectionTitle}>{t}</h2><BarList items={bars(xs)} total={d.complete} /></div>
         ))}

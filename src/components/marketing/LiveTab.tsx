@@ -52,7 +52,7 @@ export default function LiveTab({ query }: { query: string }) {
             <ReferenceLine x={pitch} stroke="oklch(var(--muted-foreground))" strokeDasharray="4 4"
               label={{ value: 'Pitch', position: 'insideTopRight', fontSize: 10, fill: 'oklch(var(--muted-foreground))' }} />
             <ChartTooltip cursor={false} content={<ChartTooltipContent labelFormatter={(_, p) => `minuto ${(p?.[0]?.payload as { minute?: number } | undefined)?.minute ?? 0}`} />} />
-            <ChartLegend content={<ChartLegendContent />} />
+            <ChartLegend content={<ChartLegendContent className="flex-wrap gap-x-4 gap-y-1" />} />
             {withData.map(e => <Line key={e.edition} dataKey={`e${e.edition}`} type="monotone" stroke={`var(--color-e${e.edition})`} strokeWidth={2} dot={false} connectNulls={false} />)}
           </LineChart>
         </ChartContainer>
@@ -63,7 +63,7 @@ export default function LiveTab({ query }: { query: string }) {
         <DistChart data={t.histogram} label="Pessoas" colorOf={i => (i < 2 ? '#f87171' : i < 4 ? '#fbbf24' : '#34d399')} />
       </Card>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-3 [&>*]:min-w-0 sm:grid-cols-2 xl:grid-cols-3">
         {d.editions.map(e => (
           <Card key={e.edition} size="sm" className="gap-1 px-4">
             <p className="text-xs font-semibold">{ed(e.edition)} <span className="font-normal text-muted-foreground">· {dm(e.liveDate)}</span></p>

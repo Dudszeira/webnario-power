@@ -13,7 +13,7 @@ export function ChallengesView({ data }: { data: Challenges }) {
   const max = data.keywords.length ? data.keywords[0].count : 1;
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-2 [&>*]:min-w-0 sm:grid-cols-2 xl:grid-cols-3">
         {data.keywords.map(k => (
           <div key={k.word} title={`Ex.: ${k.examples.join(' · ')}`} className="relative overflow-hidden rounded-md border border-border px-3 py-2">
             <div aria-hidden className="absolute inset-y-0 left-0 bg-primary/10" style={{ width: `${(k.count / max) * 100}%` }} />
@@ -62,7 +62,7 @@ export default function SurveyTab({ query }: { query: string }) {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-2">
         <Card className="p-4">
           <h2 className={sectionTitle}>Renda familiar <span className="font-normal normal-case tracking-normal">· verde = qualificado</span></h2>
           <DistChart data={dist('renda')} label="Respostas" colorOf={i => (d.charts.renda[i].qualified ? '#34d399' : '#fbbf24')} />
