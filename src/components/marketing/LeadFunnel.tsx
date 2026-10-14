@@ -131,7 +131,7 @@ export default function LeadFunnel({ view, funnel, ticketApplies }: { view: Mark
                 aria-expanded={isOpen}
                 aria-controls="funnel-detail"
                 onClick={() => setOpen(isOpen ? null : s.key)}
-                className={`group grid w-full grid-cols-[7.25rem_minmax(0,1fr)_3.25rem] items-center gap-2 rounded-lg px-2 py-1 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/60 sm:grid-cols-[10rem_minmax(0,1fr)_16rem] sm:gap-4 ${isOpen ? 'bg-muted/50' : ''}`}
+                className={`group grid w-full grid-cols-[7.25rem_minmax(0,1fr)_3.25rem] items-center gap-2 rounded-lg px-2 py-1 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/60 sm:grid-cols-[9rem_minmax(0,1fr)_4.5rem] sm:gap-4 xl:grid-cols-[10rem_minmax(0,1fr)_16rem] ${isOpen ? 'bg-muted/50' : ''}`}
               >
                 <span className="flex min-w-0 flex-col">
                   <span className={`text-xs font-medium leading-tight sm:truncate sm:text-sm ${isOpen ? 'text-foreground' : 'text-foreground/90'}`}>{s.label}</span>
@@ -147,7 +147,8 @@ export default function LeadFunnel({ view, funnel, ticketApplies }: { view: Mark
                   {int(s.value)}
                 </span>
                 <span className="flex items-center justify-end gap-2">
-                  <span className="hidden min-w-0 truncate rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px] text-muted-foreground sm:inline-block">
+                  {/* Custo só em tela larga; abaixo disso aparece no detalhe ao clicar na etapa. */}
+                  <span className="hidden min-w-0 truncate rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px] text-muted-foreground xl:inline-block">
                     {s.cost === null ? '—' : `${brl(s.cost)} ${s.costLabel}`}
                   </span>
                   <span className="w-12 shrink-0 text-right text-xs font-medium tabular-nums text-foreground/90" title={passTitle}>
@@ -162,7 +163,7 @@ export default function LeadFunnel({ view, funnel, ticketApplies }: { view: Mark
       </ol>
 
       {funnel && (
-        <div className="grid gap-4 border-t border-border p-3 sm:grid-cols-2">
+        <div className="grid gap-4 border-t border-border p-3 lg:grid-cols-2 [&>*]:min-w-0">
           {([['Power', funnel.power, 'bg-amber-400'], ['Start', funnel.start, 'bg-sky-400']] as [string, EditionFunnel['power'], string][]).map(([name, s, dot]) => {
             const steps: [string, number][] = [['Qualificada', s.qualified], ['Agendada', s.scheduled], ['Realizada', s.done], ['Venda', s.sales]];
             return (
@@ -179,7 +180,7 @@ export default function LeadFunnel({ view, funnel, ticketApplies }: { view: Mark
             );
           })}
           {funnel.desafioSales > 0 && (
-            <p className="text-[11px] text-muted-foreground sm:col-span-2">Desafio: {funnel.desafioSales} {funnel.desafioSales > 1 ? 'vendas' : 'venda'} (downsell, fora do funil de calls)</p>
+            <p className="text-[11px] text-muted-foreground lg:col-span-2">Desafio: {funnel.desafioSales} {funnel.desafioSales > 1 ? 'vendas' : 'venda'} (downsell, fora do funil de calls)</p>
           )}
         </div>
       )}
