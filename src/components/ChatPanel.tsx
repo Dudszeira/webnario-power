@@ -35,6 +35,8 @@ type Props = {
   viewerMin: number;
   viewerMax: number;
   onMinimize?: () => void;
+  /** Mobile layout: tighter staff bar, collapsible pins, inline composer. */
+  compact?: boolean;
   onCtaChange?: (val: boolean) => void;
   initialRealComments?: ChatComment[];
 };
@@ -103,7 +105,7 @@ function linkifyText(text: string): React.ReactNode {
 }
 
 // ── Viewer count ──────────────────────────────────────────────────────────────
-function ViewerCount({ min, max, T }: { min: number; max: number; T: ReturnType<typeof theme> }) {
+function ViewerCount({ min, max, T, compact }: { min: number; max: number; T: ReturnType<typeof theme>; compact?: boolean }) {
   const [count, setCount] = useState(() => Math.floor((min + max) / 2));
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -123,7 +125,7 @@ function ViewerCount({ min, max, T }: { min: number; max: number; T: ReturnType<
   }, [min, max]);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: T.textMuted, fontFamily: "'Montserrat', sans-serif" }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: compact ? 11 : 12, flexShrink: 0, whiteSpace: 'nowrap', fontWeight: 600, color: T.textMuted, fontFamily: "'Montserrat', sans-serif" }}>
       <svg width="13" height="13" viewBox="0 0 24 24" fill={T.textMuted}>
         <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
       </svg>
@@ -217,9 +219,39 @@ function CommentRow({
 }
 
 // ── Pinned banner ─────────────────────────────────────────────────────────────
-function PinnedBanner({ comment, ctaUrl, ctaText, dark }: { comment: ChatComment; ctaUrl: string; ctaText: string; dark: boolean }) {
+function PinnedBanner({ comment, ctaUrl, ctaText, dark, compact }: { comment: ChatComment; ctaUrl: string; ctaText: string; dark: boolean; compact?: boolean }) {
   const authorName = comment.author_name || 'Robison Kunz';
   const initial = authorName.charAt(0).toUpperCase();
+  const [expanded, setExpanded] = useState(false);
+
+  // Mobile: one header line + 2-line clamp, tap to expand. Keeps the comment list visible.
+  if (compact) {
+    return (
+      <div role="button" aria-expanded={expanded} onClick={() => setExpanded(v => !v)}
+        style={{ margin: '8px 12px 0', padding: '8px 10px', background: 'rgba(85,160,238,0.08)', border: '1px solid rgba(85,160,238,0.25)', borderRadius: 10, cursor: 'pointer' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, minWidth: 0 }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="#55A0EE" style={{ flexShrink: 0 }}><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#e0a030', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Montserrat', sans-serif" }}>{authorName}</span>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', padding: '1px 5px', borderRadius: 3, background: 'rgba(224,160,48,0.15)', color: '#e0a030', border: '1px solid rgba(224,160,48,0.3)', flexShrink: 0 }}>HOST</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#55A0EE" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+            style={{ marginLeft: 'auto', flexShrink: 0, transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+        <p style={{ fontSize: 13, fontWeight: 500, color: dark ? '#fff' : 'rgba(0,0,0,0.78)', margin: 0, fontFamily: "'Montserrat', sans-serif", lineHeight: 1.45,
+          ...(expanded ? {} : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }) }}>
+          {linkifyText(comment.text)}
+        </p>
+        {ctaUrl && (
+          <a href={ctaUrl} target="_blank" rel="noopener noreferrer"
+            onClick={e => { e.stopPropagation(); fetch('/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'cta_click', meta: { url: ctaUrl } }) }); }}
+            style={{ display: 'inline-block', marginTop: 8, background: '#55A0EE', color: '#fff', fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 6, textDecoration: 'none', fontFamily: "'Montserrat', sans-serif" }}>
+            {ctaText || 'Acessar agora →'}
+          </a>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ margin: '8px 12px 0', padding: '10px 12px', background: 'rgba(85,160,238,0.08)', border: '1px solid rgba(85,160,238,0.25)', borderRadius: 10 }}>
@@ -264,7 +296,7 @@ export default function ChatPanel({
   ctaAutoEnabled, ctaOverride, ctaOverrideAt, liveStartMs,
   ctaUrl, ctaText, ctaStartSecs, ctaEndSecs,
   viewerMin, viewerMax, onMinimize, onCtaChange,
-  initialRealComments,
+  initialRealComments, compact = false,
 }: Props) {
   const [isDark, setIsDark] = useState(true);
   const [comments, setComments] = useState<ChatComment[]>(() => initialRealComments ?? []);
@@ -279,6 +311,11 @@ export default function ChatPanel({
     return newest;
   });
   const [typingName, setTypingName] = useState<string | null>(null);
+  const [composerFocused, setComposerFocused] = useState(false);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const [staffBarOpen, setStaffBarOpen] = useState(() => {
+    try { return typeof window !== 'undefined' && localStorage.getItem('lc_staff_bar_open') === '1'; } catch { return false; }
+  });
 
   // Staff state
   const [isStaff, setIsStaff] = useState(false);
@@ -624,6 +661,7 @@ export default function ChatPanel({
     const commentType: ChatComment['type'] = isStaff ? 'real_staff' : 'real_user';
     setComments(prev => [...prev, { id: tempId, type: commentType, author_name: displayName, text, created_at: new Date().toISOString() }]);
     setInput('');
+    if (composerRef.current) composerRef.current.style.height = 'auto';
     try {
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       if (isStaff && staffToken) headers['Authorization'] = `Bearer ${staffToken}`;
@@ -677,8 +715,40 @@ export default function ChatPanel({
         </div>
       )}
 
+      {/* ── Staff Bar, mobile: two lines instead of five ─────── */}
+      {isStaff && compact && (
+        <div style={{ padding: '8px 12px', background: 'rgba(85,160,238,0.08)', borderBottom: '1px solid rgba(85,160,238,0.2)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 7 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <button
+              onClick={() => setStaffBarOpen(v => { const next = !v; try { localStorage.setItem('lc_staff_bar_open', next ? '1' : '0'); } catch {} return next; })}
+              aria-expanded={staffBarOpen} aria-label={staffBarOpen ? 'Recolher controles da staff' : 'Abrir controles da staff'}
+              style={{ all: 'unset', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, cursor: 'pointer', fontSize: 10, fontWeight: 700, color: '#55A0EE', textTransform: 'uppercase', letterSpacing: '.08em', fontFamily: "'Montserrat', sans-serif" }}>
+              ⚡ Staff
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#55A0EE" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+                style={{ transform: staffBarOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <span style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#fff' : '#111', background: 'rgba(85,160,238,0.2)', padding: '2px 8px', borderRadius: 20, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Montserrat', sans-serif" }}>{staffName}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: T.text, whiteSpace: 'nowrap', flexShrink: 0, fontFamily: "'Montserrat', sans-serif" }}>
+              🟢 <strong>{staffMetrics.online}</strong> · 🛒 <strong>{staffMetrics.cta_clicks}</strong>
+            </span>
+            <button onClick={logoutStaff}
+              style={{ all: 'unset', marginLeft: 'auto', flexShrink: 0, border: `1px solid ${T.border}`, borderRadius: 5, padding: '3px 10px', fontSize: 10, fontWeight: 700, color: T.textMuted, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '.05em', fontFamily: "'Montserrat', sans-serif" }}>
+              Sair
+            </button>
+          </div>
+          {staffBarOpen && <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 16, rowGap: 6 }}>
+            <ToggleSwitch on={ctaActive} onChange={toggleCta} T={T}
+              label={`CTA ${ctaOverrideState === null ? (ctaAutoEnabledState ? '(auto)' : '(manual)') : ctaOverrideState === 'on' ? '(forçado)' : '(desligado)'}`} />
+            <ToggleSwitch on={filterRealOnly} onChange={setFilterRealOnly} label="Só reais" T={T} />
+            <span style={{ fontSize: 10, color: T.textMuted, fontStyle: 'italic', fontFamily: "'Montserrat', sans-serif" }}>Toque no comentário para responder</span>
+          </div>}
+        </div>
+      )}
+
       {/* ── Staff Bar (post-login) ──────────────────────────── */}
-      {isStaff && (
+      {isStaff && !compact && (
         <div style={{ padding: '10px 14px', background: 'rgba(85,160,238,0.08)', borderBottom: '1px solid rgba(85,160,238,0.2)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 9 }}>
           {/* Header: staff label + name + logout */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -729,7 +799,7 @@ export default function ChatPanel({
               placeholder="Digite a resposta..."
               rows={2}
               maxLength={500}
-              style={{ flex: 1, background: T.bgField, border: `1px solid ${T.borderField}`, borderRadius: 6, padding: '7px 10px', fontSize: 12, color: T.textTitle, fontFamily: "'Montserrat', sans-serif", resize: 'none', outline: 'none' }}
+              style={{ flex: 1, minWidth: 0, background: T.bgField, border: `1px solid ${T.borderField}`, borderRadius: 6, padding: '7px 10px', fontSize: compact ? 16 : 12, color: T.textTitle, fontFamily: "'Montserrat', sans-serif", resize: 'none', outline: 'none' }}
               onFocus={e => (e.currentTarget.style.borderColor = '#55A0EE')}
               onBlur={e => (e.currentTarget.style.borderColor = T.borderField)}
             />
@@ -748,7 +818,7 @@ export default function ChatPanel({
       )}
 
       {/* ── Header ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', background: T.bgHeader, borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: compact ? '9px 14px' : '13px 16px', background: T.bgHeader, borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span className="lc-live-blink" style={{ width: 8, height: 8, borderRadius: '50%', background: '#e03c3c', flexShrink: 0, display: 'block' }} />
           <span style={{ fontSize: 13, fontWeight: 700, color: T.textTitle, letterSpacing: '.05em', textTransform: 'uppercase' }}>Comentários ao Vivo</span>
@@ -796,15 +866,15 @@ export default function ChatPanel({
       </div>
 
       {/* ── Pinned ─────────────────────────────────────────── */}
-      <div style={{ paddingBottom: 8, flexShrink: 0 }}>
+      <div style={{ paddingBottom: 8, flexShrink: 0, ...(compact ? { maxHeight: '40%', overflowY: 'auto' as const } : {}) }}>
         {activePins.length > 0
-          ? activePins.map(p => <PinnedBanner key={p.id} comment={p} ctaUrl={ctaUrl} ctaText={ctaText} dark={isDark} />)
-          : <PinnedBanner key="__welcome__" comment={DEFAULT_WELCOME_PIN} ctaUrl="" ctaText="" dark={isDark} />
+          ? activePins.map(p => <PinnedBanner key={p.id} comment={p} ctaUrl={ctaUrl} ctaText={ctaText} dark={isDark} compact={compact} />)
+          : <PinnedBanner key="__welcome__" comment={DEFAULT_WELCOME_PIN} ctaUrl="" ctaText="" dark={isDark} compact={compact} />
         }
       </div>
 
       {/* ── Comment list ───────────────────────────────────── */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 14, scrollBehavior: 'smooth', scrollbarWidth: 'thin', scrollbarColor: `${T.scrollbar} transparent` }}>
+      <div ref={scrollRef} style={{ flex: 1, minHeight: compact ? 80 : 0, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 14, scrollBehavior: 'smooth', scrollbarWidth: 'thin', scrollbarColor: `${T.scrollbar} transparent` }}>
         {displayComments.length === 0 && (
           <p style={{ textAlign: 'center', fontSize: 12, color: T.textMuted, marginTop: 32, fontStyle: 'italic' }}>
             {isStaff && filterRealOnly ? 'Nenhum comentário real ainda.' : 'Seja o primeiro a comentar!'}
@@ -826,23 +896,56 @@ export default function ChatPanel({
       </div>
 
       {/* ── Input area ─────────────────────────────────────── */}
-      <div style={{ flexShrink: 0, padding: '12px 14px', borderTop: `1px solid ${T.border}`, background: T.bgInput, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <input type="text" value={isStaff ? 'Equipe Kunz' : sessionName} readOnly
-          style={{ display: 'block', width: '100%', boxSizing: 'border-box', background: T.bgField, border: `1px solid ${T.borderField}`, borderRadius: 6, padding: '9px 12px', fontSize: 13, color: T.textMuted, fontFamily: "'Montserrat', sans-serif", outline: 'none', cursor: 'default' }} />
-        <textarea value={input} onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendComment(); } }}
-          disabled={!chatEnabled || sending} maxLength={200}
-          placeholder="Escreva seu comentário..." rows={2}
-          style={{ display: 'block', width: '100%', boxSizing: 'border-box', background: T.bgField, border: `1px solid ${T.borderField}`, borderRadius: 6, padding: '9px 12px', fontSize: 13, color: T.textTitle, fontFamily: "'Montserrat', sans-serif", outline: 'none', resize: 'none', lineHeight: 1.4, transition: 'border-color .2s' }}
-          onFocus={e => (e.currentTarget.style.borderColor = '#55A0EE')}
-          onBlur={e => (e.currentTarget.style.borderColor = T.borderField)} />
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <ViewerCount min={viewerMin} max={viewerMax} T={T} />
-          <button onClick={sendComment} disabled={!chatEnabled || sending || !input.trim()}
-            style={{ background: '#55A0EE', color: '#fff', border: 'none', borderRadius: 6, padding: '9px 20px', fontSize: 12, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", opacity: (!chatEnabled || sending || !input.trim()) ? 0.4 : 1, transition: 'opacity .15s' }}>
-            Comentar
-          </button>
-        </div>
+      <div style={{ flexShrink: 0, padding: compact ? '10px 12px' : '12px 14px', borderTop: `1px solid ${T.border}`, background: T.bgInput, display: 'flex', flexDirection: 'column', gap: compact ? 6 : 8 }}>
+        {compact ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+              Comentando como <strong style={{ color: T.text }}>{isStaff ? 'Equipe Kunz' : sessionName}</strong>
+            </span>
+            <ViewerCount min={viewerMin} max={viewerMax} T={T} compact />
+          </div>
+        ) : (
+          <input type="text" value={isStaff ? 'Equipe Kunz' : sessionName} readOnly
+            style={{ display: 'block', width: '100%', boxSizing: 'border-box', background: T.bgField, border: `1px solid ${T.borderField}`, borderRadius: 6, padding: '9px 12px', fontSize: 13, color: T.textMuted, fontFamily: "'Montserrat', sans-serif", outline: 'none', cursor: 'default' }} />
+        )}
+        {compact ? (
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, background: T.bgField, border: `1px solid ${composerFocused ? '#55A0EE' : T.borderField}`, borderRadius: 22, padding: '4px 4px 4px 16px', transition: 'border-color .2s' }}>
+            <textarea ref={composerRef} value={input}
+              onChange={e => {
+                setInput(e.target.value);
+                const el = e.currentTarget; el.style.height = 'auto'; el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+              }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendComment(); } }}
+              onFocus={() => setComposerFocused(true)} onBlur={() => setComposerFocused(false)}
+              disabled={!chatEnabled || sending} maxLength={200} enterKeyHint="send"
+              placeholder="Escreva seu comentário..." rows={1} aria-label="Escreva seu comentário"
+              style={{ flex: 1, minWidth: 0, display: 'block', alignSelf: 'center', background: 'transparent', border: 'none', padding: '8px 0', fontSize: 16, color: T.textTitle, fontFamily: "'Montserrat', sans-serif", outline: 'none', resize: 'none', lineHeight: 1.35, maxHeight: 96 }} />
+            <button onClick={sendComment} disabled={!chatEnabled || sending || !input.trim()} aria-label="Enviar comentário"
+              style={{ flexShrink: 0, width: 38, height: 38, borderRadius: '50%', background: '#55A0EE', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: (!chatEnabled || sending || !input.trim()) ? 0.35 : 1, transition: 'opacity .15s, transform .15s' }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="19" x2="12" y2="5"/>
+                <polyline points="5 12 12 5 19 12"/>
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <textarea value={input} onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendComment(); } }}
+            disabled={!chatEnabled || sending} maxLength={200}
+            placeholder="Escreva seu comentário..." rows={2}
+            style={{ display: 'block', width: '100%', boxSizing: 'border-box', background: T.bgField, border: `1px solid ${T.borderField}`, borderRadius: 6, padding: '9px 12px', fontSize: 13, color: T.textTitle, fontFamily: "'Montserrat', sans-serif", outline: 'none', resize: 'none', lineHeight: 1.4, transition: 'border-color .2s' }}
+            onFocus={e => (e.currentTarget.style.borderColor = '#55A0EE')}
+            onBlur={e => (e.currentTarget.style.borderColor = T.borderField)} />
+        )}
+        {!compact && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <ViewerCount min={viewerMin} max={viewerMax} T={T} />
+            <button onClick={sendComment} disabled={!chatEnabled || sending || !input.trim()}
+              style={{ background: '#55A0EE', color: '#fff', border: 'none', borderRadius: 6, padding: '9px 20px', fontSize: 12, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", opacity: (!chatEnabled || sending || !input.trim()) ? 0.4 : 1, transition: 'opacity .15s' }}>
+              Comentar
+            </button>
+          </div>
+        )}
         {!chatEnabled && <p style={{ textAlign: 'center', fontSize: 11, color: T.textMuted, margin: 0 }}>Chat desabilitado</p>}
         {toastError && (
           <div style={{ fontSize: 11, fontWeight: 600, color: '#e05050', background: 'rgba(224,80,80,0.1)', border: '1px solid rgba(224,80,80,0.25)', borderRadius: 6, padding: '7px 11px', textAlign: 'center', fontFamily: "'Montserrat', sans-serif" }}>

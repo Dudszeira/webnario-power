@@ -83,6 +83,22 @@ export default function AoVivoContent({
     videoOffsetRef.current = secs;
   }, []);
 
+  // Short screens (phone in landscape, small laptop windows) get the desktop layout from md up;
+  // switch the chat to its compact form there so the composer stays on screen.
+  const [shortViewport, setShortViewport] = useState(false);
+  // Phone turned sideways: video takes the whole screen and the chat steps aside (CSS-hidden,
+  // so it keeps its state and comes back as it was when the phone is turned upright).
+  const [landscapePhone, setLandscapePhone] = useState(false);
+  useEffect(() => {
+    const short = window.matchMedia('(max-height: 640px)');
+    const phone = window.matchMedia('(orientation: landscape) and (max-height: 500px) and (pointer: coarse)');
+    const update = () => { setShortViewport(short.matches); setLandscapePhone(phone.matches); };
+    update();
+    short.addEventListener('change', update);
+    phone.addEventListener('change', update);
+    return () => { short.removeEventListener('change', update); phone.removeEventListener('change', update); };
+  }, []);
+
   function toggleChat() {
     setChatMinimized(v => {
       const next = !v;
@@ -127,7 +143,7 @@ export default function AoVivoContent({
   }, [redirectCountdown, salesUrl]);
 
   return (
-    <div className="flex flex-col min-h-screen md:h-screen md:overflow-hidden" style={{ background: '#0d0d0d' }}>
+    <div className="flex flex-col h-[100dvh] overflow-hidden md:h-screen" style={{ background: '#0d0d0d' }}>
 
       {/* Admin preview banner */}
       {isAdminPreview && (
@@ -149,16 +165,20 @@ export default function AoVivoContent({
         </div>
       )}
 
-      {/* ── Main layout: video (left) + chat (right, desktop) ── */}
-      <div className="flex flex-col md:flex-row flex-1 p-4 md:p-6 gap-4 md:gap-5 md:overflow-hidden">
+      {/* ── Main layout: video (left) + chat (right, desktop) ──
+          Mobile: video pinned on top, chat fills the rest; only the comment list scrolls. */}
+      <div className={`flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden ${landscapePhone ? '' : shortViewport ? 'md:p-3 md:gap-3' : 'md:p-6 md:gap-5'}`}
+        style={landscapePhone ? { background: '#000' } : undefined}>
 
         {/* Left column */}
-        <div className="flex flex-col flex-1 min-w-0 gap-4 md:overflow-y-auto">
+        <div className={`flex flex-col flex-1 min-w-0 min-h-0 ${landscapePhone ? 'justify-center' : 'md:gap-4 md:overflow-y-auto'}`}>
 
-          {/* Video card */}
+          {/* Video card (landscape phones: capped at half the height so the chat still fits) */}
           <div
-            className="w-full overflow-hidden"
-            style={{ borderRadius: 20, background: '#111', border: '1px solid #1e1e1e' }}
+            className={landscapePhone
+              ? 'flex-shrink-0 overflow-hidden mx-auto'
+              : 'w-full flex-shrink-0 overflow-hidden max-md:w-[min(100%,calc(50dvh*16/9))] max-md:mx-auto md:rounded-[20px] md:border md:border-[#1e1e1e]'}
+            style={{ background: '#111', ...(landscapePhone ? { width: 'min(100%, calc(100dvh * 16 / 9))' } : {}) }}
           >
             <VideoPlayer
               source={videoSource}
@@ -169,9 +189,9 @@ export default function AoVivoContent({
             />
           </div>
 
-          {/* Info card below video */}
+          {/* Info card below video (desktop only: on mobile it would push the chat down) */}
           <div
-            className="flex items-center gap-4 px-5 py-4 flex-shrink-0"
+            className={`hidden ${landscapePhone ? '' : 'md:flex'} items-center gap-4 px-5 py-4 flex-shrink-0`}
             style={{ background: '#111', border: '1px solid #1e1e1e', borderRadius: 20 }}
           >
             {/* Logo thumbnail */}
@@ -193,10 +213,10 @@ export default function AoVivoContent({
             </p>
           </div>
 
-          {/* Mobile chat (below info card, hidden on md+) */}
+          {/* Mobile chat (fills the space under the video, hidden on md+) */}
           <div
-            className="md:hidden overflow-hidden"
-            style={{ height: '100dvh', flexShrink: 0, borderRadius: 20, border: '1px solid #1e1e1e' }}
+            className={`${landscapePhone ? 'hidden' : 'md:hidden'} flex-1 min-h-0 overflow-hidden`}
+            style={{ borderTop: '1px solid #1e1e1e' }}
           >
             <ChatPanel
               editionId={editionId}
@@ -218,6 +238,7 @@ export default function AoVivoContent({
               viewerMax={viewerMax}
               onCtaChange={setLiveCta}
               initialRealComments={initialRealComments as any}
+              compact
             />
           </div>
         </div>
@@ -227,7 +248,7 @@ export default function AoVivoContent({
           <button
             onClick={toggleChat}
             title="Abrir chat"
-            className="hidden md:flex"
+            className={landscapePhone ? 'hidden' : 'hidden md:flex'}
             style={{
               flexShrink: 0,
               width: 44,
@@ -253,7 +274,7 @@ export default function AoVivoContent({
           </button>
         ) : (
           <div
-            className="hidden md:flex flex-col flex-shrink-0 overflow-hidden"
+            className={`hidden ${landscapePhone ? '' : 'md:flex'} flex-col flex-shrink-0 overflow-hidden`}
             style={{
               width: 420,
               borderRadius: 20,
@@ -281,6 +302,7 @@ export default function AoVivoContent({
               viewerMax={viewerMax}
               onMinimize={toggleChat}
               onCtaChange={setLiveCta}
+              compact={shortViewport}
             />
           </div>
         )}

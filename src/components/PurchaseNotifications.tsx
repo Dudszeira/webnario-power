@@ -212,7 +212,7 @@ export default function PurchaseNotifications({ simulatedComments, videoOffsetRe
   if (!toasts.length) return null;
 
   return (
-    <div className="fixed bottom-6 left-6 z-50 flex flex-col gap-2 pointer-events-none" style={{ maxWidth: 300 }}>
+    <div className="fixed bottom-24 left-3 md:bottom-6 md:left-6 z-50 flex flex-col gap-2 pointer-events-none" style={{ maxWidth: 300 }}>
       {toasts.map((t) => {
         const city = nameToCity(t.name);
         const displayName = formatName(t.name);
