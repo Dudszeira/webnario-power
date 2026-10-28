@@ -77,6 +77,10 @@ const config: Config = {
       addVariant('data-active', '&:where([data-state="active"], [data-active]:not([data-active="false"]))');
       addVariant('data-horizontal', '&[data-orientation="horizontal"]');
       addVariant('data-vertical', '&[data-orientation="vertical"]');
+      // Live page: side-by-side video + chat only on wide, landscape-ish screens. Tablets held
+      // upright get the stacked phone layout instead of a tiny video next to the chat.
+      addVariant('live-wide', '@media (min-width: 768px) and (min-aspect-ratio: 1/1)');
+      addVariant('live-stack', '@media not all and (min-width: 768px) and (min-aspect-ratio: 1/1)');
     }),
   ],
 };
